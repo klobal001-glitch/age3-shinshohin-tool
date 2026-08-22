@@ -1,0 +1,113 @@
+import { Genre, Product } from "./types";
+
+// 元ツールで確認できた商品名（表示順）。id・ジャンル・発売日は判明分のみ設定し、
+// 不明な項目は空欄（null / ""）にしています。運用時に商品情報シートから
+// 補完してください。
+interface Seed {
+  id: string;
+  name: string;
+  genre?: Genre;
+  releaseDate?: string;
+}
+
+const seeds: Seed[] = [
+  { id: "anbutter_hokkaido", name: "北海道あんバター", genre: "regular_sweet" },
+  { id: "bananabrulee", name: "バナナブリュレ", genre: "season", releaseDate: "2026-05-01" },
+  { id: "whip", name: "ホイップ" },
+  { id: "jamichigo", name: "ジャムいちご" },
+  { id: "chocoichigo", name: "チョコいちご" },
+  { id: "chocobanana", name: "チョコバナナ" },
+  { id: "namamikan", name: "生みかん" },
+  { id: "blueberry", name: "ブルーベリー" },
+  { id: "mango", name: "マンゴー" },
+  { id: "anbutter", name: "あんバター" },
+  { id: "caramelbiscuit", name: "濃厚キャラメルビスケット" },
+  { id: "montblanc", name: "モンブラン" },
+  { id: "cremebrulee", name: "クレームブリュレ" },
+  { id: "daigakuimo", name: "大学芋" },
+  { id: "kuromitsukinako", name: "黒蜜きなこ" },
+  { id: "kuromitsukinako_tap", name: "黒蜜たっぷりきなこ" },
+  { id: "chocoberrynuts", name: "チョコベリーナッツ" },
+  { id: "chococreamichigo", name: "チョコクリームいちご" },
+  { id: "chococreambanana", name: "チョコクリームバナナ" },
+  { id: "namachocochoco", name: "生チョコチョコ" },
+  { id: "namachocomatcha", name: "生チョコ抹茶" },
+  { id: "honeyrarecheese", name: "はちみつレアチーズ" },
+  { id: "berrypistachio", name: "ベリーピスタチオ" },
+  { id: "cinnamonapplepie", name: "シナモンアップルパイ（青森県）", genre: "shop_limited" },
+  { id: "tsukimiteriyaki", name: "月見照り焼き" },
+  { id: "potatosalad", name: "たっぷりポテトサラダ" },
+  { id: "eggsalad", name: "たっぷりたまごサラダ" },
+  { id: "tunamayo", name: "ツナマヨネーズ" },
+  { id: "cheesecreamstew", name: "焼きチーズクリームシチュー" },
+  { id: "keema", name: "焼きキーマカレー" },
+  { id: "keema_spicy", name: "激辛!焼きキーマカレー" },
+  { id: "torotamanapolitan", name: "とろタマナポリタン" },
+  { id: "torotamanapolitan_cheese", name: "とろタマナポリタン 追いチーズ" },
+  { id: "torotamayakisoba", name: "とろタマ焼きそば" },
+  { id: "umidarekarubi", name: "旨だれ牛カルビ焼肉（石川県）", genre: "shop_limited" },
+  { id: "chickennanban", name: "チキン南蛮（宮崎県）", genre: "shop_limited" },
+  { id: "cheesesalmon", name: "炙りチーズサーモン（北海道・スモークサーモン）", genre: "shop_limited" },
+  { id: "houjicha", name: "ほうじ茶（スイーツサンド）", genre: "sweets_sand" },
+  { id: "amaou", name: "あまおう（フルーツサンド）", genre: "fruit_sand" },
+  { id: "dubaimochi_choco", name: "ドバイチョコ餅(チョコ)" },
+  { id: "dubaimochi_matcha", name: "ドバイチョコ餅（抹茶）" },
+  { id: "botayama_softcream", name: "ボタ山ソフトクリーム" },
+  { id: "acaishaveice", name: "アサイーかき氷（廃番）" },
+  { id: "dip_ichigo", name: "揚げパンディップ いちご" },
+  { id: "dip_choco", name: "揚げパンディップ チョコ" },
+  { id: "dip_cookiecream", name: "揚げパンディップ クッキークリーム" },
+  { id: "dip_matchakinako", name: "揚げパンディップ 抹茶黒蜜きなこ" },
+  { id: "agepan_single", name: "揚げパン（単品）", genre: "single" },
+  { id: "matchabrulee", name: "抹茶ブリュレ" },
+  { id: "icematchaanko", name: "アイス抹茶あんこ", genre: "shop_limited" },
+  { id: "hidagyu", name: "飛騨牛ステーキ", genre: "shop_limited" },
+  { id: "dubaichoco", name: "ドバイチョコレート", genre: "shop_limited" },
+  { id: "unatama", name: "はみ出る鰻玉", genre: "shop_limited" },
+  { id: "kurianmochi", name: "金の抹茶栗あん団子", genre: "shop_limited" },
+  { id: "takomeat", name: "タコミート（茅ヶ崎限定）", genre: "shop_limited" },
+  { id: "shirasuavocado", name: "しらすサーモンアボカド（茅ヶ崎限定）", genre: "shop_limited" },
+  { id: "muscat", name: "シャインマスカット", genre: "season", releaseDate: "2026-09-01" },
+  { id: "sakura", name: "SAKURA抹茶", genre: "season", releaseDate: "2027-03-01" },
+  { id: "beniimo", name: "紅蜜芋ブリュレ", genre: "season", releaseDate: "2026-09-01" },
+  { id: "fig", name: "いちじく", genre: "season", releaseDate: "2026-09-01" },
+  { id: "halloween", name: "紅芋蜜ブリュレ（ハロウィン）", genre: "season" },
+  { id: "yangnyeom", name: "ヤンニョムチキン" },
+  { id: "currycheese", name: "旨辛チーズカレー", genre: "season", releaseDate: "2026-08-01" },
+  { id: "napolitan", name: "旨辛ナポリタン", genre: "season", releaseDate: "2026-08-01" },
+  { id: "yakiniku", name: "旨辛焼肉", genre: "season", releaseDate: "2026-08-01" },
+  { id: "thaitea", name: "タイティー抹茶ブリュレ" },
+  { id: "pbj", name: "ピーナッツバタージャム", genre: "season", releaseDate: "2026-07-01" },
+  { id: "tiramisu", name: "ティラミス", genre: "season", releaseDate: "2026-07-01" },
+  { id: "icebrulee", name: "アイスクリームブリュレ", genre: "season", releaseDate: "2027-05-01" },
+  { id: "icejamichigo", name: "アイスジャムいちご", genre: "season", releaseDate: "2027-05-01" },
+  { id: "icechocoichigo", name: "アイスチョコいちご" },
+  { id: "icechocobanana", name: "アイスチョコバナナ" },
+  { id: "melonparfait", name: "メロンパフェ" },
+  { id: "ichigodaifuku", name: "いちご大福", genre: "season", releaseDate: "2027-04-01" },
+  { id: "chocomarshmallow", name: "チョコマシュマロ", genre: "season", releaseDate: "2027-03-01" },
+  { id: "chocobrulee", name: "チョコブリュレ", genre: "season", releaseDate: "2027-02-01" },
+  { id: "roastbeef", name: "ローストビーフ", genre: "season" },
+  { id: "cheeseburger", name: "チーズバーガー", genre: "season", releaseDate: "2027-04-01" },
+  { id: "ebiten", name: "えび天とろ玉", genre: "season" },
+  { id: "berryopera", name: "ミックスベリーオペラ", genre: "season" },
+  { id: "shiromifry", name: "白身フライ", genre: "season" },
+  { id: "ajifry", name: "アジフライ", genre: "season" },
+  { id: "chocomint", name: "チョコミント" },
+  { id: "juicymelon", name: "ジューシーメロン" },
+  { id: "takoyaki", name: "たこ焼き＆えびせんやで！", genre: "season" },
+  { id: "omurice", name: "とろふわオムライス", genre: "season" },
+  { id: "mentaikorice", name: "炙り一本明太子ご飯", genre: "season" },
+  { id: "carbonara", name: "明太子カルボナーラ", genre: "season" },
+];
+
+export const INITIAL_PRODUCTS: Product[] = seeds.map((s) => ({
+  id: s.id,
+  name: s.name,
+  genre: s.genre ?? null,
+  custom: false,
+}));
+
+export const INITIAL_RELEASE_DATES: Record<string, string> = Object.fromEntries(
+  seeds.filter((s) => s.releaseDate).map((s) => [s.id, s.releaseDate as string])
+);
