@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Header, { TabKey } from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
 import MenuView from "@/components/MenuView";
 import ProductSheetView from "@/components/ProductSheetView";
 import PrepTaskView from "@/components/PrepTaskView";
@@ -31,15 +32,20 @@ function AppShell() {
   const app = useAppData();
 
   return (
-    <div className="min-h-screen bg-[#f4ede4]">
-      <Header activeTab={tab} onChangeTab={setTab} productName={app.selectedProduct?.name} />
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        {tab === "menu" && <MenuView app={app} onNavigate={setTab} />}
-        {tab === "sheet" && <ProductSheetView app={app} />}
-        {tab === "tasks" && <PrepTaskView app={app} />}
-        {tab === "gallery" && <VisualGalleryView app={app} onNavigate={setTab} />}
-        {tab === "help" && <HelpView />}
-      </main>
+    <div className="flex min-h-screen bg-[#f4ede4] md:h-screen md:overflow-hidden">
+      <Sidebar app={app} activeTab={tab} onChangeTab={setTab} />
+      <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
+        <div className="md:hidden">
+          <Header activeTab={tab} onChangeTab={setTab} productName={app.selectedProduct?.name} />
+        </div>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+          {tab === "menu" && <MenuView app={app} onNavigate={setTab} />}
+          {tab === "sheet" && <ProductSheetView app={app} />}
+          {tab === "tasks" && <PrepTaskView app={app} />}
+          {tab === "gallery" && <VisualGalleryView app={app} onNavigate={setTab} />}
+          {tab === "help" && <HelpView />}
+        </main>
+      </div>
     </div>
   );
 }
