@@ -33,9 +33,11 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
   return (
     <div className="rounded-xl border border-amber-200 bg-white p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium text-stone-600">① 商品を選ぶ（両方に共通）</span>
+        <h2 className="hidden text-base font-semibold text-stone-800 md:block">
+          {selectedProduct.name}
+        </h2>
         <select
-          className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+          className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-1.5 text-sm md:hidden"
           value={selectedProduct.id}
           onChange={(e) => setSelectedId(e.target.value)}
         >
