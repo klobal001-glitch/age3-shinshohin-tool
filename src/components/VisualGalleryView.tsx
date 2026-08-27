@@ -51,6 +51,9 @@ export default function VisualGalleryView({
 
   const today = new Date().toISOString().slice(0, 10);
 
+  const thumbnailFor = (info: ReturnType<typeof getInfo>) =>
+    info.visualDownloads.find((v) => v.key === "ig_feed")?.links.find((l) => l.trim());
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-amber-200 bg-white p-4">
@@ -103,9 +106,18 @@ export default function VisualGalleryView({
               onNavigate("sheet");
             }}
           >
-            <div className="mb-2 flex aspect-square items-center justify-center rounded-lg bg-stone-100 text-3xl text-stone-300">
-              🖼
-            </div>
+            {thumbnailFor(info) ? (
+              <img
+                src={thumbnailFor(info)}
+                alt={product.name}
+                className="mb-2 aspect-square w-full rounded-lg bg-stone-100 object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="mb-2 flex aspect-square items-center justify-center rounded-lg bg-stone-100 text-3xl text-stone-300">
+                🖼
+              </div>
+            )}
             {product.genre && (
               <span className={`mb-1 inline-block rounded px-2 py-0.5 text-[11px] font-medium ${GENRE_BADGE_COLOR[product.genre]}`}>
                 {GENRE_LABELS[product.genre]}
