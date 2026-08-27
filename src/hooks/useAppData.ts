@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocalStorageState } from "@/lib/storage";
 import { INITIAL_PRODUCTS, INITIAL_RELEASE_DATES } from "@/lib/products";
 import { createDefaultProductInfo } from "@/lib/productInfo";
+import { supabase } from "@/lib/supabaseClient";
 import { Genre, Product, ProductInfo } from "@/lib/types";
 
 export type TaskStateMap = Record<string, boolean>; // key: "groupId|milestoneId|taskId(|childId)" -> checked
@@ -19,20 +20,77 @@ function buildInitialInfoMap(): Record<string, ProductInfo> {
   return map;
 }
 
+type ProductRow = { id: string; name: string; genre: Genre; custom: boolean; sort_order: number | null };
+type InfoRow = { product_id: string; data: ProductInfo };
+type TaskRow = { product_id: string; data: TaskStateMap };
+
+/**
+ * 商品リスト・商品情報シート・準備タスクのチェック状態を Supabase の共有データベースに
+ * 保存する。チームの誰が開いても同じデータが見える／編集できる。
+ *
+ * 画面がすぐ表示できるよう、読み込み中はこの端末のデフォルト値（あるいは前回の表示内容）
+ * を出しておき、Supabase から取得できたら差し替える（読み込み中の白画面を避けるため）。
+ * 「選択中の商品」だけは端末ごとのUI状態なので localStorage のまま。
+ */
 export function useAppData() {
-  const [products, setProducts] = useLocalStorageState<Product[]>("products", INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [selectedId, setSelectedId] = useLocalStorageState<string>(
     "selected_product",
     INITIAL_PRODUCTS[0]?.id ?? ""
   );
-  const [infoMap, setInfoMap] = useLocalStorageState<Record<string, ProductInfo>>(
-    "product_info",
-    buildInitialInfoMap()
-  );
-  const [taskStateAll, setTaskStateAll] = useLocalStorageState<Record<string, TaskStateMap>>(
-    "task_state",
-    {}
-  );
+  const [infoMap, setInfoMap] = useState<Record<string, ProductInfo>>(buildInitialInfoMap());
+  const [taskStateAll, setTaskStateAll] = useState<Record<string, TaskStateMap>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const [productsRes, infoRes, taskRes] = await Promise.all([
+        supabase.from("products").select("id,name,genre,custom,sort_order").order("sort_order", { ascending: true }),
+        supabase.from("product_info").select("product_id,data"),
+        supabase.from("task_state").select("product_id,data"),
+      ]);
+
+      if (cancelled) return;
+
+      if (!productsRes.error && productsRes.data) {
+        const rows = productsRes.data as ProductRow[];
+        if (rows.length > 0) {
+          setProducts(rows.map((r) => ({ id: r.id, name: r.name, genre: r.genre, custom: r.custom })));
+        }
+      } else if (productsRes.error) {
+        console.error("products の読み込みに失敗しました", productsRes.error);
+      }
+
+      if (!infoRes.error && infoRes.data) {
+        const rows = infoRes.data as InfoRow[];
+        if (rows.length > 0) {
+          const map: Record<string, ProductInfo> = {};
+          for (const r of rows) map[r.product_id] = r.data;
+          setInfoMap(map);
+        }
+      } else if (infoRes.error) {
+        console.error("product_info の読み込みに失敗しました", infoRes.error);
+      }
+
+      if (!taskRes.error && taskRes.data) {
+        const rows = taskRes.data as TaskRow[];
+        const map: Record<string, TaskStateMap> = {};
+        for (const r of rows) map[r.product_id] = r.data;
+        setTaskStateAll(map);
+      } else if (taskRes.error) {
+        console.error("task_state の読み込みに失敗しました", taskRes.error);
+      }
+
+      setLoading(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedId) ?? products[0],
@@ -46,12 +104,18 @@ export function useAppData() {
 
   const updateInfo = useCallback(
     (productId: string, patch: Partial<ProductInfo>) => {
-      setInfoMap((prev) => ({
-        ...prev,
-        [productId]: { ...(prev[productId] ?? createDefaultProductInfo()), ...patch },
-      }));
+      setInfoMap((prev) => {
+        const next = { ...(prev[productId] ?? createDefaultProductInfo()), ...patch };
+        supabase
+          .from("product_info")
+          .upsert({ product_id: productId, data: next, updated_at: new Date().toISOString() })
+          .then(({ error }) => {
+            if (error) console.error("product_info の保存に失敗しました", error);
+          });
+        return { ...prev, [productId]: next };
+      });
     },
-    [setInfoMap]
+    []
   );
 
   const getTaskState = useCallback(
@@ -59,65 +123,109 @@ export function useAppData() {
     [taskStateAll]
   );
 
-  const toggleTask = useCallback(
-    (productId: string, key: string) => {
-      setTaskStateAll((prev) => {
-        const productState = { ...(prev[productId] ?? {}) };
-        productState[key] = !productState[key];
-        return { ...prev, [productId]: productState };
-      });
-    },
-    [setTaskStateAll]
-  );
+  const toggleTask = useCallback((productId: string, key: string) => {
+    setTaskStateAll((prev) => {
+      const productState = { ...(prev[productId] ?? {}) };
+      productState[key] = !productState[key];
+      supabase
+        .from("task_state")
+        .upsert({ product_id: productId, data: productState, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("task_state の保存に失敗しました", error);
+        });
+      return { ...prev, [productId]: productState };
+    });
+  }, []);
 
-  const resetProductTasks = useCallback(
-    (productId: string) => {
-      setTaskStateAll((prev) => ({ ...prev, [productId]: {} }));
-    },
-    [setTaskStateAll]
-  );
+  const resetProductTasks = useCallback((productId: string) => {
+    setTaskStateAll((prev) => {
+      supabase
+        .from("task_state")
+        .upsert({ product_id: productId, data: {}, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("task_state のリセットに失敗しました", error);
+        });
+      return { ...prev, [productId]: {} };
+    });
+  }, []);
 
   const resetProductInfo = useCallback(
     (productId: string) => {
       const product = products.find((p) => p.id === productId);
       const fresh = createDefaultProductInfo();
       if (product) fresh.nameJa = product.name;
+      supabase
+        .from("product_info")
+        .upsert({ product_id: productId, data: fresh, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("product_info のリセットに失敗しました", error);
+        });
       setInfoMap((prev) => ({ ...prev, [productId]: fresh }));
     },
-    [products, setInfoMap]
+    [products]
   );
 
   const addProduct = useCallback(
     (name: string, genre: Genre) => {
       const id = `custom_${Date.now().toString(36)}`;
       const product: Product = { id, name, genre, custom: true };
-      setProducts((prev) => [...prev, product]);
       const info = createDefaultProductInfo();
       info.nameJa = name;
+
+      setProducts((prev) => [...prev, product]);
       setInfoMap((prev) => ({ ...prev, [id]: info }));
       setSelectedId(id);
+
+      const sortOrder = products.length;
+      supabase
+        .from("products")
+        .insert({ id, name, genre, custom: true, sort_order: sortOrder })
+        .then(({ error }) => {
+          if (error) console.error("products への追加に失敗しました", error);
+        });
+      supabase
+        .from("product_info")
+        .upsert({ product_id: id, data: info, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("product_info への追加に失敗しました", error);
+        });
+
       return id;
     },
-    [setProducts, setInfoMap, setSelectedId]
+    [products, setSelectedId]
   );
 
-  const renameProduct = useCallback(
-    (productId: string, name: string) => {
-      setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, name } : p)));
-      setInfoMap((prev) => ({
-        ...prev,
-        [productId]: { ...(prev[productId] ?? createDefaultProductInfo()), nameJa: name },
-      }));
-    },
-    [setProducts, setInfoMap]
-  );
+  const renameProduct = useCallback((productId: string, name: string) => {
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, name } : p)));
+    setInfoMap((prev) => {
+      const next = { ...(prev[productId] ?? createDefaultProductInfo()), nameJa: name };
+      supabase
+        .from("product_info")
+        .upsert({ product_id: productId, data: next, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("product_info の更新に失敗しました", error);
+        });
+      return { ...prev, [productId]: next };
+    });
+    supabase
+      .from("products")
+      .update({ name, updated_at: new Date().toISOString() })
+      .eq("id", productId)
+      .then(({ error }) => {
+        if (error) console.error("products の更新に失敗しました", error);
+      });
+  }, []);
 
-  const changeGenre = useCallback(
-    (productId: string, genre: Genre) => {
-      setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, genre } : p)));
-    },
-    [setProducts]
-  );
+  const changeGenre = useCallback((productId: string, genre: Genre) => {
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, genre } : p)));
+    supabase
+      .from("products")
+      .update({ genre, updated_at: new Date().toISOString() })
+      .eq("id", productId)
+      .then(({ error }) => {
+        if (error) console.error("products の更新に失敗しました", error);
+      });
+  }, []);
 
   const deleteProduct = useCallback(
     (productId: string) => {
@@ -138,8 +246,16 @@ export function useAppData() {
         delete next[productId];
         return next;
       });
+      // product_info / task_state は products の on delete cascade で自動削除される
+      supabase
+        .from("products")
+        .delete()
+        .eq("id", productId)
+        .then(({ error }) => {
+          if (error) console.error("products の削除に失敗しました", error);
+        });
     },
-    [selectedId, setProducts, setInfoMap, setTaskStateAll, setSelectedId]
+    [selectedId, setSelectedId]
   );
 
   return {
@@ -147,6 +263,7 @@ export function useAppData() {
     selectedProduct,
     selectedId,
     setSelectedId,
+    loading,
     getInfo,
     updateInfo,
     getTaskState,
