@@ -80,7 +80,7 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
     const taskState = app.getTaskState(p.id);
     for (const g of TASK_GROUPS) {
       for (const m of g.milestones) {
-        const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate);
+        const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate, info.ongoing);
         if (!deadline) continue;
         const { checked, total } = milestoneCheckState(g, m, taskState);
         if (total > 0 && checked === total) continue; // 完了済みは除外
