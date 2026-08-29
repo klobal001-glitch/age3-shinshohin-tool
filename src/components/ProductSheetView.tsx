@@ -182,7 +182,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     const lines = [
       `【${info.nameJa || selectedProduct.name}】`,
       `ジャンル：${selectedProduct.genre ? GENRE_LABELS[selectedProduct.genre] : "（指定なし）"}`,
-      `発売日：${info.releaseDate || "―"}　販売終了日：${info.endDate || "―"}`,
+      `発売日：${info.releaseDate || "―"}　販売終了日：${info.ongoing ? "継続販売中" : info.endDate || "―"}`,
       `NOアルコール・NOポーク：${info.noAlcoholPork === "mark" ? "マークを付ける" : info.noAlcoholPork === "nomark" ? "マークを付けない" : "未設定"}`,
       `品名（英語）：${info.nameEn}`,
       `紹介文（日本語）：${info.descriptionJa}`,
@@ -281,12 +281,27 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             />
           </Field>
           <Field label="販売終了日">
-            <input
-              type="date"
-              className={inputCls}
-              value={info.endDate}
-              onChange={(e) => patch({ endDate: e.target.value })}
-            />
+            <label className="mb-2 flex items-center gap-2 text-sm text-stone-600">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-amber-600"
+                checked={info.ongoing}
+                onChange={(e) => patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })}
+              />
+              継続販売中（終了日を決めない）
+            </label>
+            {info.ongoing ? (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                継続販売中 — 販売終了日は設定しません
+              </div>
+            ) : (
+              <input
+                type="date"
+                className={inputCls}
+                value={info.endDate}
+                onChange={(e) => patch({ endDate: e.target.value })}
+              />
+            )}
           </Field>
           <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
             <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
