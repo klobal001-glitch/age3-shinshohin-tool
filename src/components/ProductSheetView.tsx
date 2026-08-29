@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import {
+  DEFAULT_INGREDIENT_ROWS,
   UBER_RATE,
   autoUberPrice,
   effectiveUberPrice,
   formatYen,
   ingredientsProgress,
+  isBlankIngredientRow,
   optionalProgress,
   parsePriceInput,
   requiredProgress,
@@ -251,6 +253,21 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const removeIngredient = (idx: number) =>
     patch({ ingredients: info.ingredients.filter((_, i) => i !== idx) });
 
+  const blankIngredientCount = info.ingredients.filter(isBlankIngredientRow).length;
+
+  /** 入力済みの行だけ残す。少なすぎるときは入力用の空行を DEFAULT_INGREDIENT_ROWS まで補う */
+  const removeBlankIngredients = () => {
+    const kept = info.ingredients.filter((row) => !isBlankIngredientRow(row));
+    const rows = [...kept];
+    while (rows.length < DEFAULT_INGREDIENT_ROWS) {
+      rows.push({ nameJa: "", nameEn: "", amount: "", specs: [] });
+    }
+    patch({ ingredients: rows });
+  };
+
+  const blankIngredientsRemovable =
+    info.ingredients.length - Math.max(info.ingredients.length - blankIngredientCount, DEFAULT_INGREDIENT_ROWS);
+
   const updateVisual = (key: string, links: string[]) => {
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
@@ -444,7 +461,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section id="sheet-ingredients" step={2} icon="🥘" title="材料（ingredients）" progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}>
         <p className="text-xs text-stone-400">
-          品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。「＋材料を追加」で増やせます。
+          品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。最初は{DEFAULT_INGREDIENT_ROWS}行あり、足りなければ「＋ 材料を追加」で増やせます。使わない行は「空の行を消す」でまとめて片付きます。
         </p>
         {info.ingredients.map((row, idx) => (
           <div key={idx} className="rounded-lg border border-stone-200 p-3">
@@ -497,12 +514,22 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             ))}
           </div>
         ))}
-        <button
-          className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
-          onClick={addIngredient}
-        >
-          ＋ 材料を追加
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+            onClick={addIngredient}
+          >
+            ＋ 材料を追加
+          </button>
+          {blankIngredientsRemovable > 0 && (
+            <button
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100"
+              onClick={removeBlankIngredients}
+            >
+              空の行を消す（{blankIngredientsRemovable}行）
+            </button>
+          )}
+        </div>
       </Section>
 
       <Section id="sheet-howto" step={3} icon="👩‍🍳" title="作り方（How to make）" progress={`${howtoFilled}/2`}>
