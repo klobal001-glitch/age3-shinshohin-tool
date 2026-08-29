@@ -84,6 +84,9 @@ export default function MenuView({
           <span>⏰</span>
           <h3 className="font-semibold text-stone-800">直近の締め切り</h3>
         </div>
+        <p className="mb-3 text-xs text-stone-400">
+          継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
+        </p>
         {nearestDeadlines.length === 0 ? (
           <p className="py-4 text-center text-sm text-stone-400">
             発売月が設定されている商品がまだありません。準備タスクで発売月を設定すると、ここに締め切りが表示されます。
