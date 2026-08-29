@@ -25,7 +25,8 @@ export function formatJpDate(d: Date | null): string {
 export function computeDeadline(
   rule: DeadlineRule,
   releaseDate: string,
-  endDate: string
+  endDate: string,
+  ongoing = false
 ): Date | null {
   if (rule.type === "monthsBefore") {
     const base = parseDate(releaseDate);
@@ -34,6 +35,8 @@ export function computeDeadline(
     return new Date(target.getFullYear(), target.getMonth(), rule.day);
   }
   if (rule.type === "endOfMonth") {
+    // 継続販売中の商品には「販売終了月末」の締め切りは存在しない
+    if (rule.useEndDate && ongoing) return null;
     const base = parseDate(rule.useEndDate ? endDate : releaseDate) ?? parseDate(releaseDate);
     if (!base) return null;
     return endOfMonth(base);
