@@ -31,9 +31,9 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-300 bg-white p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="hidden text-base font-semibold text-stone-800 md:block">
+        <h2 className="hidden text-lg font-bold text-stone-900 md:block">
           {selectedProduct.name}
         </h2>
         <select
@@ -61,31 +61,39 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
           ))}
         </select>
 
-        <button
-          className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
-          onClick={() => setAdding((v) => !v)}
-        >
-          ＋ 商品を追加
-        </button>
-        <button
-          className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50"
-          onClick={() => {
-            setRenameValue(selectedProduct.name);
-            setRenaming((v) => !v);
-          }}
-        >
-          ✎ 名前変更
-        </button>
-        <button
-          className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          onClick={() => {
-            if (confirm(`「${selectedProduct.name}」を削除します。よろしいですか？`)) {
-              deleteProduct(selectedProduct.id);
-            }
-          }}
-        >
-          🗑 削除
-        </button>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+            onClick={() => setAdding((v) => !v)}
+          >
+            ＋ 商品を追加
+          </button>
+          <button
+            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50"
+            onClick={() => {
+              setRenameValue(selectedProduct.name);
+              setRenaming((v) => !v);
+            }}
+          >
+            名前を変える
+          </button>
+          <span className="mx-1 hidden h-5 w-px bg-stone-200 sm:block" aria-hidden />
+          {/* 押し間違いを避けるため、削除だけは枠のない控えめな表示にしている */}
+          <button
+            className="rounded px-2 py-1.5 text-sm text-stone-400 underline-offset-4 hover:text-red-600 hover:underline"
+            onClick={() => {
+              if (
+                confirm(
+                  `「${selectedProduct.name}」を削除します。入力した情報と準備タスクのチェックもすべて消えます。よろしいですか？`
+                )
+              ) {
+                deleteProduct(selectedProduct.id);
+              }
+            }}
+          >
+            この商品を削除
+          </button>
+        </div>
       </div>
 
       {adding && (
