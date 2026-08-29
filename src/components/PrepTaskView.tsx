@@ -22,6 +22,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
   const taskState = selectedProduct ? getTaskState(selectedProduct.id) : {};
   const releaseDate = info?.releaseDate ?? "";
   const endDate = info?.endDate ?? "";
+  const ongoing = info?.ongoing ?? false;
 
   const patchDates = (release: string, end: string) => {
     if (!selectedProduct) return;
@@ -57,7 +58,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
   const flatMilestones: { group: TaskGroup; milestone: Milestone; deadline: Date | null }[] = [];
   for (const g of TASK_GROUPS) {
     for (const m of g.milestones) {
-      flatMilestones.push({ group: g, milestone: m, deadline: computeDeadline(m.rule, releaseDate, endDate) });
+      flatMilestones.push({ group: g, milestone: m, deadline: computeDeadline(m.rule, releaseDate, endDate, ongoing) });
     }
   }
   if (sortMode === "deadline") {
@@ -87,12 +88,18 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
           </label>
           <label className="text-sm">
             <span className="mb-1 block font-medium text-stone-600">販売終了月（任意・G-5用）</span>
-            <input
-              type="month"
-              className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
-              value={info.endDate ? info.endDate.slice(0, 7) : ""}
-              onChange={(e) => patchDates(info.releaseDate, e.target.value ? `${e.target.value}-01` : "")}
-            />
+            {info.ongoing ? (
+              <span className="inline-block rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-700">
+                継続販売中
+              </span>
+            ) : (
+              <input
+                type="month"
+                className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+                value={info.endDate ? info.endDate.slice(0, 7) : ""}
+                onChange={(e) => patchDates(info.releaseDate, e.target.value ? `${e.target.value}-01` : "")}
+              />
+            )}
           </label>
           <label className="ml-auto flex items-center gap-2 text-sm text-stone-600">
             <input type="checkbox" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} />
@@ -140,7 +147,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
                   </span>
                 </div>
                 {group.milestones.map((m) => {
-                  const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate);
+                  const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate, info.ongoing);
                   const days = daysDiffFromToday(deadline);
                   const dl = diffLabel(days);
                   const mp = milestoneProgress(group, m);
