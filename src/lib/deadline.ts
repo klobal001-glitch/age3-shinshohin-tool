@@ -46,6 +46,18 @@ export function computeDeadline(
   return null;
 }
 
+/**
+ * 発売日から months か月以上が経過しているか。
+ * 発売から時間が経った商品の締め切りは、ダッシュボードでは追わない。
+ */
+export function isReleasedLongAgo(releaseDate: string, months: number): boolean {
+  const d = parseDate(releaseDate);
+  if (!d) return false;
+  const now = new Date();
+  const limit = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+  return d.getTime() < limit.getTime();
+}
+
 export function daysDiffFromToday(target: Date | null): number | null {
   if (!target) return null;
   const today = new Date();
