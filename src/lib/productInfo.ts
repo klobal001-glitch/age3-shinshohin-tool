@@ -67,6 +67,8 @@ export function requiredProgress(info: ProductInfo): ProgressCount {
     info.priceTokyo !== null,
     info.priceKama !== null,
     info.ingredients.some((i) => i.nameJa && i.amount),
+    // 各サイズのビジュアルは1つでもリンクが入っていれば充足
+    ...info.visualDownloads.map((v) => v.links.length > 0),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
@@ -85,7 +87,6 @@ export function optionalProgress(info: ProductInfo): ProgressCount {
     !!info.threadsCaption,
     !!info.pressEmail,
     !!info.prTimesUrl,
-    ...info.visualDownloads.map((v) => v.links.length > 0),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
