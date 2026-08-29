@@ -47,6 +47,7 @@ export interface ProductInfo {
     nameJa: string;
     releaseDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
+  ongoing: boolean; // 継続販売中（販売終了日を設けないレギュラー商品など）
   nameEn: string;
     descriptionJa: string;
     descriptionEn: string;
