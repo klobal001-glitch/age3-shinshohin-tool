@@ -15,30 +15,48 @@ import {
 } from "@/lib/productInfo";
 import { GENRE_LABELS } from "@/lib/types";
 
+/** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
+  id,
+  step,
   icon,
   title,
   progress,
   children,
 }: {
+  id: string;
+  step: number;
   icon: string;
   title: string;
   progress?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-white p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-semibold text-stone-800">
-          <span>{icon}</span>
+    <section id={id} className="scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white">
+      <div className="flex items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-700 text-sm font-semibold tabular-nums text-white">
+          {step}
+        </span>
+        <h3 className="flex items-center gap-2 text-base font-semibold text-stone-800">
+          <span aria-hidden>{icon}</span>
           {title}
         </h3>
-        {progress && <span className="text-xs text-stone-400">{progress}</span>}
+        {progress && (
+          <span className="ml-auto shrink-0 text-xs tabular-nums text-stone-500">{progress}</span>
+        )}
       </div>
-      <div className="space-y-3">{children}</div>
-    </div>
+      <div className="space-y-3 p-5">{children}</div>
+    </section>
   );
 }
+
+const SECTIONS = [
+  { id: "sheet-basic", label: "基本データ" },
+  { id: "sheet-ingredients", label: "材料" },
+  { id: "sheet-howto", label: "作り方" },
+  { id: "sheet-visual", label: "ビジュアル" },
+  { id: "sheet-sns", label: "SNS・PR" },
+];
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -199,6 +217,29 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
   const patch = (p: Partial<typeof info>) => updateInfo(selectedProduct.id, p);
 
+  // セクションごとの入力状況（見出しの右に出す目安）
+  const BASIC_TOTAL = 9;
+  const basicFilled = [
+    !!info.nameJa,
+    info.noAlcoholPork !== null,
+    !!info.releaseDate,
+    !!info.endDate || info.ongoing,
+    !!info.nameEn,
+    !!info.descriptionJa,
+    !!info.descriptionEn,
+    info.priceTokyo !== null,
+    info.priceKama !== null,
+  ].filter(Boolean).length;
+  const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
+  const visualFilled = info.visualDownloads.filter((v) => v.links.some((l) => l.trim())).length;
+  const snsFilled = [
+    !!info.igCaption,
+    !!info.xCaption,
+    !!info.threadsCaption,
+    !!info.pressEmail,
+    !!info.prTimesUrl,
+  ].filter(Boolean).length;
+
   const updateIngredient = (idx: number, patchRow: Partial<(typeof info.ingredients)[number]>) => {
     const next = info.ingredients.map((row, i) => (i === idx ? { ...row, ...patchRow } : row));
     patch({ ingredients: next });
@@ -259,7 +300,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   };
 
   return (
-    <div className="space-y-4 print:space-y-2">
+    <div className="space-y-6 print:space-y-2">
       <div className="print:hidden">
         <ProductPicker app={app} />
       </div>
@@ -276,12 +317,25 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             材料 {ing.filled}/{ing.total}件
           </span>
         </div>
-        <p className="mt-2 text-xs text-stone-400">
+        <div className="mt-3 flex flex-wrap gap-2 print:hidden">
+          {SECTIONS.map((sec, i) => (
+            <button
+              key={sec.id}
+              className="rounded-full border border-stone-300 px-3 py-1 text-xs text-stone-600 hover:border-amber-500 hover:bg-amber-50 hover:text-amber-800"
+              onClick={() =>
+                document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              {i + 1}. {sec.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-stone-400">
           必須が揃うと100%です。各サイズのビジュアルは、リンクが1つでも入っていれば充足とみなします。詳細スペック・使用材料＋手順・SNS/PR文面などの「任意」は、空でもOKです。
         </p>
       </div>
 
-      <Section icon="🧾" title="基本データ">
+      <Section id="sheet-basic" step={1} icon="🧾" title="基本データ" progress={`${basicFilled}/${BASIC_TOTAL}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="NOアルコール・NOポーク">
             <div className="flex gap-2">
@@ -388,7 +442,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </div>
       </Section>
 
-      <Section icon="🥘" title="材料（ingredients）" progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}>
+      <Section id="sheet-ingredients" step={2} icon="🥘" title="材料（ingredients）" progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}>
         <p className="text-xs text-stone-400">
           品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。「＋材料を追加」で増やせます。
         </p>
@@ -451,7 +505,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </button>
       </Section>
 
-      <Section icon="👩‍🍳" title="作り方（How to make）">
+      <Section id="sheet-howto" step={3} icon="👩‍🍳" title="作り方（How to make）" progress={`${howtoFilled}/2`}>
         <p className="text-xs text-stone-400">
           使用材料と手順は別ページで管理する想定です。ここには動画のURLとメモだけを入れます。
         </p>
@@ -472,7 +526,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </Field>
       </Section>
 
-      <Section icon="🖼️" title="ビジュアルダウンロード（各サイズ）">
+      <Section id="sheet-visual" step={4} icon="🖼️" title="ビジュアルダウンロード（各サイズ）" progress={`${visualFilled}/${info.visualDownloads.length}`}>
         <p className="text-xs text-stone-400">
           各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを貼ります。
         </p>
@@ -501,7 +555,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         ))}
       </Section>
 
-      <Section icon="📣" title="紹介文各種（SNS・PR）">
+      <Section id="sheet-sns" step={5} icon="📣" title="紹介文各種（SNS・PR）" progress={`${snsFilled}/5`}>
         <Field label="Instagram 投稿文章（本文＋ハッシュタグ）">
           <textarea rows={3} className={inputCls} value={info.igCaption} onChange={(e) => patch({ igCaption: e.target.value })} />
         </Field>
