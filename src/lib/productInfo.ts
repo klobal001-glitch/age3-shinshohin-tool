@@ -30,6 +30,7 @@ export function createDefaultProductInfo(): ProductInfo {
     nameJa: "",
     releaseDate: "",
     endDate: "",
+    ongoing: false,
     nameEn: "",
     descriptionJa: "",
     descriptionEn: "",
@@ -73,7 +74,7 @@ export function requiredProgress(info: ProductInfo): ProgressCount {
 export function optionalProgress(info: ProductInfo): ProgressCount {
   const checks: boolean[] = [
     !!info.nameEn,
-    !!info.endDate,
+    !!info.endDate || info.ongoing,
     !!info.descriptionJa,
     !!info.descriptionEn,
     !!info.instagramPost,
@@ -150,6 +151,7 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   const r = raw as Record<string, unknown>;
   const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
 
+  merged.ongoing = r.ongoing === true;
   merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
   merged.priceKama = legacyPriceToNumber(r.priceKama);
   merged.priceTokyoUber = legacyPriceToNumber(r.priceTokyoUber);
