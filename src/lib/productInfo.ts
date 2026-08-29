@@ -1,4 +1,4 @@
-import { ProductInfo, VisualLinkGroup } from "./types";
+import { IngredientRow, ProductInfo, VisualLinkGroup } from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
   { key: "ig_feed", label: "Instagram フィード投稿画像", size: "1,080 × 1,350px" },
@@ -16,6 +16,9 @@ export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[
   { key: "menu_fold", label: "二つ折り手元メニュー", size: "" },
   { key: "flyer", label: "各店チラシ", size: "" },
 ];
+
+/** 新しい商品を作ったときに最初から用意しておく材料の行数。 */
+export const DEFAULT_INGREDIENT_ROWS = 5;
 
 export function createDefaultProductInfo(): ProductInfo {
   const visualDownloads: VisualLinkGroup[] = VISUAL_DOWNLOAD_DEFS.map((d) => ({
@@ -39,10 +42,12 @@ export function createDefaultProductInfo(): ProductInfo {
     priceTokyoUber: null,
     priceKama: null,
     priceKamaUber: null,
-    ingredients: [
-      { nameJa: "", nameEn: "", amount: "", specs: [] },
-      { nameJa: "", nameEn: "", amount: "", specs: [] },
-    ],
+    ingredients: Array.from({ length: DEFAULT_INGREDIENT_ROWS }, () => ({
+      nameJa: "",
+      nameEn: "",
+      amount: "",
+      specs: [] as string[],
+    })),
     howToVideoUrl: "",
     recipeNotes: "",
     visualDownloads,
@@ -140,6 +145,42 @@ export function formatYen(value: number | null): string {
   return `¥${value.toLocaleString("ja-JP")}`;
 }
 
+/** 品名・分量・詳細スペックがすべて空の行か */
+export function isBlankIngredientRow(row: IngredientRow): boolean {
+  return (
+    !row.nameJa.trim() &&
+    !row.nameEn.trim() &&
+    !row.amount.trim() &&
+    row.specs.every((s) => !s.trim())
+  );
+}
+
+/**
+ * 材料の行をそろえる。
+ * - 末尾に続く空行は取り除く（過去に大量の空行が入ってしまったデータの掃除）
+ * - 入力しやすいように DEFAULT_INGREDIENT_ROWS 行までは空行を補う
+ * 途中にある空行は、意図して空けている場合があるので残す。
+ */
+export function normalizeIngredientRows(rows: unknown[]): IngredientRow[] {
+  const cleaned: IngredientRow[] = rows.map((raw) => {
+    const row = (raw ?? {}) as Partial<IngredientRow>;
+    return {
+      nameJa: row.nameJa ?? "",
+      nameEn: row.nameEn ?? "",
+      amount: row.amount ?? "",
+      specs: Array.isArray(row.specs) ? row.specs : [],
+    };
+  });
+
+  while (cleaned.length > 0 && isBlankIngredientRow(cleaned[cleaned.length - 1])) {
+    cleaned.pop();
+  }
+  while (cleaned.length < DEFAULT_INGREDIENT_ROWS) {
+    cleaned.push({ nameJa: "", nameEn: "", amount: "", specs: [] });
+  }
+  return cleaned;
+}
+
 /**
  * Supabase から読んだ古い形のデータを現在の型に合わせて補正する。
  * - 価格の文字列 → 数値
@@ -161,12 +202,7 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   if (!Array.isArray(merged.ingredients) || merged.ingredients.length === 0) {
     merged.ingredients = base.ingredients;
   } else {
-    merged.ingredients = merged.ingredients.map((row) => ({
-      nameJa: row?.nameJa ?? "",
-      nameEn: row?.nameEn ?? "",
-      amount: row?.amount ?? "",
-      specs: Array.isArray(row?.specs) ? row.specs : [],
-    }));
+    merged.ingredients = normalizeIngredientRows(merged.ingredients);
   }
 
   // ビジュアルDLの定義が増えた場合に備えて、足りないグループを補う
