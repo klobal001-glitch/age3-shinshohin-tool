@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
-import { ingredientsProgress, optionalProgress, requiredProgress } from "@/lib/productInfo";
+import {
+  UBER_RATE,
+  autoUberPrice,
+  effectiveUberPrice,
+  formatYen,
+  ingredientsProgress,
+  optionalProgress,
+  parsePriceInput,
+  requiredProgress,
+} from "@/lib/productInfo";
 import { GENRE_LABELS } from "@/lib/types";
 
 function Section({
@@ -45,6 +54,97 @@ function Field({ label, children, hint }: { label: string; children: React.React
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
+
+/** 「¥」を左に固定した数値専用の価格入力欄 */
+function PriceInput({
+  value,
+  placeholder,
+  muted,
+  onChange,
+}: {
+  value: number | null;
+  placeholder?: string;
+  muted?: boolean;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">
+        ¥
+      </span>
+      <input
+        type="text"
+        inputMode="numeric"
+        className={`${inputCls} pl-7 tabular-nums ${muted ? "text-stone-500" : ""}`}
+        placeholder={placeholder}
+        value={value === null ? "" : value.toLocaleString("ja-JP")}
+        onChange={(e) => onChange(parsePriceInput(e.target.value))}
+      />
+    </div>
+  );
+}
+
+/** 元価格＋そのUber価格（自動計算）のセット */
+function PriceBlock({
+  label,
+  base,
+  uber,
+  onBase,
+  onUber,
+}: {
+  label: string;
+  base: number | null;
+  uber: number | null;
+  onBase: (v: number | null) => void;
+  onUber: (v: number | null) => void;
+}) {
+  const auto = autoUberPrice(base);
+  const isManual = uber !== null;
+
+  return (
+    <div className="rounded-lg border border-stone-200 p-3">
+      <Field label={label}>
+        <PriceInput value={base} placeholder="950" onChange={onBase} />
+      </Field>
+      <div className="mt-3">
+        <div className="mb-1 flex items-center gap-2">
+          <label className="block text-sm font-medium text-stone-600">
+            └ Uber Eats 価格（税込）
+          </label>
+          {isManual ? (
+            <>
+              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] text-stone-600">
+                手入力
+              </span>
+              <button
+                type="button"
+                className="text-[11px] text-amber-700 hover:underline"
+                onClick={() => onUber(null)}
+              >
+                自動に戻す
+              </button>
+            </>
+          ) : (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
+              自動（× {UBER_RATE}）
+            </span>
+          )}
+        </div>
+        <PriceInput
+          value={effectiveUberPrice(uber, base)}
+          muted={!isManual}
+          placeholder={auto === null ? "元価格を入れると自動計算" : ""}
+          onChange={onUber}
+        />
+        <p className="mt-1 text-xs text-stone-400">
+          {isManual
+            ? `自動計算なら ${auto === null ? "―" : formatYen(auto)} です。`
+            : "元価格を変えると自動で更新されます。直接入力すると手入力に切り替わります。"}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function ProductSheetView({ app }: { app: ReturnType<typeof useAppData> }) {
   const { selectedProduct, getInfo, updateInfo, resetProductInfo } = app;
@@ -88,9 +188,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       `紹介文（日本語）：${info.descriptionJa}`,
       `紹介文（英語）：${info.descriptionEn}`,
       `Instagram投稿文：${info.instagramPost}`,
-      `販売価格（銀座・原宿・浅草・飛騨高山）：${info.priceTokyo}`,
-      `販売価格（嘉麻）：${info.priceKama}`,
-      `販売価格（Uber）：${info.priceUber}`,
+      `販売価格（銀座・原宿・浅草・飛騨高山）：${formatYen(info.priceTokyo) || "―"}`,
+      `　└ Uber：${formatYen(effectiveUberPrice(info.priceTokyoUber, info.priceTokyo)) || "―"}`,
+      `販売価格（嘉麻）：${formatYen(info.priceKama) || "―"}`,
+      `　└ Uber：${formatYen(effectiveUberPrice(info.priceKamaUber, info.priceKama)) || "―"}`,
       "",
       "■材料",
       ...info.ingredients
@@ -126,16 +227,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Field label="商品名（自由入力・上書き可）">
-            <input
-              className={inputCls}
-              value={info.nameJa}
-              onChange={(e) => patch({ nameJa: e.target.value })}
-            />
-          </Field>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">
             必須 {req.filled}/{req.total}（{req.total ? Math.round((req.filled / req.total) * 100) : 0}%）
           </span>
@@ -225,16 +317,21 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             onChange={(e) => patch({ instagramPost: e.target.value })}
           />
         </Field>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="販売価格（銀座・原宿・浅草・飛騨高山／税込）">
-            <input className={inputCls} value={info.priceTokyo} onChange={(e) => patch({ priceTokyo: e.target.value })} />
-          </Field>
-          <Field label="販売価格（嘉麻／税込）">
-            <input className={inputCls} value={info.priceKama} onChange={(e) => patch({ priceKama: e.target.value })} />
-          </Field>
-          <Field label="販売価格（Uber／税込）">
-            <input className={inputCls} value={info.priceUber} onChange={(e) => patch({ priceUber: e.target.value })} />
-          </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PriceBlock
+            label="販売価格（銀座・原宿・浅草・飛騨高山／税込）"
+            base={info.priceTokyo}
+            uber={info.priceTokyoUber}
+            onBase={(v) => patch({ priceTokyo: v })}
+            onUber={(v) => patch({ priceTokyoUber: v })}
+          />
+          <PriceBlock
+            label="販売価格（嘉麻／税込）"
+            base={info.priceKama}
+            uber={info.priceKamaUber}
+            onBase={(v) => patch({ priceKama: v })}
+            onUber={(v) => patch({ priceKamaUber: v })}
+          />
         </div>
       </Section>
 
