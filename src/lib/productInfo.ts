@@ -34,9 +34,10 @@ export function createDefaultProductInfo(): ProductInfo {
     descriptionJa: "",
     descriptionEn: "",
     instagramPost: "",
-    priceTokyo: "",
-    priceKama: "",
-    priceUber: "",
+    priceTokyo: null,
+    priceTokyoUber: null,
+    priceKama: null,
+    priceKamaUber: null,
     ingredients: [
       { nameJa: "", nameEn: "", amount: "", specs: [] },
       { nameJa: "", nameEn: "", amount: "", specs: [] },
@@ -62,9 +63,8 @@ export function requiredProgress(info: ProductInfo): ProgressCount {
     !!info.nameJa,
     !!info.releaseDate,
     info.noAlcoholPork !== null,
-    !!info.priceTokyo,
-    !!info.priceKama,
-    !!info.priceUber,
+    info.priceTokyo !== null,
+    info.priceKama !== null,
     info.ingredients.some((i) => i.nameJa && i.amount),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
@@ -94,4 +94,91 @@ export function ingredientsProgress(info: ProductInfo): ProgressCount {
     filled: info.ingredients.filter((i) => i.nameJa && i.amount).length,
     total: info.ingredients.length,
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * 価格まわり
+ *
+ * 価格は「税込・円」の数値で保持する。Uber価格は元価格の UBER_RATE 倍を
+ * 自動計算して表示し、値を明示的に入れた場合だけその値を優先する
+ * （＝ null は「自動」を意味する）。
+ * ------------------------------------------------------------------ */
+
+export const UBER_RATE = 1.4;
+
+/** 入力欄の文字列を価格の数値に変換する。数字以外は無視。空なら null。 */
+export function parsePriceInput(raw: string): number | null {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (!digits) return null;
+  return Number(digits);
+}
+
+/** 旧形式（"3,800 (¥)" / "¥950 (+¥100)" など）から最初の数値を取り出す。 */
+export function legacyPriceToNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const m = value.replace(/,/g, "").match(/\d+/);
+  return m ? Number(m[0]) : null;
+}
+
+/** 元価格から自動計算した Uber 価格（1円単位で四捨五入）。 */
+export function autoUberPrice(base: number | null): number | null {
+  if (base === null) return null;
+  return Math.round(base * UBER_RATE);
+}
+
+/** 実際に表示・書き出しに使う Uber 価格。手入力があればそれを優先。 */
+export function effectiveUberPrice(explicit: number | null, base: number | null): number | null {
+  return explicit !== null ? explicit : autoUberPrice(base);
+}
+
+/** 表示用フォーマット。null は空文字。 */
+export function formatYen(value: number | null): string {
+  if (value === null) return "";
+  return `¥${value.toLocaleString("ja-JP")}`;
+}
+
+/**
+ * Supabase から読んだ古い形のデータを現在の型に合わせて補正する。
+ * - 価格の文字列 → 数値
+ * - 廃止された priceUber は「銀座系のUber価格」として引き継がず破棄する
+ * - 欠けているキーはデフォルト値で埋める
+ */
+export function normalizeProductInfo(raw: unknown): ProductInfo {
+  const base = createDefaultProductInfo();
+  if (!raw || typeof raw !== "object") return base;
+  const r = raw as Record<string, unknown>;
+  const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
+
+  merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
+  merged.priceKama = legacyPriceToNumber(r.priceKama);
+  merged.priceTokyoUber = legacyPriceToNumber(r.priceTokyoUber);
+  merged.priceKamaUber = legacyPriceToNumber(r.priceKamaUber);
+
+  if (!Array.isArray(merged.ingredients) || merged.ingredients.length === 0) {
+    merged.ingredients = base.ingredients;
+  } else {
+    merged.ingredients = merged.ingredients.map((row) => ({
+      nameJa: row?.nameJa ?? "",
+      nameEn: row?.nameEn ?? "",
+      amount: row?.amount ?? "",
+      specs: Array.isArray(row?.specs) ? row.specs : [],
+    }));
+  }
+
+  // ビジュアルDLの定義が増えた場合に備えて、足りないグループを補う
+  const existing = new Map(
+    (Array.isArray(merged.visualDownloads) ? merged.visualDownloads : []).map((v) => [v.key, v])
+  );
+  merged.visualDownloads = VISUAL_DOWNLOAD_DEFS.map((d) => {
+    const cur = existing.get(d.key);
+    return {
+      key: d.key,
+      label: d.label,
+      size: d.size,
+      links: Array.isArray(cur?.links) ? cur.links : [],
+    };
+  });
+
+  return merged;
 }
