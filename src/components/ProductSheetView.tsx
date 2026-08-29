@@ -277,7 +277,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           </span>
         </div>
         <p className="mt-2 text-xs text-stone-400">
-          必須が揃うと100%です。詳細スペック・使用材料＋手順・各ビジュアルDL・SNS/PR文面などの「任意」は、空でもOKです。
+          必須が揃うと100%です。各サイズのビジュアルは、リンクが1つでも入っていれば充足とみなします。詳細スペック・使用材料＋手順・SNS/PR文面などの「任意」は、空でもOKです。
         </p>
       </div>
 
