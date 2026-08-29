@@ -1,7 +1,7 @@
 import { useAppData } from "@/hooks/useAppData";
 import { requiredProgress, optionalProgress } from "./productInfo";
 import { TASK_GROUPS } from "./prepTasks";
-import { computeDeadline, daysDiffFromToday } from "./deadline";
+import { computeDeadline, daysDiffFromToday, isReleasedLongAgo } from "./deadline";
 import { Product, ProductInfo, TaskGroup, Milestone } from "./types";
 
 type App = ReturnType<typeof useAppData>;
@@ -71,12 +71,23 @@ export interface DeadlineEntry {
   total: number;
 }
 
-/** 全商品ぶんの「未完了マイルストーン」を締め切りが近い順（延滞が大きい順）に並べる */
+/** ダッシュボードで締め切りを追わなくなるまでの期間（発売日から） */
+export const DEADLINE_TRACKING_MONTHS = 12;
+
+/**
+ * 全商品ぶんの「未完了マイルストーン」を締め切りが近い順（延滞が大きい順）に並べる。
+ *
+ * 次の商品は対象外にしている（商品ごとの準備タスク画面には従来どおり表示される）:
+ * - 継続販売中のレギュラー商品 … 発売準備の締め切りという概念がないため
+ * - 発売から1年以上が経過した商品 … 過ぎた締め切りを延々と催促しても意味がないため
+ */
 export function collectDeadlines(app: App): DeadlineEntry[] {
   const entries: DeadlineEntry[] = [];
   for (const p of app.products) {
     const info = app.getInfo(p.id);
     if (!info.releaseDate) continue;
+    if (info.ongoing) continue;
+    if (isReleasedLongAgo(info.releaseDate, DEADLINE_TRACKING_MONTHS)) continue;
     const taskState = app.getTaskState(p.id);
     for (const g of TASK_GROUPS) {
       for (const m of g.milestones) {
