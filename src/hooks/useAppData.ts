@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocalStorageState } from "@/lib/storage";
 import { INITIAL_PRODUCTS, INITIAL_RELEASE_DATES } from "@/lib/products";
-import { createDefaultProductInfo } from "@/lib/productInfo";
+import { createDefaultProductInfo, normalizeProductInfo } from "@/lib/productInfo";
 import { supabase } from "@/lib/supabaseClient";
 import { Genre, Product, ProductInfo } from "@/lib/types";
 
@@ -67,7 +67,7 @@ export function useAppData() {
         const rows = infoRes.data as InfoRow[];
         if (rows.length > 0) {
           const map: Record<string, ProductInfo> = {};
-          for (const r of rows) map[r.product_id] = r.data;
+          for (const r of rows) map[r.product_id] = normalizeProductInfo(r.data);
           setInfoMap(map);
         }
       } else if (infoRes.error) {
@@ -102,20 +102,70 @@ export function useAppData() {
     [infoMap]
   );
 
+  /* ------------------------------------------------------------------ *
+   * 商品情報シートの保存
+   *
+   * 以前は1文字入力するたびに upsert していたため、続けて入力すると
+   * 前の保存が後の保存を上書きして入力が消えることがあった。
+   * ここでは商品ごとに最新の内容だけを保持し、入力が止まってから
+   * まとめて保存する（離脱時・タブを隠したときは即時保存）。
+   * ------------------------------------------------------------------ */
+  const infoMapRef = useRef(infoMap);
+  useEffect(() => {
+    infoMapRef.current = infoMap;
+  }, [infoMap]);
+
+  const pendingInfoRef = useRef<Record<string, ProductInfo>>({});
+  const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const flushInfo = useCallback((productId?: string) => {
+    const ids = productId ? [productId] : Object.keys(pendingInfoRef.current);
+    for (const id of ids) {
+      const data = pendingInfoRef.current[id];
+      if (!data) continue;
+      delete pendingInfoRef.current[id];
+      if (saveTimersRef.current[id]) {
+        clearTimeout(saveTimersRef.current[id]);
+        delete saveTimersRef.current[id];
+      }
+      supabase
+        .from("product_info")
+        .upsert({ product_id: id, data, updated_at: new Date().toISOString() })
+        .then(({ error }) => {
+          if (error) console.error("product_info の保存に失敗しました", error);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    const flushAll = () => flushInfo();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushAll();
+    };
+    window.addEventListener("beforeunload", flushAll);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", flushAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flushAll();
+    };
+  }, [flushInfo]);
+
   const updateInfo = useCallback(
     (productId: string, patch: Partial<ProductInfo>) => {
-      setInfoMap((prev) => {
-        const next = { ...(prev[productId] ?? createDefaultProductInfo()), ...patch };
-        supabase
-          .from("product_info")
-          .upsert({ product_id: productId, data: next, updated_at: new Date().toISOString() })
-          .then(({ error }) => {
-            if (error) console.error("product_info の保存に失敗しました", error);
-          });
-        return { ...prev, [productId]: next };
-      });
+      const base =
+        pendingInfoRef.current[productId] ??
+        infoMapRef.current[productId] ??
+        createDefaultProductInfo();
+      const next = { ...base, ...patch };
+      pendingInfoRef.current[productId] = next;
+      infoMapRef.current = { ...infoMapRef.current, [productId]: next };
+      setInfoMap((prev) => ({ ...prev, [productId]: next }));
+
+      if (saveTimersRef.current[productId]) clearTimeout(saveTimersRef.current[productId]);
+      saveTimersRef.current[productId] = setTimeout(() => flushInfo(productId), 600);
     },
-    []
+    [flushInfo]
   );
 
   const getTaskState = useCallback(
@@ -154,6 +204,11 @@ export function useAppData() {
       const product = products.find((p) => p.id === productId);
       const fresh = createDefaultProductInfo();
       if (product) fresh.nameJa = product.name;
+      delete pendingInfoRef.current[productId];
+      if (saveTimersRef.current[productId]) {
+        clearTimeout(saveTimersRef.current[productId]);
+        delete saveTimersRef.current[productId];
+      }
       supabase
         .from("product_info")
         .upsert({ product_id: productId, data: fresh, updated_at: new Date().toISOString() })
@@ -197,16 +252,16 @@ export function useAppData() {
 
   const renameProduct = useCallback((productId: string, name: string) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, name } : p)));
-    setInfoMap((prev) => {
-      const next = { ...(prev[productId] ?? createDefaultProductInfo()), nameJa: name };
-      supabase
-        .from("product_info")
-        .upsert({ product_id: productId, data: next, updated_at: new Date().toISOString() })
-        .then(({ error }) => {
-          if (error) console.error("product_info の更新に失敗しました", error);
-        });
-      return { ...prev, [productId]: next };
-    });
+    // 入力中の内容を取りこぼさないよう、保存待ちの内容を土台にする
+    const base =
+      pendingInfoRef.current[productId] ??
+      infoMapRef.current[productId] ??
+      createDefaultProductInfo();
+    const next = { ...base, nameJa: name };
+    pendingInfoRef.current[productId] = next;
+    infoMapRef.current = { ...infoMapRef.current, [productId]: next };
+    setInfoMap((prev) => ({ ...prev, [productId]: next }));
+    flushInfo(productId);
     supabase
       .from("products")
       .update({ name, updated_at: new Date().toISOString() })
@@ -214,7 +269,7 @@ export function useAppData() {
       .then(({ error }) => {
         if (error) console.error("products の更新に失敗しました", error);
       });
-  }, []);
+  }, [flushInfo]);
 
   const changeGenre = useCallback((productId: string, genre: Genre) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, genre } : p)));
