@@ -5,8 +5,8 @@ import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
 
-const FILTERS: { value: Genre | "all"; label: string }[] = [
-  { value: "all", label: "すべて" },
+const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
+  { value: "all", label: "すべてのジャンル" },
   { value: "regular_sweet", label: GENRE_LABELS.regular_sweet },
   { value: "regular_savory", label: GENRE_LABELS.regular_savory },
   { value: "sweets_sand", label: GENRE_LABELS.sweets_sand },
@@ -16,15 +16,17 @@ const FILTERS: { value: Genre | "all"; label: string }[] = [
   { value: "season", label: GENRE_LABELS.season },
 ];
 
-const GENRE_BADGE_COLOR: Record<NonNullable<Genre>, string> = {
-  regular_sweet: "bg-pink-100 text-pink-700",
-  regular_savory: "bg-orange-100 text-orange-700",
-  sweets_sand: "bg-purple-100 text-purple-700",
-  fruit_sand: "bg-lime-100 text-lime-700",
-  single: "bg-sky-100 text-sky-700",
-  shop_limited: "bg-blue-100 text-blue-700",
-  season: "bg-amber-100 text-amber-700",
-};
+type ImageFilter = "all" | "has" | "none";
+type SortMode = "date" | "name" | "least";
+
+/** 選択中のボタンかどうかで見た目を切り替える共通スタイル */
+function chipCls(active: boolean) {
+  return `rounded-lg border px-3 py-1.5 text-sm transition ${
+    active
+      ? "border-stone-700 bg-stone-700 font-medium text-white"
+      : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
+  }`;
+}
 
 export default function VisualGalleryView({
   app,
@@ -34,107 +36,152 @@ export default function VisualGalleryView({
   onNavigate: (t: TabKey) => void;
 }) {
   const { products, getInfo, setSelectedId } = app;
-  const [filter, setFilter] = useState<Genre | "all">("all");
-  const [sortMode, setSortMode] = useState<"date" | "name">("date");
+  const [genre, setGenre] = useState<Genre | "all">("all");
+  const [imageFilter, setImageFilter] = useState<ImageFilter>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("date");
 
   const rows = useMemo(() => {
-    let list = products.map((p) => ({ product: p, info: getInfo(p.id) }));
-    if (filter !== "all") list = list.filter((r) => r.product.genre === filter);
+    let list = products.map((p) => {
+      const info = getInfo(p.id);
+      const done = info.visualDownloads.filter((v) => v.links.some((l) => l.trim())).length;
+      const thumb = info.visualDownloads
+        .find((v) => v.key === "ig_feed")
+        ?.links.find((l) => l.trim());
+      return { product: p, info, done, total: info.visualDownloads.length, thumb };
+    });
+    if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
+    if (imageFilter === "has") list = list.filter((r) => r.done > 0);
+    if (imageFilter === "none") list = list.filter((r) => r.done === 0);
+
     if (sortMode === "date") {
-      list.sort((a, b) => (a.info.releaseDate || "9999").localeCompare(b.info.releaseDate || "9999"));
-    } else {
+      list.sort((a, b) =>
+        (a.info.releaseDate || "9999").localeCompare(b.info.releaseDate || "9999")
+      );
+    } else if (sortMode === "name") {
       list.sort((a, b) => a.product.name.localeCompare(b.product.name, "ja"));
+    } else {
+      list.sort((a, b) => a.done - b.done || a.product.name.localeCompare(b.product.name, "ja"));
     }
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, filter, sortMode]);
+  }, [products, genre, imageFilter, sortMode]);
 
+  const totalDone = rows.filter((r) => r.done > 0).length;
   const today = new Date().toISOString().slice(0, 10);
-
-  const thumbnailFor = (info: ReturnType<typeof getInfo>) =>
-    info.visualDownloads.find((v) => v.key === "ig_feed")?.links.find((l) => l.trim());
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-amber-200 bg-white p-4">
-        <p className="mb-3 text-sm text-stone-500">
-          サムネイルをクリックすると、その商品の情報シートが開きます。画像は準備でき次第、順次追加します。
-        </p>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-stone-500">並べ替え：</span>
-          <button
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              sortMode === "date" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
-            }`}
-            onClick={() => setSortMode("date")}
-          >
-            発売順（古い→新しい）
-          </button>
-          <button
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              sortMode === "name" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
-            }`}
-            onClick={() => setSortMode("name")}
-          >
-            名前順
-          </button>
+      <div className="overflow-hidden rounded-xl border border-stone-300 bg-white">
+        <div className="flex flex-wrap items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
+          <h2 className="text-base font-semibold text-stone-800">ビジュアル一覧</h2>
+          <span className="text-sm tabular-nums text-stone-500">
+            {rows.length}件中 {totalDone}件に画像あり
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-stone-500">表示：</span>
-          {FILTERS.map((f) => (
-            <button
-              key={f.label}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                filter === f.value ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
-              }`}
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
+
+        <div className="space-y-3 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-16 shrink-0 text-sm text-stone-500">並べ替え</span>
+            <button className={chipCls(sortMode === "date")} onClick={() => setSortMode("date")}>
+              発売日が古い順
             </button>
-          ))}
-          <span className="ml-auto text-xs text-stone-400">{rows.length}件</span>
+            <button className={chipCls(sortMode === "name")} onClick={() => setSortMode("name")}>
+              名前順
+            </button>
+            <button className={chipCls(sortMode === "least")} onClick={() => setSortMode("least")}>
+              画像が少ない順
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-16 shrink-0 text-sm text-stone-500">絞り込み</span>
+            <button className={chipCls(imageFilter === "all")} onClick={() => setImageFilter("all")}>
+              すべて
+            </button>
+            <button className={chipCls(imageFilter === "none")} onClick={() => setImageFilter("none")}>
+              画像なしだけ
+            </button>
+            <button className={chipCls(imageFilter === "has")} onClick={() => setImageFilter("has")}>
+              画像ありだけ
+            </button>
+            <select
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700"
+              value={genre === "all" ? "" : genre ?? ""}
+              onChange={(e) => setGenre((e.target.value || "all") as Genre | "all")}
+            >
+              {GENRE_OPTIONS.map((g) => (
+                <option key={g.label} value={g.value === "all" ? "" : g.value ?? ""}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <p className="text-xs text-stone-400">
+            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {rows.map(({ product, info }) => (
-          <button
-            key={product.id}
-            className="rounded-xl border border-stone-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md"
-            onClick={() => {
-              setSelectedId(product.id);
-              onNavigate("sheet");
-            }}
-          >
-            {thumbnailFor(info) ? (
-              <img
-                src={thumbnailFor(info)}
-                alt={product.name}
-                className="mb-2 aspect-square w-full rounded-lg bg-stone-100 object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <div className="mb-2 flex aspect-square items-center justify-center rounded-lg bg-stone-100 text-3xl text-stone-300">
-                🖼
+      {rows.length === 0 ? (
+        <p className="rounded-xl border border-stone-300 bg-white p-8 text-center text-sm text-stone-500">
+          条件に合う商品がありません。絞り込みを変えてください。
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {rows.map(({ product, info, done, total, thumb }) => (
+            <button
+              key={product.id}
+              className="overflow-hidden rounded-xl border border-stone-300 bg-white text-left transition hover:border-stone-500"
+              onClick={() => {
+                setSelectedId(product.id);
+                onNavigate("sheet");
+              }}
+            >
+              {thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumb}
+                  alt={product.name}
+                  className="aspect-[4/3] w-full bg-stone-100 object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
+                  画像未登録
+                </div>
+              )}
+
+              <div className="space-y-1 p-3">
+                <div className="text-sm font-semibold leading-snug text-stone-800">{product.name}</div>
+                <div className="text-xs text-stone-500">
+                  {product.genre ? GENRE_LABELS[product.genre] : "ジャンル未設定"}
+                  <span className="mx-1 text-stone-300">/</span>
+                  <span className="tabular-nums">
+                    {info.releaseDate ? info.releaseDate.replaceAll("-", "/") : "発売日未設定"}
+                  </span>
+                  {info.releaseDate && info.releaseDate > today && "（発売前）"}
+                </div>
+
+                <div className="pt-1">
+                  <div className="mb-1 flex items-baseline justify-between text-xs">
+                    <span className="text-stone-500">ビジュアル</span>
+                    <span className="tabular-nums text-stone-600">
+                      {done}/{total}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className={`h-full rounded-full ${done === total ? "bg-emerald-500" : "bg-stone-600"}`}
+                      style={{ width: `${total ? (done / total) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-            )}
-            {product.genre && (
-              <span className={`mb-1 inline-block rounded px-2 py-0.5 text-[11px] font-medium ${GENRE_BADGE_COLOR[product.genre]}`}>
-                {GENRE_LABELS[product.genre]}
-              </span>
-            )}
-            <div className="text-sm font-medium text-stone-800">{product.name}</div>
-            <div className="text-xs text-stone-400">
-              {info.releaseDate ? info.releaseDate.replaceAll("-", "/") : "発売日未設定"}
-            </div>
-            {info.releaseDate && info.releaseDate > today && (
-              <span className="mt-1 inline-block rounded bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-700">
-                発売予定
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
