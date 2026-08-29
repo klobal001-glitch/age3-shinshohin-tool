@@ -84,6 +84,44 @@ function PriceInput({
   );
 }
 
+/**
+ * ビジュアルのリンク1行。
+ * 画像として読めるURLなら左に小さなサムネイルを出す（クリックで別タブ表示）。
+ * Dropbox/Google Drive の共有リンクなど、画像として読めないURLでは
+ * サムネイルは出さず、入力欄だけを表示する。
+ */
+function VisualLinkRow({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [broken, setBroken] = useState(false);
+  const url = value.trim();
+  const showThumb = !broken && /^https?:\/\//.test(url);
+
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      {showThumb && (
+        <a href={url} target="_blank" rel="noreferrer" title="別タブで開く" className="shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt=""
+            className="h-12 w-12 rounded border border-stone-200 bg-stone-50 object-cover"
+            onError={() => setBroken(true)}
+            onLoad={() => setBroken(false)}
+          />
+        </a>
+      )}
+      <input
+        className={inputCls}
+        placeholder="https://..."
+        value={value}
+        onChange={(e) => {
+          setBroken(false);
+          onChange(e.target.value);
+        }}
+      />
+    </div>
+  );
+}
+
 /** 元価格＋そのUber価格（自動計算）のセット */
 function PriceBlock({
   label,
@@ -444,13 +482,11 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               {v.label} {v.size && <span className="text-xs text-stone-400">（{v.size}）</span>}
             </div>
             {v.links.map((l, li) => (
-              <input
+              <VisualLinkRow
                 key={li}
-                className={`${inputCls} mb-2`}
-                placeholder="https://..."
                 value={l}
-                onChange={(e) => {
-                  const links = v.links.map((x, i) => (i === li ? e.target.value : x));
+                onChange={(val) => {
+                  const links = v.links.map((x, i) => (i === li ? val : x));
                   updateVisual(v.key, links);
                 }}
               />
