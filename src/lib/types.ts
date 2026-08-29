@@ -51,9 +51,11 @@ export interface ProductInfo {
     descriptionJa: string;
     descriptionEn: string;
     instagramPost: string;
-    priceTokyo: string; // 銀座・原宿・浅草・飛騨高山
-  priceKama: string; // 嘉麻
-  priceUber: string; // Uber
+    // 価格はすべて数値（税込・円）。未入力は null。
+  priceTokyo: number | null; // 銀座・原宿・浅草・飛騨高山
+  priceTokyoUber: number | null; // 上記のUber価格。null = 自動計算（priceTokyo × 1.4）
+  priceKama: number | null; // 嘉麻
+  priceKamaUber: number | null; // 上記のUber価格。null = 自動計算（priceKama × 1.4）
 
   // 材料
   ingredients: IngredientRow[];
