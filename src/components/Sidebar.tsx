@@ -5,6 +5,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
 import { TabKey } from "./Header";
+import Age3Logo from "@/components/Age3Logo";
 
 const NAV: { key: TabKey; icon: string; label: string }[] = [
   { key: "menu", icon: "🏠", label: "メニュー" },
@@ -73,15 +74,9 @@ export default function Sidebar({
   return (
     <aside className="hidden w-72 shrink-0 flex-col border-r border-amber-900/10 bg-[#f4ede4] md:flex">
       <div className="bg-[#4a2f1f] px-4 py-4 text-amber-50">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-700 text-[13px] font-bold">
-            Age.3
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-base font-bold leading-tight">新商品ツール</h1>
-            <p className="truncate text-[11px] text-amber-200/80">揚サンド直営共有</p>
-          </div>
-        </div>
+        <Age3Logo className="h-7 w-auto" />
+        <h1 className="mt-2.5 text-base font-bold leading-tight">新商品ツール</h1>
+        <p className="truncate text-[11px] text-amber-200/80">揚サンド直営共有</p>
       </div>
 
       <div className="px-3 pt-3">
