@@ -119,9 +119,9 @@ function Field({
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
 
-/** 表のセル。枠線は普段消しておき、フォーカスしたときだけ出す */
+/** 表のセル。書き込める欄と分かるように、枠と白い背景を常に出す */
 const cellCls =
-  "w-full rounded border border-transparent px-2 py-1.5 text-sm hover:bg-stone-50 focus:border-amber-500 focus:bg-white focus:outline-none";
+  "w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm placeholder:text-stone-300 hover:border-stone-400 focus:border-amber-500 focus:outline-none";
 
 /** 「¥」を左に固定した数値専用の価格入力欄 */
 function PriceInput({
@@ -723,53 +723,52 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             <thead>
               <tr className="text-left text-[11px] font-medium text-stone-400">
                 <th className="w-8 pb-1" />
-                <th className="pb-1">品名（日本語）</th>
-                <th className="pb-1">品名（英語）</th>
-                <th className="w-24 pb-1">分量</th>
-                <th className="pb-1">詳細スペック（任意）</th>
+                <th className="px-0.5 pb-1">品名（日本語）</th>
+                <th className="px-0.5 pb-1">品名（英語）</th>
+                <th className="w-24 px-0.5 pb-1">分量</th>
+                <th className="px-0.5 pb-1">詳細スペック（任意）</th>
                 <th className="w-8 pb-1" />
               </tr>
             </thead>
             <tbody>
               {info.ingredients.map((row, idx) => (
-                <tr key={idx} className="group border-t border-stone-100">
-                  <td className="text-center text-[11px] tabular-nums text-stone-400">{idx + 1}</td>
-                  <td>
+                <tr key={idx} className="group align-top">
+                  <td className="py-1 pr-1 text-center text-[11px] tabular-nums text-stone-400">
+                    <span className="inline-block py-1.5">{idx + 1}</span>
+                  </td>
+                  <td className="px-0.5 py-1">
                     <input
                       id={`f-ing-ja-${idx}`}
                       className={cellCls}
-                      placeholder="—"
                       value={row.nameJa}
                       onChange={(e) => updateIngredient(idx, { nameJa: e.target.value })}
                       onKeyDown={(e) => onIngredientEnter(e, idx, "ja")}
                     />
                   </td>
-                  <td>
+                  <td className="px-0.5 py-1">
                     <input
                       id={`f-ing-en-${idx}`}
                       className={cellCls}
-                      placeholder="—"
                       value={row.nameEn}
                       onChange={(e) => updateIngredient(idx, { nameEn: e.target.value })}
                       onKeyDown={(e) => onIngredientEnter(e, idx, "en")}
                     />
                   </td>
-                  <td>
+                  <td className="px-0.5 py-1">
                     <input
                       id={`f-ing-amount-${idx}`}
                       className={cellCls}
-                      placeholder="—"
                       value={row.amount}
                       onChange={(e) => updateIngredient(idx, { amount: e.target.value })}
                       onKeyDown={(e) => onIngredientEnter(e, idx, "amount")}
                     />
                   </td>
-                  <td>
+                  <td className="px-0.5 py-1">
                     <div className="flex items-center gap-1">
                       <input
                         id={`f-ing-spec-${idx}`}
                         className={cellCls}
-                        placeholder="商品名／メーカー／原材料など"
+                        placeholder="任意"
                         value={row.specs[0] ?? ""}
                         onChange={(e) => setFirstSpec(idx, e.target.value)}
                         onKeyDown={(e) => onIngredientEnter(e, idx, "spec")}
@@ -788,7 +787,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                         key={si}
                         className={`${cellCls} mt-1`}
                         value={s}
-                        placeholder="商品名／メーカー／原材料など"
+                        placeholder="任意"
                         onChange={(e) => {
                           const specs = row.specs.map((v, i) => (i === si + 1 ? e.target.value : v));
                           updateIngredient(idx, { specs });
@@ -796,7 +795,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                       />
                     ))}
                   </td>
-                  <td className="text-center">
+                  <td className="py-1 pl-1 text-center">
                     <button
                       type="button"
                       title="この行を消す"
