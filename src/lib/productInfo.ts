@@ -1,6 +1,7 @@
 import { IngredientRow, ProductInfo, VisualLinkGroup } from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
+  { key: "product_image", label: "商品画像", size: "背景なし画像" },
   { key: "ig_feed", label: "Instagram フィード投稿画像", size: "1,080 × 1,350px" },
   { key: "ig_story", label: "Instagram ストーリーズ投稿画像", size: "1,080 × 1,920px" },
   { key: "poster_a1_asakusa", label: "ポスター A1（浅草）", size: "594 × 841mm" },
