@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import {
@@ -118,6 +118,47 @@ function Field({
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
+
+/**
+ * 中身の量に合わせて高さが伸びる文章欄。
+ * 2〜3行の枠の中で長文をスクロールしながら書かなくて済むようにする。
+ * rows で指定した高さを下限として、それより短くはならない。
+ */
+function AutoTextarea({
+  rows,
+  value,
+  onChange,
+  maxLength,
+}: {
+  rows: number;
+  value: string;
+  onChange: (v: string) => void;
+  maxLength?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const minHeightRef = useRef(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 最初の1回だけ、rows で決まる高さを下限として覚えておく
+    if (minHeightRef.current === 0) minHeightRef.current = el.offsetHeight;
+    el.style.height = "auto";
+    const border = el.offsetHeight - el.clientHeight;
+    el.style.height = `${Math.max(el.scrollHeight + border, minHeightRef.current)}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      rows={rows}
+      maxLength={maxLength}
+      className={`${inputCls} resize-none overflow-hidden`}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
 
 /** 表のセル。書き込める欄と分かるように、枠と白い背景を常に出す */
 const cellCls =
@@ -290,7 +331,7 @@ function focusInput(elementId: string) {
 }
 
 export default function ProductSheetView({ app }: { app: ReturnType<typeof useAppData> }) {
-  const { selectedProduct, getInfo, updateInfo, resetProductInfo, saveState } = app;
+  const { selectedProduct, getInfo, updateInfo, resetProductInfo, saveState, retrySave } = app;
   const [copyMsg, setCopyMsg] = useState("");
   /** 入力済みの項目を隠して、残っている必須項目だけを出す */
   const [onlyEmpty, setOnlyEmpty] = useState(false);
@@ -424,14 +465,22 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     });
   };
 
+  /**
+   * 追加欄に入っている URL を登録して、欄を空にする。
+   * 改行や空白で区切って複数まとめて貼り付けてもよい。
+   */
+  const commitVisualInput = (el: HTMLInputElement, key: string, links: string[]) => {
+    const added = el.value.split(/\s+/).map((v) => v.trim()).filter(Boolean);
+    if (added.length === 0) return;
+    updateVisual(key, [...links, ...added]);
+    el.value = "";
+  };
+
   /** 貼り付けた URL を Enter で登録する */
   const onVisualPaste = (e: React.KeyboardEvent<HTMLInputElement>, key: string, links: string[]) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    const value = e.currentTarget.value.trim();
-    if (!value) return;
-    updateVisual(key, [...links, value]);
-    e.currentTarget.value = "";
+    commitVisualInput(e.currentTarget, key, links);
   };
 
   /* --------------------------------- 書き出し --------------------------------- */
@@ -479,13 +528,21 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   };
 
   const saveLabel =
-    saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存しました" : "自動保存";
+    saveState === "saving"
+      ? "保存中…"
+      : saveState === "saved"
+        ? "保存しました"
+        : saveState === "error"
+          ? "保存できませんでした"
+          : "自動保存";
   const saveCls =
     saveState === "saving"
       ? "bg-amber-100 text-amber-800"
       : saveState === "saved"
         ? "bg-emerald-100 text-emerald-700"
-        : "bg-stone-100 text-stone-500";
+        : saveState === "error"
+          ? "bg-red-100 text-red-700"
+          : "bg-stone-100 text-stone-500";
 
   return (
     <div className="space-y-6 print:space-y-2">
@@ -510,6 +567,15 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
           <div className="ml-auto flex flex-wrap items-center gap-3 print:hidden">
             <span className={`rounded-full px-3 py-1 text-xs ${saveCls}`}>{saveLabel}</span>
+            {saveState === "error" && (
+              <button
+                type="button"
+                className="rounded-full border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                onClick={retrySave}
+              >
+                再試行
+              </button>
+            )}
             <label className="flex cursor-pointer items-center gap-2 text-xs text-stone-600">
               <input
                 type="checkbox"
@@ -647,32 +713,29 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </div>
         {showOptional() && (
           <Field label="紹介文（日本語）" hint={`${info.descriptionJa.length} 字`}>
-            <textarea
+            <AutoTextarea
               rows={2}
-              className={inputCls}
               value={info.descriptionJa}
-              onChange={(e) => patch({ descriptionJa: e.target.value })}
+              onChange={(v) => patch({ descriptionJa: v })}
             />
           </Field>
         )}
         {showOptional() && (
           <Field label="英語（紹介文）" hint="担当AIが記入・空欄でOK">
-            <textarea
+            <AutoTextarea
               rows={2}
-              className={inputCls}
               value={info.descriptionEn}
-              onChange={(e) => patch({ descriptionEn: e.target.value })}
+              onChange={(v) => patch({ descriptionEn: v })}
             />
           </Field>
         )}
         {showOptional() && (
           <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
-            <textarea
+            <AutoTextarea
               rows={3}
               maxLength={140}
-              className={inputCls}
               value={info.instagramPost}
-              onChange={(e) => patch({ instagramPost: e.target.value })}
+              onChange={(v) => patch({ instagramPost: v })}
             />
           </Field>
         )}
@@ -852,11 +915,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               />
             </Field>
             <Field label="メモ（任意）">
-              <textarea
+              <AutoTextarea
                 rows={2}
-                className={inputCls}
                 value={info.recipeNotes}
-                onChange={(e) => patch({ recipeNotes: e.target.value })}
+                onChange={(v) => patch({ recipeNotes: v })}
               />
             </Field>
           </>
@@ -874,7 +936,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         <p className="text-xs text-stone-400">
           各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを、下の枠に貼って
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
-          を押すと登録されます。
+          を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
         {info.visualDownloads
           .filter((v) => showRequired(visualFilledOf(v.links)))
@@ -895,9 +957,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               <input
                 id={`f-visual-${v.key}`}
                 className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
-                placeholder="URLを貼って Enter"
+                placeholder="URLを貼って Enter（複数まとめて貼ってもOK）"
                 aria-label={`${v.label}のリンクを追加`}
                 onKeyDown={(e) => onVisualPaste(e, v.key, v.links)}
+                onBlur={(e) => commitVisualInput(e.currentTarget, v.key, v.links)}
               />
             </div>
           ))}
@@ -919,16 +982,32 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         ) : (
           <>
             <Field label="Instagram 投稿文章（本文＋ハッシュタグ）">
-              <textarea rows={3} className={inputCls} value={info.igCaption} onChange={(e) => patch({ igCaption: e.target.value })} />
+              <AutoTextarea
+                rows={3}
+                value={info.igCaption}
+                onChange={(v) => patch({ igCaption: v })}
+              />
             </Field>
             <Field label="X（旧Twitter）文章">
-              <textarea rows={2} className={inputCls} value={info.xCaption} onChange={(e) => patch({ xCaption: e.target.value })} />
+              <AutoTextarea
+                rows={2}
+                value={info.xCaption}
+                onChange={(v) => patch({ xCaption: v })}
+              />
             </Field>
             <Field label="Threads 文章">
-              <textarea rows={2} className={inputCls} value={info.threadsCaption} onChange={(e) => patch({ threadsCaption: e.target.value })} />
+              <AutoTextarea
+                rows={2}
+                value={info.threadsCaption}
+                onChange={(v) => patch({ threadsCaption: v })}
+              />
             </Field>
             <Field label="取引先・関係者への一斉メール（件名＋本文）">
-              <textarea rows={3} className={inputCls} value={info.pressEmail} onChange={(e) => patch({ pressEmail: e.target.value })} />
+              <AutoTextarea
+                rows={3}
+                value={info.pressEmail}
+                onChange={(v) => patch({ pressEmail: v })}
+              />
             </Field>
             <Field label="PR TIMES 記事URL">
               <input className={inputCls} value={info.prTimesUrl} onChange={(e) => patch({ prTimesUrl: e.target.value })} />

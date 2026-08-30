@@ -125,7 +125,7 @@ function MilestoneCard({
 }
 
 export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppData> }) {
-  const { selectedProduct, getInfo, getTaskState, toggleTask, resetProductTasks } = app;
+  const { selectedProduct, getInfo, getTaskState, toggleTask, resetProductTasks, saveState } = app;
   const [sortMode, setSortMode] = useState<"group" | "deadline">("group");
   const [hideCompleted, setHideCompleted] = useState(false);
 
@@ -208,6 +208,19 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
           <span className="ml-auto text-sm tabular-nums text-stone-600">
             {overall.checked}/{overall.total}（{overallPct}%）
           </span>
+          {saveState === "error" ? (
+            <span className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-700 print:hidden">
+              保存できませんでした（チェックは元に戻しました）
+            </span>
+          ) : saveState === "saving" ? (
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-800 print:hidden">
+              保存中…
+            </span>
+          ) : saveState === "saved" ? (
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700 print:hidden">
+              保存しました
+            </span>
+          ) : null}
         </div>
 
         <div className="space-y-4 p-4">

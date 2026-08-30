@@ -41,8 +41,11 @@ export function useAppData() {
   const [infoMap, setInfoMap] = useState<Record<string, ProductInfo>>(buildInitialInfoMap());
   const [taskStateAll, setTaskStateAll] = useState<Record<string, TaskStateMap>>({});
   const [loading, setLoading] = useState(true);
-  /** 画面右上の保存表示。"saving" = 保存待ち／保存中、"saved" = 直前の保存が完了 */
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  /**
+   * 画面右上の保存表示。"saving" = 保存待ち／保存中、"saved" = 直前の保存が完了、
+   * "error" = 保存に失敗（内容は保存待ちに残してあるので、再試行でもう一度送れる）
+   */
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +124,8 @@ export function useAppData() {
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   /** 送信中の upsert 数。0 になった時点で「保存しました」に切り替える */
   const inflightRef = useRef(0);
+  /** 直近の保存で失敗があったか。あるうちは「保存しました」に切り替えない */
+  const hadErrorRef = useRef(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushInfo = useCallback((productId?: string) => {
@@ -142,10 +147,14 @@ export function useAppData() {
           inflightRef.current = Math.max(0, inflightRef.current - 1);
           if (error) {
             console.error("product_info の保存に失敗しました", error);
-            setSaveState("idle");
+            // 送れなかった内容は捨てずに保存待ちへ戻す。
+            // （この間に新しい入力があれば、そちらが最新なので上書きしない）
+            pendingInfoRef.current[id] = pendingInfoRef.current[id] ?? data;
+            hadErrorRef.current = true;
+            setSaveState("error");
             return;
           }
-          if (inflightRef.current === 0) {
+          if (inflightRef.current === 0 && !hadErrorRef.current) {
             setSaveState("saved");
             if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
             savedTimerRef.current = setTimeout(() => setSaveState("idle"), 2500);
@@ -154,15 +163,43 @@ export function useAppData() {
     }
   }, []);
 
+  /** 保存待ち・保存し損ねた内容をもう一度送る（右上の「再試行」から呼ぶ） */
+  const retrySave = useCallback(() => {
+    hadErrorRef.current = false;
+    if (Object.keys(pendingInfoRef.current).length === 0) {
+      setSaveState("idle");
+      return;
+    }
+    flushInfo();
+  }, [flushInfo]);
+
   useEffect(() => {
     const flushAll = () => flushInfo();
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flushAll();
     };
-    window.addEventListener("beforeunload", flushAll);
+    /**
+     * 入力してすぐ閉じると、まとめ保存が間に合わずに消えることがある。
+     * 未送信の内容が残っているときだけ、ブラウザの確認ダイアログを出す。
+     */
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      const unsaved = Object.keys(pendingInfoRef.current).length > 0;
+      flushAll();
+      if (unsaved) e.preventDefault();
+    };
+    /** ⌘S / Ctrl+S で、まとめ保存を待たずに送る */
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        flushAll();
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("keydown", onKeyDown);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("beforeunload", flushAll);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("visibilitychange", onVisibility);
       flushAll();
     };
@@ -179,6 +216,7 @@ export function useAppData() {
       infoMapRef.current = { ...infoMapRef.current, [productId]: next };
       setInfoMap((prev) => ({ ...prev, [productId]: next }));
 
+      hadErrorRef.current = false;
       setSaveState("saving");
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       if (saveTimersRef.current[productId]) clearTimeout(saveTimersRef.current[productId]);
@@ -187,23 +225,41 @@ export function useAppData() {
     [flushInfo]
   );
 
+  /** setState の外からも最新のチェック状態を読めるようにしておく */
+  const taskStateAllRef = useRef(taskStateAll);
+  useEffect(() => {
+    taskStateAllRef.current = taskStateAll;
+  }, [taskStateAll]);
+
   const getTaskState = useCallback(
     (productId: string): TaskStateMap => taskStateAll[productId] ?? {},
     [taskStateAll]
   );
 
   const toggleTask = useCallback((productId: string, key: string) => {
-    setTaskStateAll((prev) => {
-      const productState = { ...(prev[productId] ?? {}) };
-      productState[key] = !productState[key];
-      supabase
-        .from("task_state")
-        .upsert({ product_id: productId, data: productState, updated_at: new Date().toISOString() })
-        .then(({ error }) => {
-          if (error) console.error("task_state の保存に失敗しました", error);
-        });
-      return { ...prev, [productId]: productState };
-    });
+    const before = taskStateAllRef.current[productId] ?? {};
+    const productState = { ...before, [key]: !before[key] };
+
+    setTaskStateAll((prev) => ({ ...prev, [productId]: productState }));
+    hadErrorRef.current = false;
+    setSaveState("saving");
+
+    supabase
+      .from("task_state")
+      .upsert({ product_id: productId, data: productState, updated_at: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) {
+          console.error("task_state の保存に失敗しました", error);
+          // 保存できていないのにチェックだけ付いたままだと誤解のもとなので、表示を戻す
+          hadErrorRef.current = true;
+          setSaveState("error");
+          setTaskStateAll((cur) => ({ ...cur, [productId]: before }));
+          return;
+        }
+        setSaveState("saved");
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSaveState("idle"), 2500);
+      });
   }, []);
 
   const resetProductTasks = useCallback((productId: string) => {
@@ -339,6 +395,7 @@ export function useAppData() {
     setSelectedId,
     loading,
     saveState,
+    retrySave,
     getInfo,
     updateInfo,
     getTaskState,
