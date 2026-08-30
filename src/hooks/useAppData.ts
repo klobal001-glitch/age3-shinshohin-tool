@@ -41,6 +41,8 @@ export function useAppData() {
   const [infoMap, setInfoMap] = useState<Record<string, ProductInfo>>(buildInitialInfoMap());
   const [taskStateAll, setTaskStateAll] = useState<Record<string, TaskStateMap>>({});
   const [loading, setLoading] = useState(true);
+  /** 画面右上の保存表示。"saving" = 保存待ち／保存中、"saved" = 直前の保存が完了 */
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +119,9 @@ export function useAppData() {
 
   const pendingInfoRef = useRef<Record<string, ProductInfo>>({});
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  /** 送信中の upsert 数。0 になった時点で「保存しました」に切り替える */
+  const inflightRef = useRef(0);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushInfo = useCallback((productId?: string) => {
     const ids = productId ? [productId] : Object.keys(pendingInfoRef.current);
@@ -128,11 +133,23 @@ export function useAppData() {
         clearTimeout(saveTimersRef.current[id]);
         delete saveTimersRef.current[id];
       }
+      inflightRef.current += 1;
+      setSaveState("saving");
       supabase
         .from("product_info")
         .upsert({ product_id: id, data, updated_at: new Date().toISOString() })
         .then(({ error }) => {
-          if (error) console.error("product_info の保存に失敗しました", error);
+          inflightRef.current = Math.max(0, inflightRef.current - 1);
+          if (error) {
+            console.error("product_info の保存に失敗しました", error);
+            setSaveState("idle");
+            return;
+          }
+          if (inflightRef.current === 0) {
+            setSaveState("saved");
+            if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+            savedTimerRef.current = setTimeout(() => setSaveState("idle"), 2500);
+          }
         });
     }
   }, []);
@@ -162,6 +179,8 @@ export function useAppData() {
       infoMapRef.current = { ...infoMapRef.current, [productId]: next };
       setInfoMap((prev) => ({ ...prev, [productId]: next }));
 
+      setSaveState("saving");
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       if (saveTimersRef.current[productId]) clearTimeout(saveTimersRef.current[productId]);
       saveTimersRef.current[productId] = setTimeout(() => flushInfo(productId), 600);
     },
@@ -319,6 +338,7 @@ export function useAppData() {
     selectedId,
     setSelectedId,
     loading,
+    saveState,
     getInfo,
     updateInfo,
     getTaskState,

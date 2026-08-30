@@ -24,6 +24,7 @@ function Section({
   icon,
   title,
   progress,
+  done,
   children,
 }: {
   id: string;
@@ -31,12 +32,17 @@ function Section({
   icon: string;
   title: string;
   progress?: string;
+  done?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section id={id} className="scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white">
       <div className="flex items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-700 text-sm font-semibold tabular-nums text-white">
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums text-white ${
+            done ? "bg-emerald-600" : "bg-stone-700"
+          }`}
+        >
           {step}
         </span>
         <h3 className="flex items-center gap-2 text-base font-semibold text-stone-800">
@@ -52,6 +58,20 @@ function Section({
   );
 }
 
+/** 上に貼り付いている進捗パネルの下にセクション見出しが来るように送る */
+function scrollToSection(sectionId: string) {
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+  const panel = document.getElementById("sheet-progress");
+  const offset = (panel?.offsetHeight ?? 0) + 12;
+  const scroller = el.closest(".md\\:overflow-y-auto") as HTMLElement | null;
+  if (scroller) {
+    scroller.scrollTo({ top: el.offsetTop - scroller.offsetTop - offset, behavior: "smooth" });
+  } else {
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: "smooth" });
+  }
+}
+
 const SECTIONS = [
   { id: "sheet-basic", label: "基本データ" },
   { id: "sheet-ingredients", label: "材料" },
@@ -60,12 +80,36 @@ const SECTIONS = [
   { id: "sheet-sns", label: "SNS・PR" },
 ];
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+/** 必須項目の入力済み／未入力を示す小さな点。緑＝入力済み、赤＝未入力 */
+function Dot({ filled }: { filled: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+        filled ? "bg-emerald-500" : "bg-red-500"
+      }`}
+    />
+  );
+}
+
+function Field({
+  label,
+  children,
+  hint,
+  filled,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+  /** 渡すと必須項目として扱い、左に点を出す */
+  filled?: boolean;
+}) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-stone-600">
+      <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-stone-600">
+        {filled !== undefined && <Dot filled={filled} />}
         {label}
-        {hint && <span className="ml-2 text-xs font-normal text-stone-400">{hint}</span>}
+        {hint && <span className="ml-1 text-xs font-normal text-stone-400">{hint}</span>}
       </label>
       {children}
     </div>
@@ -75,13 +119,19 @@ function Field({ label, children, hint }: { label: string; children: React.React
 const inputCls =
   "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
 
+/** 表のセル。枠線は普段消しておき、フォーカスしたときだけ出す */
+const cellCls =
+  "w-full rounded border border-transparent px-2 py-1.5 text-sm hover:bg-stone-50 focus:border-amber-500 focus:bg-white focus:outline-none";
+
 /** 「¥」を左に固定した数値専用の価格入力欄 */
 function PriceInput({
+  id,
   value,
   placeholder,
   muted,
   onChange,
 }: {
+  id?: string;
   value: number | null;
   placeholder?: string;
   muted?: boolean;
@@ -93,6 +143,7 @@ function PriceInput({
         ¥
       </span>
       <input
+        id={id}
         type="text"
         inputMode="numeric"
         className={`${inputCls} pl-7 tabular-nums ${muted ? "text-stone-500" : ""}`}
@@ -105,12 +156,20 @@ function PriceInput({
 }
 
 /**
- * ビジュアルのリンク1行。
+ * ビジュアルの登録済みリンク1行。
  * 画像として読めるURLなら左に小さなサムネイルを出す（クリックで別タブ表示）。
  * Dropbox/Google Drive の共有リンクなど、画像として読めないURLでは
  * サムネイルは出さず、入力欄だけを表示する。
  */
-function VisualLinkRow({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function VisualLinkRow({
+  value,
+  onChange,
+  onRemove,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+}) {
   const [broken, setBroken] = useState(false);
   const url = value.trim();
   const showThumb = !broken && /^https?:\/\//.test(url);
@@ -138,19 +197,31 @@ function VisualLinkRow({ value, onChange }: { value: string; onChange: (v: strin
           onChange(e.target.value);
         }}
       />
+      <button
+        type="button"
+        title="このリンクを消す"
+        className="shrink-0 rounded px-2 py-1 text-stone-400 hover:bg-red-50 hover:text-red-600"
+        onClick={onRemove}
+      >
+        ×
+      </button>
     </div>
   );
 }
 
 /** 元価格＋そのUber価格（自動計算）のセット */
 function PriceBlock({
+  id,
   label,
+  filled,
   base,
   uber,
   onBase,
   onUber,
 }: {
+  id: string;
   label: string;
+  filled: boolean;
   base: number | null;
   uber: number | null;
   onBase: (v: number | null) => void;
@@ -161,8 +232,8 @@ function PriceBlock({
 
   return (
     <div className="rounded-lg border border-stone-200 p-3">
-      <Field label={label}>
-        <PriceInput value={base} placeholder="950" onChange={onBase} />
+      <Field label={label} filled={filled}>
+        <PriceInput id={id} value={base} placeholder="950" onChange={onBase} />
       </Field>
       <div className="mt-3">
         <div className="mb-1 flex items-center gap-2">
@@ -204,9 +275,25 @@ function PriceBlock({
   );
 }
 
+/** 指定した入力欄まで画面を送って、カーソルを入れる */
+function focusInput(elementId: string) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => {
+    try {
+      (el as HTMLElement).focus({ preventScroll: true });
+    } catch {
+      (el as HTMLElement).focus();
+    }
+  }, 350);
+}
+
 export default function ProductSheetView({ app }: { app: ReturnType<typeof useAppData> }) {
-  const { selectedProduct, getInfo, updateInfo, resetProductInfo } = app;
+  const { selectedProduct, getInfo, updateInfo, resetProductInfo, saveState } = app;
   const [copyMsg, setCopyMsg] = useState("");
+  /** 入力済みの項目を隠して、残っている必須項目だけを出す */
+  const [onlyEmpty, setOnlyEmpty] = useState(false);
 
   if (!selectedProduct) {
     return <ProductPicker app={app} />;
@@ -218,6 +305,39 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const ing = ingredientsProgress(info);
 
   const patch = (p: Partial<typeof info>) => updateInfo(selectedProduct.id, p);
+
+  /* ---------------- 必須項目の一覧（点の表示と「次の未入力へ」で使う） --------------- */
+
+  const ingredientsFilled = info.ingredients.some((i) => i.nameJa && i.amount);
+  const firstOpenIngredient = Math.max(
+    0,
+    info.ingredients.findIndex((i) => !(i.nameJa && i.amount))
+  );
+  const visualFilledOf = (links: string[]) => links.some((l) => l.trim());
+
+  const requiredItems: { filled: boolean; focusId: string }[] = [
+    { filled: !!info.nameJa, focusId: "f-nameJa" },
+    { filled: !!info.releaseDate, focusId: "f-releaseDate" },
+    { filled: info.noAlcoholPork !== null, focusId: "f-noAlcoholPork" },
+    { filled: info.priceTokyo !== null, focusId: "f-priceTokyo" },
+    { filled: info.priceKama !== null, focusId: "f-priceKama" },
+    { filled: ingredientsFilled, focusId: `f-ing-ja-${firstOpenIngredient}` },
+    ...info.visualDownloads.map((v) => ({
+      filled: visualFilledOf(v.links),
+      focusId: `f-visual-${v.key}`,
+    })),
+  ];
+
+  const nextEmpty = requiredItems.find((r) => !r.filled);
+
+  const jumpToNextEmpty = () => {
+    if (!nextEmpty) return;
+    focusInput(nextEmpty.focusId);
+  };
+
+  /** 「未入力だけ表示」がONのとき、埋まっている必須項目と任意項目は隠す */
+  const showRequired = (filled: boolean) => !onlyEmpty || !filled;
+  const showOptional = () => !onlyEmpty;
 
   // セクションごとの入力状況（見出しの右に出す目安）
   const BASIC_TOTAL = 9;
@@ -233,7 +353,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     info.priceKama !== null,
   ].filter(Boolean).length;
   const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
-  const visualFilled = info.visualDownloads.filter((v) => v.links.some((l) => l.trim())).length;
+  const visualFilled = info.visualDownloads.filter((v) => visualFilledOf(v.links)).length;
   const snsFilled = [
     !!info.igCaption,
     !!info.xCaption,
@@ -241,6 +361,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     !!info.pressEmail,
     !!info.prTimesUrl,
   ].filter(Boolean).length;
+
+  /* ---------------------------------- 材料 ---------------------------------- */
 
   const updateIngredient = (idx: number, patchRow: Partial<(typeof info.ingredients)[number]>) => {
     const next = info.ingredients.map((row, i) => (i === idx ? { ...row, ...patchRow } : row));
@@ -266,13 +388,53 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   };
 
   const blankIngredientsRemovable =
-    info.ingredients.length - Math.max(info.ingredients.length - blankIngredientCount, DEFAULT_INGREDIENT_ROWS);
+    info.ingredients.length -
+    Math.max(info.ingredients.length - blankIngredientCount, DEFAULT_INGREDIENT_ROWS);
+
+  /**
+   * 表の中で Enter を押したときの動き。
+   * 最後の行なら行を1つ増やして、同じ列の次の行にカーソルを移す。
+   * （右のセルへは Tab。ブラウザ標準の動きをそのまま使う）
+   */
+  const onIngredientEnter = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    idx: number,
+    column: "ja" | "en" | "amount" | "spec"
+  ) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const isLast = idx === info.ingredients.length - 1;
+    if (isLast) addIngredient();
+    const nextId = `f-ing-${column}-${idx + 1}`;
+    window.setTimeout(() => document.getElementById(nextId)?.focus(), isLast ? 30 : 0);
+  };
+
+  /** 表のセルは specs の1つ目を扱う。2つ目以降は行の下に続けて出す */
+  const setFirstSpec = (idx: number, value: string) => {
+    const row = info.ingredients[idx];
+    const specs = row.specs.length > 0 ? row.specs.map((s, i) => (i === 0 ? value : s)) : [value];
+    updateIngredient(idx, { specs });
+  };
+
+  /* -------------------------------- ビジュアル -------------------------------- */
 
   const updateVisual = (key: string, links: string[]) => {
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
     });
   };
+
+  /** 貼り付けた URL を Enter で登録する */
+  const onVisualPaste = (e: React.KeyboardEvent<HTMLInputElement>, key: string, links: string[]) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const value = e.currentTarget.value.trim();
+    if (!value) return;
+    updateVisual(key, [...links, value]);
+    e.currentTarget.value = "";
+  };
+
+  /* --------------------------------- 書き出し --------------------------------- */
 
   const buildExportText = () => {
     const lines = [
@@ -316,32 +478,73 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     setTimeout(() => setCopyMsg(""), 2500);
   };
 
+  const saveLabel =
+    saveState === "saving" ? "保存中…" : saveState === "saved" ? "保存しました" : "自動保存";
+  const saveCls =
+    saveState === "saving"
+      ? "bg-amber-100 text-amber-800"
+      : saveState === "saved"
+        ? "bg-emerald-100 text-emerald-700"
+        : "bg-stone-100 text-stone-500";
+
   return (
     <div className="space-y-6 print:space-y-2">
       <div className="print:hidden">
         <ProductPicker app={app} />
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">
+      <div
+        id="sheet-progress"
+        className="sticky top-0 z-20 rounded-xl border border-amber-200 bg-amber-50/95 p-4 backdrop-blur print:static print:bg-white"
+      >
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="rounded-full bg-amber-200 px-3 py-1 font-medium text-amber-900">
             必須 {req.filled}/{req.total}（{req.total ? Math.round((req.filled / req.total) * 100) : 0}%）
           </span>
-          <span className="rounded-full bg-stone-100 px-3 py-1 text-stone-600">
+          <span className="rounded-full bg-white px-3 py-1 text-stone-600">
             任意 {opt.filled}/{opt.total}
           </span>
-          <span className="rounded-full bg-stone-100 px-3 py-1 text-stone-600">
+          <span className="rounded-full bg-white px-3 py-1 text-stone-600">
             材料 {ing.filled}/{ing.total}件
           </span>
+
+          <div className="ml-auto flex flex-wrap items-center gap-3 print:hidden">
+            <span className={`rounded-full px-3 py-1 text-xs ${saveCls}`}>{saveLabel}</span>
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-stone-600">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-amber-600"
+                checked={onlyEmpty}
+                onChange={(e) => setOnlyEmpty(e.target.checked)}
+              />
+              未入力だけ表示
+            </label>
+            <button
+              type="button"
+              disabled={!nextEmpty}
+              onClick={jumpToNextEmpty}
+              className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-default disabled:bg-stone-300"
+            >
+              {nextEmpty ? "次の未入力へ →" : "必須はすべて入力済み"}
+            </button>
+          </div>
         </div>
+
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-amber-200/60">
+          <div
+            className={`h-full rounded-full transition-all ${
+              req.filled === req.total ? "bg-emerald-600" : "bg-amber-600"
+            }`}
+            style={{ width: `${req.total ? (req.filled / req.total) * 100 : 0}%` }}
+          />
+        </div>
+
         <div className="mt-3 flex flex-wrap gap-2 print:hidden">
           {SECTIONS.map((sec, i) => (
             <button
               key={sec.id}
-              className="rounded-full border border-stone-300 px-3 py-1 text-xs text-stone-600 hover:border-amber-500 hover:bg-amber-50 hover:text-amber-800"
-              onClick={() =>
-                document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
+              className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs text-stone-600 hover:border-amber-500 hover:bg-amber-50 hover:text-amber-800"
+              onClick={() => scrollToSection(sec.id)}
             >
               {i + 1}. {sec.label}
             </button>
@@ -352,168 +555,263 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </p>
       </div>
 
-      <Section id="sheet-basic" step={1} icon="🧾" title="基本データ" progress={`${basicFilled}/${BASIC_TOTAL}`}>
+      <Section
+        id="sheet-basic"
+        step={1}
+        icon="🧾"
+        title="基本データ"
+        progress={`${basicFilled}/${BASIC_TOTAL}`}
+        done={basicFilled === BASIC_TOTAL}
+      >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="NOアルコール・NOポーク">
-            <div className="flex gap-2">
-              <button
-                className={`rounded-lg border px-3 py-1.5 text-sm ${
-                  info.noAlcoholPork === "mark"
-                    ? "border-amber-600 bg-amber-600 text-white"
-                    : "border-stone-300 text-stone-600"
-                }`}
-                onClick={() => patch({ noAlcoholPork: "mark" })}
-              >
-                マークを付ける
-              </button>
-              <button
-                className={`rounded-lg border px-3 py-1.5 text-sm ${
-                  info.noAlcoholPork === "nomark"
-                    ? "border-amber-600 bg-amber-600 text-white"
-                    : "border-stone-300 text-stone-600"
-                }`}
-                onClick={() => patch({ noAlcoholPork: "nomark" })}
-              >
-                マークを付けない
-              </button>
-            </div>
-          </Field>
-          <Field label="品名（日本語）">
-            <input className={inputCls} value={info.nameJa} onChange={(e) => patch({ nameJa: e.target.value })} />
-          </Field>
-          <Field label="発売日">
-            <input
-              type="date"
-              className={inputCls}
-              value={info.releaseDate}
-              onChange={(e) => patch({ releaseDate: e.target.value })}
-            />
-          </Field>
-          <Field label="販売終了日">
-            <label className="mb-2 flex items-center gap-2 text-sm text-stone-600">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-amber-600"
-                checked={info.ongoing}
-                onChange={(e) => patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })}
-              />
-              継続販売中（終了日を決めない）
-            </label>
-            {info.ongoing ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                継続販売中 — 販売終了日は設定しません
+          {showRequired(info.noAlcoholPork !== null) && (
+            <Field label="NOアルコール・NOポーク" filled={info.noAlcoholPork !== null}>
+              <div className="flex gap-2">
+                <button
+                  id="f-noAlcoholPork"
+                  className={`rounded-lg border px-3 py-1.5 text-sm ${
+                    info.noAlcoholPork === "mark"
+                      ? "border-amber-600 bg-amber-600 text-white"
+                      : "border-stone-300 text-stone-600"
+                  }`}
+                  onClick={() => patch({ noAlcoholPork: "mark" })}
+                >
+                  マークを付ける
+                </button>
+                <button
+                  className={`rounded-lg border px-3 py-1.5 text-sm ${
+                    info.noAlcoholPork === "nomark"
+                      ? "border-amber-600 bg-amber-600 text-white"
+                      : "border-stone-300 text-stone-600"
+                  }`}
+                  onClick={() => patch({ noAlcoholPork: "nomark" })}
+                >
+                  マークを付けない
+                </button>
               </div>
-            ) : (
+            </Field>
+          )}
+          {showRequired(!!info.nameJa) && (
+            <Field label="品名（日本語）" filled={!!info.nameJa}>
               <input
+                id="f-nameJa"
+                className={inputCls}
+                value={info.nameJa}
+                onChange={(e) => patch({ nameJa: e.target.value })}
+              />
+            </Field>
+          )}
+          {showRequired(!!info.releaseDate) && (
+            <Field label="発売日" filled={!!info.releaseDate}>
+              <input
+                id="f-releaseDate"
                 type="date"
                 className={inputCls}
-                value={info.endDate}
-                onChange={(e) => patch({ endDate: e.target.value })}
+                value={info.releaseDate}
+                onChange={(e) => patch({ releaseDate: e.target.value })}
               />
-            )}
-          </Field>
-          <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
-            <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
-          </Field>
+            </Field>
+          )}
+          {showOptional() && (
+            <Field label="販売終了日">
+              <label className="mb-2 flex items-center gap-2 text-sm text-stone-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-amber-600"
+                  checked={info.ongoing}
+                  onChange={(e) =>
+                    patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })
+                  }
+                />
+                継続販売中（終了日を決めない）
+              </label>
+              {info.ongoing ? (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  継続販売中 — 販売終了日は設定しません
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={info.endDate}
+                  onChange={(e) => patch({ endDate: e.target.value })}
+                />
+              )}
+            </Field>
+          )}
+          {showOptional() && (
+            <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
+              <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
+            </Field>
+          )}
         </div>
-        <Field label="紹介文（日本語）">
-          <textarea
-            rows={2}
-            className={inputCls}
-            value={info.descriptionJa}
-            onChange={(e) => patch({ descriptionJa: e.target.value })}
-          />
-        </Field>
-        <Field label="英語（紹介文）" hint="担当AIが記入・空欄でOK">
-          <textarea
-            rows={2}
-            className={inputCls}
-            value={info.descriptionEn}
-            onChange={(e) => patch({ descriptionEn: e.target.value })}
-          />
-        </Field>
-        <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
-          <textarea
-            rows={3}
-            maxLength={140}
-            className={inputCls}
-            value={info.instagramPost}
-            onChange={(e) => patch({ instagramPost: e.target.value })}
-          />
-        </Field>
+        {showOptional() && (
+          <Field label="紹介文（日本語）" hint={`${info.descriptionJa.length} 字`}>
+            <textarea
+              rows={2}
+              className={inputCls}
+              value={info.descriptionJa}
+              onChange={(e) => patch({ descriptionJa: e.target.value })}
+            />
+          </Field>
+        )}
+        {showOptional() && (
+          <Field label="英語（紹介文）" hint="担当AIが記入・空欄でOK">
+            <textarea
+              rows={2}
+              className={inputCls}
+              value={info.descriptionEn}
+              onChange={(e) => patch({ descriptionEn: e.target.value })}
+            />
+          </Field>
+        )}
+        {showOptional() && (
+          <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
+            <textarea
+              rows={3}
+              maxLength={140}
+              className={inputCls}
+              value={info.instagramPost}
+              onChange={(e) => patch({ instagramPost: e.target.value })}
+            />
+          </Field>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <PriceBlock
-            label="販売価格（銀座・原宿・浅草・飛騨高山／税込）"
-            base={info.priceTokyo}
-            uber={info.priceTokyoUber}
-            onBase={(v) => patch({ priceTokyo: v })}
-            onUber={(v) => patch({ priceTokyoUber: v })}
-          />
-          <PriceBlock
-            label="販売価格（嘉麻／税込）"
-            base={info.priceKama}
-            uber={info.priceKamaUber}
-            onBase={(v) => patch({ priceKama: v })}
-            onUber={(v) => patch({ priceKamaUber: v })}
-          />
+          {showRequired(info.priceTokyo !== null) && (
+            <PriceBlock
+              id="f-priceTokyo"
+              label="販売価格（銀座・原宿・浅草・飛騨高山／税込）"
+              filled={info.priceTokyo !== null}
+              base={info.priceTokyo}
+              uber={info.priceTokyoUber}
+              onBase={(v) => patch({ priceTokyo: v })}
+              onUber={(v) => patch({ priceTokyoUber: v })}
+            />
+          )}
+          {showRequired(info.priceKama !== null) && (
+            <PriceBlock
+              id="f-priceKama"
+              label="販売価格（嘉麻／税込）"
+              filled={info.priceKama !== null}
+              base={info.priceKama}
+              uber={info.priceKamaUber}
+              onBase={(v) => patch({ priceKama: v })}
+              onUber={(v) => patch({ priceKamaUber: v })}
+            />
+          )}
         </div>
       </Section>
 
-      <Section id="sheet-ingredients" step={2} icon="🥘" title="材料（ingredients）" progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}>
+      <Section
+        id="sheet-ingredients"
+        step={2}
+        icon="🥘"
+        title="材料（ingredients）"
+        progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}
+        done={ingredientsFilled}
+      >
         <p className="text-xs text-stone-400">
-          品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。最初は{DEFAULT_INGREDIENT_ROWS}行あり、足りなければ「＋ 材料を追加」で増やせます。使わない行は「空の行を消す」でまとめて片付きます。
+          品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Tab</kbd>
+          で右のセル、最後の行で
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
+          を押すと行が増えます。
         </p>
-        {info.ingredients.map((row, idx) => (
-          <div key={idx} className="rounded-lg border border-stone-200 p-3">
-            <div className="mb-2 flex items-center justify-between text-sm font-medium text-stone-600">
-              材料 {idx + 1}
-              <button className="text-xs text-red-500 hover:underline" onClick={() => removeIngredient(idx)}>
-                削除
-              </button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="品名（日本語）">
-                <input
-                  className={inputCls}
-                  value={row.nameJa}
-                  onChange={(e) => updateIngredient(idx, { nameJa: e.target.value })}
-                />
-              </Field>
-              <Field label="品名（英語）">
-                <input
-                  className={inputCls}
-                  value={row.nameEn}
-                  onChange={(e) => updateIngredient(idx, { nameEn: e.target.value })}
-                />
-              </Field>
-              <Field label="分量">
-                <input
-                  className={inputCls}
-                  value={row.amount}
-                  onChange={(e) => updateIngredient(idx, { amount: e.target.value })}
-                />
-              </Field>
-            </div>
-            <button
-              className="mt-2 text-xs text-amber-700 hover:underline"
-              onClick={() => updateIngredient(idx, { specs: [...row.specs, ""] })}
-            >
-              ＋ 詳細スペックを追加（任意）
-            </button>
-            {row.specs.map((s, si) => (
-              <input
-                key={si}
-                className={`${inputCls} mt-2`}
-                value={s}
-                placeholder="商品名/メーカー/原材料/アレルゲン等"
-                onChange={(e) => {
-                  const specs = row.specs.map((v, i) => (i === si ? e.target.value : v));
-                  updateIngredient(idx, { specs });
-                }}
-              />
-            ))}
-          </div>
-        ))}
+
+        <div className="-mx-2 overflow-x-auto px-2">
+          <table className="w-full min-w-[680px] border-collapse text-sm">
+            <thead>
+              <tr className="text-left text-[11px] font-medium text-stone-400">
+                <th className="w-8 pb-1" />
+                <th className="pb-1">品名（日本語）</th>
+                <th className="pb-1">品名（英語）</th>
+                <th className="w-24 pb-1">分量</th>
+                <th className="pb-1">詳細スペック（任意）</th>
+                <th className="w-8 pb-1" />
+              </tr>
+            </thead>
+            <tbody>
+              {info.ingredients.map((row, idx) => (
+                <tr key={idx} className="group border-t border-stone-100">
+                  <td className="text-center text-[11px] tabular-nums text-stone-400">{idx + 1}</td>
+                  <td>
+                    <input
+                      id={`f-ing-ja-${idx}`}
+                      className={cellCls}
+                      placeholder="—"
+                      value={row.nameJa}
+                      onChange={(e) => updateIngredient(idx, { nameJa: e.target.value })}
+                      onKeyDown={(e) => onIngredientEnter(e, idx, "ja")}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      id={`f-ing-en-${idx}`}
+                      className={cellCls}
+                      placeholder="—"
+                      value={row.nameEn}
+                      onChange={(e) => updateIngredient(idx, { nameEn: e.target.value })}
+                      onKeyDown={(e) => onIngredientEnter(e, idx, "en")}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      id={`f-ing-amount-${idx}`}
+                      className={cellCls}
+                      placeholder="—"
+                      value={row.amount}
+                      onChange={(e) => updateIngredient(idx, { amount: e.target.value })}
+                      onKeyDown={(e) => onIngredientEnter(e, idx, "amount")}
+                    />
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1">
+                      <input
+                        id={`f-ing-spec-${idx}`}
+                        className={cellCls}
+                        placeholder="商品名／メーカー／原材料など"
+                        value={row.specs[0] ?? ""}
+                        onChange={(e) => setFirstSpec(idx, e.target.value)}
+                        onKeyDown={(e) => onIngredientEnter(e, idx, "spec")}
+                      />
+                      <button
+                        type="button"
+                        title="スペックの行を足す"
+                        className="shrink-0 rounded px-1.5 py-1 text-xs text-stone-300 transition hover:bg-amber-50 hover:text-amber-700 group-hover:text-stone-400"
+                        onClick={() => updateIngredient(idx, { specs: [...row.specs, ""] })}
+                      >
+                        ＋
+                      </button>
+                    </div>
+                    {row.specs.slice(1).map((s, si) => (
+                      <input
+                        key={si}
+                        className={`${cellCls} mt-1`}
+                        value={s}
+                        placeholder="商品名／メーカー／原材料など"
+                        onChange={(e) => {
+                          const specs = row.specs.map((v, i) => (i === si + 1 ? e.target.value : v));
+                          updateIngredient(idx, { specs });
+                        }}
+                      />
+                    ))}
+                  </td>
+                  <td className="text-center">
+                    <button
+                      type="button"
+                      title="この行を消す"
+                      className="rounded px-2 py-1 text-stone-300 transition hover:bg-red-50 hover:text-red-600 group-hover:text-stone-400"
+                      onClick={() => removeIngredient(idx)}
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
@@ -532,72 +830,112 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </div>
       </Section>
 
-      <Section id="sheet-howto" step={3} icon="👩‍🍳" title="作り方（How to make）" progress={`${howtoFilled}/2`}>
-        <p className="text-xs text-stone-400">
-          使用材料と手順は別ページで管理する想定です。ここには動画のURLとメモだけを入れます。
-        </p>
-        <Field label="作り方動画 YouTube URL">
-          <input
-            className={inputCls}
-            value={info.howToVideoUrl}
-            onChange={(e) => patch({ howToVideoUrl: e.target.value })}
-          />
-        </Field>
-        <Field label="メモ（任意）">
-          <textarea
-            rows={2}
-            className={inputCls}
-            value={info.recipeNotes}
-            onChange={(e) => patch({ recipeNotes: e.target.value })}
-          />
-        </Field>
-      </Section>
-
-      <Section id="sheet-visual" step={4} icon="🖼️" title="ビジュアルダウンロード（各サイズ）" progress={`${visualFilled}/${info.visualDownloads.length}`}>
-        <p className="text-xs text-stone-400">
-          各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを貼ります。
-        </p>
-        {info.visualDownloads.map((v) => (
-          <div key={v.key} className="rounded-lg border border-stone-200 p-3">
-            <div className="mb-1 text-sm font-medium text-stone-600">
-              {v.label} {v.size && <span className="text-xs text-stone-400">（{v.size}）</span>}
-            </div>
-            {v.links.map((l, li) => (
-              <VisualLinkRow
-                key={li}
-                value={l}
-                onChange={(val) => {
-                  const links = v.links.map((x, i) => (i === li ? val : x));
-                  updateVisual(v.key, links);
-                }}
+      <Section
+        id="sheet-howto"
+        step={3}
+        icon="👩‍🍳"
+        title="作り方（How to make）"
+        progress={`${howtoFilled}/2`}
+        done={howtoFilled === 2}
+      >
+        {onlyEmpty ? (
+          <p className="text-xs text-stone-400">「未入力だけ表示」がONです。この欄はすべて任意なので隠しています。</p>
+        ) : (
+          <>
+            <p className="text-xs text-stone-400">
+              使用材料と手順は別ページで管理する想定です。ここには動画のURLとメモだけを入れます。
+            </p>
+            <Field label="作り方動画 YouTube URL">
+              <input
+                className={inputCls}
+                value={info.howToVideoUrl}
+                onChange={(e) => patch({ howToVideoUrl: e.target.value })}
               />
-            ))}
-            <button
-              className="text-xs text-amber-700 hover:underline"
-              onClick={() => updateVisual(v.key, [...v.links, ""])}
-            >
-              ＋ リンクを追加
-            </button>
-          </div>
-        ))}
+            </Field>
+            <Field label="メモ（任意）">
+              <textarea
+                rows={2}
+                className={inputCls}
+                value={info.recipeNotes}
+                onChange={(e) => patch({ recipeNotes: e.target.value })}
+              />
+            </Field>
+          </>
+        )}
       </Section>
 
-      <Section id="sheet-sns" step={5} icon="📣" title="紹介文各種（SNS・PR）" progress={`${snsFilled}/5`}>
-        <Field label="Instagram 投稿文章（本文＋ハッシュタグ）">
-          <textarea rows={3} className={inputCls} value={info.igCaption} onChange={(e) => patch({ igCaption: e.target.value })} />
-        </Field>
-        <Field label="X（旧Twitter）文章">
-          <textarea rows={2} className={inputCls} value={info.xCaption} onChange={(e) => patch({ xCaption: e.target.value })} />
-        </Field>
-        <Field label="Threads 文章">
-          <textarea rows={2} className={inputCls} value={info.threadsCaption} onChange={(e) => patch({ threadsCaption: e.target.value })} />
-        </Field>
-        <Field label="取引先・関係者への一斉メール（件名＋本文）">
-          <textarea rows={3} className={inputCls} value={info.pressEmail} onChange={(e) => patch({ pressEmail: e.target.value })} />
-        </Field>
-        <Field label="PR TIMES 記事URL">
-          <input className={inputCls} value={info.prTimesUrl} onChange={(e) => patch({ prTimesUrl: e.target.value })} />
-        </Field>
+      <Section
+        id="sheet-visual"
+        step={4}
+        icon="🖼️"
+        title="ビジュアルダウンロード（各サイズ）"
+        progress={`${visualFilled}/${info.visualDownloads.length}`}
+        done={visualFilled === info.visualDownloads.length}
+      >
+        <p className="text-xs text-stone-400">
+          各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを、下の枠に貼って
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
+          を押すと登録されます。
+        </p>
+        {info.visualDownloads
+          .filter((v) => showRequired(visualFilledOf(v.links)))
+          .map((v) => (
+            <div key={v.key} className="rounded-lg border border-stone-200 p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-stone-600">
+                <Dot filled={visualFilledOf(v.links)} />
+                {v.label} {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
+              </div>
+              {v.links.map((l, li) => (
+                <VisualLinkRow
+                  key={li}
+                  value={l}
+                  onChange={(val) => updateVisual(v.key, v.links.map((x, i) => (i === li ? val : x)))}
+                  onRemove={() => updateVisual(v.key, v.links.filter((_, i) => i !== li))}
+                />
+              ))}
+              <input
+                id={`f-visual-${v.key}`}
+                className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
+                placeholder="URLを貼って Enter"
+                aria-label={`${v.label}のリンクを追加`}
+                onKeyDown={(e) => onVisualPaste(e, v.key, v.links)}
+              />
+            </div>
+          ))}
+        {onlyEmpty && visualFilled === info.visualDownloads.length && (
+          <p className="text-xs text-stone-400">すべてのサイズにリンクが入っています。</p>
+        )}
+      </Section>
+
+      <Section
+        id="sheet-sns"
+        step={5}
+        icon="📣"
+        title="紹介文各種（SNS・PR）"
+        progress={`${snsFilled}/5`}
+        done={snsFilled === 5}
+      >
+        {onlyEmpty ? (
+          <p className="text-xs text-stone-400">「未入力だけ表示」がONです。この欄はすべて任意なので隠しています。</p>
+        ) : (
+          <>
+            <Field label="Instagram 投稿文章（本文＋ハッシュタグ）">
+              <textarea rows={3} className={inputCls} value={info.igCaption} onChange={(e) => patch({ igCaption: e.target.value })} />
+            </Field>
+            <Field label="X（旧Twitter）文章">
+              <textarea rows={2} className={inputCls} value={info.xCaption} onChange={(e) => patch({ xCaption: e.target.value })} />
+            </Field>
+            <Field label="Threads 文章">
+              <textarea rows={2} className={inputCls} value={info.threadsCaption} onChange={(e) => patch({ threadsCaption: e.target.value })} />
+            </Field>
+            <Field label="取引先・関係者への一斉メール（件名＋本文）">
+              <textarea rows={3} className={inputCls} value={info.pressEmail} onChange={(e) => patch({ pressEmail: e.target.value })} />
+            </Field>
+            <Field label="PR TIMES 記事URL">
+              <input className={inputCls} value={info.prTimesUrl} onChange={(e) => patch({ prTimesUrl: e.target.value })} />
+            </Field>
+          </>
+        )}
       </Section>
 
       <div className="flex flex-wrap items-center gap-3 print:hidden">
@@ -627,7 +965,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       </div>
 
       <p className="rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-stone-500">
-        ※これは「1商品に必要な情報一式」を集めるための入力式の下書きシートです。入力内容はこの端末に自動保存され、「コピー用に書き出し」でスプレッドシートやメールに貼れます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
+        ※これは「1商品に必要な情報一式」を集めるための入力式の下書きシートです。入力内容は共有データベースに自動保存され、「コピー用に書き出し」でスプレッドシートやメールに貼れます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
     </div>
   );

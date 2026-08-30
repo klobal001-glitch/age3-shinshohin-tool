@@ -72,8 +72,8 @@ export function requiredProgress(info: ProductInfo): ProgressCount {
     info.priceTokyo !== null,
     info.priceKama !== null,
     info.ingredients.some((i) => i.nameJa && i.amount),
-    // 各サイズのビジュアルは1つでもリンクが入っていれば充足
-    ...info.visualDownloads.map((v) => v.links.length > 0),
+    // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）
+    ...info.visualDownloads.map((v) => v.links.some((l) => l.trim())),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
