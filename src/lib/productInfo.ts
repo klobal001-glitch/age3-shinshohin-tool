@@ -68,6 +68,7 @@ export function createDefaultProductInfo(): ProductInfo {
     releaseDate: "",
     endDate: "",
     ongoing: false,
+    discontinued: false,
     nameEn: "",
     descriptionJa: "",
     descriptionEn: "",
@@ -231,6 +232,7 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
 
   merged.ongoing = r.ongoing === true;
+  merged.discontinued = r.discontinued === true;
   merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
   merged.priceKama = legacyPriceToNumber(r.priceKama);
   merged.priceTokyoUber = legacyPriceToNumber(r.priceTokyoUber);

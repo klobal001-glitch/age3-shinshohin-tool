@@ -78,6 +78,7 @@ export const DEADLINE_TRACKING_MONTHS = 12;
  * 全商品ぶんの「未完了マイルストーン」を締め切りが近い順（延滞が大きい順）に並べる。
  *
  * 次の商品は対象外にしている（商品ごとの準備タスク画面には従来どおり表示される）:
+ * - 廃盤の商品 … もう作らないため
  * - 継続販売中のレギュラー商品 … 発売準備の締め切りという概念がないため
  * - 発売から1年以上が経過した商品 … 過ぎた締め切りを延々と催促しても意味がないため
  */
@@ -85,6 +86,7 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
   const entries: DeadlineEntry[] = [];
   for (const p of app.products) {
     const info = app.getInfo(p.id);
+    if (info.discontinued) continue; // 廃盤は締め切りを追わない
     if (!info.releaseDate) continue;
     if (info.ongoing) continue;
     if (isReleasedLongAgo(info.releaseDate, DEADLINE_TRACKING_MONTHS)) continue;
@@ -122,7 +124,8 @@ export interface DashboardStats {
 }
 
 export function computeDashboardStats(app: App, deadlines: DeadlineEntry[]): DashboardStats {
-  const products = app.products;
+  /* 廃盤はもう作らないので、現行の商品だけで平均を出す */
+  const products = app.products.filter((p) => !app.getInfo(p.id).discontinued);
   let infoSum = 0;
   let taskChecked = 0;
   let taskTotal = 0;

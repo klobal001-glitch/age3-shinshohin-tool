@@ -162,6 +162,7 @@ export default function VisualGalleryView({
       const card = pickCardImage(info);
       return { product: p, info, done, total: requiredVisualTotal(p.genre), card };
     });
+    list = list.filter((r) => !r.info.discontinued); // 廃盤は出さない
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
     if (imageFilter === "has") list = list.filter((r) => r.card !== null);
     if (imageFilter === "none") list = list.filter((r) => r.card === null);

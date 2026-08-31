@@ -39,12 +39,15 @@ export default function MenuView({
   const nearestDeadlines = useMemo(() => nearestPerProduct(deadlines), [deadlines]);
 
   const productRows = useMemo(() => {
-    const rows = products.map((p) => {
-      const info = infoFillRate(getInfo(p.id), p.genre);
-      const t = taskCompletion(getTaskState(p.id));
-      const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
-      return { product: p, info, task };
-    });
+    /* 廃盤はもう作らないので、この一覧にも出さない */
+    const rows = products
+      .filter((p) => !getInfo(p.id).discontinued)
+      .map((p) => {
+        const info = infoFillRate(getInfo(p.id), p.genre);
+        const t = taskCompletion(getTaskState(p.id));
+        const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
+        return { product: p, info, task };
+      });
     if (productSort === "name") {
       rows.sort((a, b) => a.product.name.localeCompare(b.product.name, "ja"));
     } else {

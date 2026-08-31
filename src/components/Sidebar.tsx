@@ -48,20 +48,30 @@ export default function Sidebar({
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  /** 廃盤は普段は隠す。現行の商品だけに集中できるようにするため */
+  const [showDiscontinued, setShowDiscontinued] = useState(false);
 
-  const grouped = useMemo(() => {
+  /** 現行の商品（ジャンル別）と、廃盤の商品を分けて持つ */
+  const { grouped, retired } = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
+
+    const live = filtered.filter((p) => !getInfo(p.id).discontinued);
+    const gone = filtered.filter((p) => getInfo(p.id).discontinued);
+
     const map = new Map<Genre, typeof products>();
     for (const g of GENRE_ORDER) map.set(g, []);
-    for (const p of filtered) {
+    for (const p of live) {
       const key = GENRE_ORDER.includes(p.genre) ? p.genre : null;
       map.get(key)!.push(p);
     }
-    return GENRE_ORDER.map((g) => ({ genre: g, items: map.get(g) ?? [] })).filter(
-      (section) => section.items.length > 0
-    );
-  }, [products, query]);
+    return {
+      grouped: GENRE_ORDER.map((g) => ({ genre: g, items: map.get(g) ?? [] })).filter(
+        (section) => section.items.length > 0
+      ),
+      retired: gone,
+    };
+  }, [products, query, getInfo]);
 
   const submitAdd = () => {
     if (!newName.trim()) return;
@@ -111,7 +121,7 @@ export default function Sidebar({
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
-        {grouped.length === 0 && (
+        {grouped.length === 0 && retired.length === 0 && (
           <p className="px-1 py-4 text-xs text-stone-400">該当する商品がありません。</p>
         )}
         {grouped.map(({ genre, items }) => (
@@ -147,6 +157,42 @@ export default function Sidebar({
             </ul>
           </div>
         ))}
+
+        {retired.length > 0 && (
+          <div className="mb-3">
+            <button
+              className="mb-1 flex w-full items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400 hover:text-stone-600"
+              onClick={() => setShowDiscontinued((v) => !v)}
+            >
+              <span aria-hidden>{showDiscontinued ? "▾" : "▸"}</span>
+              廃盤 {retired.length}
+            </button>
+            {showDiscontinued && (
+              <ul>
+                {retired.map((p) => {
+                  const active = p.id === selectedId;
+                  return (
+                    <li key={p.id}>
+                      <button
+                        onClick={() => setSelectedId(p.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                          active ? "bg-stone-600 text-white" : "text-stone-400 hover:bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            active ? "bg-white" : "bg-stone-300"
+                          }`}
+                        />
+                        <span className="min-w-0 flex-1 truncate line-through">{p.name}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="border-t border-amber-900/10 p-3">

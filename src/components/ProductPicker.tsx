@@ -16,7 +16,17 @@ const GENRE_OPTIONS: { value: Genre; label: string }[] = [
 ];
 
 export default function ProductPicker({ app }: { app: ReturnType<typeof useAppData> }) {
-  const { products, selectedProduct, setSelectedId, addProduct, renameProduct, changeGenre, deleteProduct } = app;
+  const {
+    products,
+    selectedProduct,
+    setSelectedId,
+    addProduct,
+    renameProduct,
+    changeGenre,
+    deleteProduct,
+    getInfo,
+    updateInfo,
+  } = app;
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -30,12 +40,33 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
     );
   }
 
+  const discontinued = getInfo(selectedProduct.id).discontinued;
+
+  /** 廃盤にする／戻す。データは消さず、現行の一覧と集計から外すだけ */
+  const toggleDiscontinued = () => {
+    if (!discontinued) {
+      const ok = confirm(
+        `「${selectedProduct.name}」を廃盤にします。\n\n` +
+          "入力した情報と準備タスクのチェックは残りますが、\n" +
+          "商品リスト・ビジュアル一覧・締め切り一覧・平均入力率からは外れます。\n" +
+          "いつでも戻せます。よろしいですか？"
+      );
+      if (!ok) return;
+    }
+    updateInfo(selectedProduct.id, { discontinued: !discontinued });
+  };
+
   return (
     <div className="rounded-xl border border-stone-300 bg-white p-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="hidden text-lg font-bold text-stone-900 md:block">
           {selectedProduct.name}
         </h2>
+        {discontinued && (
+          <span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+            廃盤
+          </span>
+        )}
         <select
           className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-1.5 text-sm md:hidden"
           value={selectedProduct.id}
@@ -76,6 +107,16 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
             }}
           >
             名前を変える
+          </button>
+          <button
+            className={`rounded-lg border px-3 py-1.5 text-sm ${
+              discontinued
+                ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
+                : "border-stone-300 hover:bg-stone-50"
+            }`}
+            onClick={toggleDiscontinued}
+          >
+            {discontinued ? "廃盤をやめる" : "廃盤にする"}
           </button>
           <span className="mx-1 hidden h-5 w-px bg-stone-200 sm:block" aria-hidden />
           {/* 押し間違いを避けるため、削除だけは枠のない控えめな表示にしている */}
