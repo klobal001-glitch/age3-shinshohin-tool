@@ -26,6 +26,7 @@ function Section({
   title,
   progress,
   done,
+  active,
   children,
 }: {
   id: string;
@@ -34,14 +35,25 @@ function Section({
   title: string;
   progress?: string;
   done?: boolean;
+  /** 上のタブで今選ばれているセクションか。タブと同じ色にして対応を示す */
+  active?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white">
-      <div className="flex items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
+    <section
+      id={id}
+      className={`scroll-mt-4 overflow-hidden rounded-xl border bg-white transition-colors ${
+        active ? "border-amber-400" : "border-stone-300"
+      }`}
+    >
+      <div
+        className={`flex items-center gap-3 border-b px-5 py-3 transition-colors ${
+          active ? "border-amber-300 bg-amber-100" : "border-stone-300 bg-stone-100"
+        }`}
+      >
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums text-white ${
-            done ? "bg-emerald-600" : "bg-stone-700"
+            done ? "bg-emerald-600" : active ? "bg-amber-600" : "bg-stone-700"
           }`}
         >
           {step}
@@ -74,7 +86,15 @@ function scrollToSection(sectionId: string) {
 }
 
 /** シートが縦に長いので、上から探せるように使うスクロール先の一覧 */
-type SectionTab = { id: string; label: string; filled: number; total: number };
+type SectionTab = { id: string; label: string; icon: string; filled: number; total: number };
+
+const SECTION_IDS = [
+  "sheet-basic",
+  "sheet-ingredients",
+  "sheet-howto",
+  "sheet-visual",
+  "sheet-sns",
+];
 
 /** 進捗パネルの下に来ている見出しを「今いるセクション」とみなす */
 function useActiveSection(ids: string[]) {
@@ -120,16 +140,18 @@ function useActiveSection(ids: string[]) {
 }
 
 /**
- * 上部のタブ。押すとその見出しまでスクロールし、今いるセクションに下線が付く。
- * 中身は隠さない（1ページに全部あるほうが「未入力だけ表示」や⌘F検索が効くため）。
+ * 上部のタブ。押すとその見出しまでスクロールする。
+ *
+ * 「このタブが、下のどれのことか」が一目で分かるように、
+ * 見出しと同じ番号の丸と絵文字をタブにも出し、見ているセクションでは
+ * タブと見出しの両方を同じ茶色にする。選ばれたタブは下線を切って、
+ * 下の中身へ口が開いているように見せる。
  */
-function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
-  const active = useActiveSection(tabs.map((t) => t.id));
-
+function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
   return (
     <nav
       aria-label="シート内の移動"
-      className="mt-3 flex gap-1 overflow-x-auto border-b border-amber-200 print:hidden"
+      className="mt-3 flex gap-1 overflow-x-auto border-b border-amber-300 print:hidden"
     >
       {tabs.map((t, i) => {
         const isActive = t.id === active;
@@ -140,14 +162,22 @@ function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
             type="button"
             aria-current={isActive ? "true" : undefined}
             onClick={() => scrollToSection(t.id)}
-            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-1.5 text-xs transition ${
+            className={`-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-lg border px-3 py-2 text-xs transition ${
               isActive
-                ? "border-amber-600 font-medium text-amber-900"
-                : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-800"
+                ? "border-amber-300 border-b-white bg-white font-medium text-stone-800"
+                : "border-transparent text-stone-500 hover:bg-white/60 hover:text-stone-800"
             }`}
           >
-            {i + 1}. {t.label}
-            <span className={`ml-1.5 tabular-nums ${done ? "text-emerald-600" : "text-stone-400"}`}>
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums text-white ${
+                done ? "bg-emerald-600" : isActive ? "bg-amber-600" : "bg-stone-400"
+              }`}
+            >
+              {i + 1}
+            </span>
+            <span aria-hidden>{t.icon}</span>
+            {t.label}
+            <span className={`tabular-nums ${done ? "text-emerald-600" : "text-stone-400"}`}>
               {t.filled}/{t.total}
             </span>
           </button>
@@ -485,6 +515,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const [copyMsg, setCopyMsg] = useState("");
   /** 入力済みの項目を隠して、残っている必須項目だけを出す */
   const [onlyEmpty, setOnlyEmpty] = useState(false);
+  /** 今どのセクションを見ているか。タブと見出しの両方を同じ色にするのに使う */
+  const activeSection = useActiveSection(SECTION_IDS);
 
   if (!selectedProduct) {
     return <ProductPicker app={app} />;
@@ -555,11 +587,17 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
   /** 上部タブに出す、セクションごとの入力状況 */
   const sectionTabs: SectionTab[] = [
-    { id: "sheet-basic", label: "基本データ", filled: basicFilled, total: BASIC_TOTAL },
-    { id: "sheet-ingredients", label: "材料", filled: ing.filled, total: ing.total },
-    { id: "sheet-howto", label: "作り方", filled: howtoFilled, total: 2 },
-    { id: "sheet-visual", label: "ビジュアル", filled: visualFilled, total: info.visualDownloads.length },
-    { id: "sheet-sns", label: "SNS・PR", filled: snsFilled, total: 5 },
+    { id: "sheet-basic", label: "基本データ", icon: "🧾", filled: basicFilled, total: BASIC_TOTAL },
+    { id: "sheet-ingredients", label: "材料", icon: "🥘", filled: ing.filled, total: ing.total },
+    { id: "sheet-howto", label: "作り方", icon: "👩‍🍳", filled: howtoFilled, total: 2 },
+    {
+      id: "sheet-visual",
+      label: "ビジュアル",
+      icon: "🖼️",
+      filled: visualFilled,
+      total: info.visualDownloads.length,
+    },
+    { id: "sheet-sns", label: "SNS・PR", icon: "📣", filled: snsFilled, total: 5 },
   ];
 
   /* ---------------------------------- 材料 ---------------------------------- */
@@ -761,7 +799,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           />
         </div>
 
-        <SectionTabs tabs={sectionTabs} />
+        <SectionTabs tabs={sectionTabs} active={activeSection} />
 
         <details className="mt-2 print:hidden">
           <summary className="cursor-pointer list-none text-xs text-stone-400 hover:text-stone-600">
@@ -775,6 +813,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section
         id="sheet-basic"
+        active={activeSection === "sheet-basic"}
         step={1}
         icon="🧾"
         title="基本データ"
@@ -919,6 +958,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section
         id="sheet-ingredients"
+        active={activeSection === "sheet-ingredients"}
         step={2}
         icon="🥘"
         title="材料（ingredients）"
@@ -1046,6 +1086,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section
         id="sheet-howto"
+        active={activeSection === "sheet-howto"}
         step={3}
         icon="👩‍🍳"
         title="作り方（How to make）"
@@ -1079,6 +1120,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section
         id="sheet-visual"
+        active={activeSection === "sheet-visual"}
         step={4}
         icon="🖼️"
         title="ビジュアルダウンロード（各サイズ）"
@@ -1123,6 +1165,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <Section
         id="sheet-sns"
+        active={activeSection === "sheet-sns"}
         step={5}
         icon="📣"
         title="紹介文各種（SNS・PR）"
