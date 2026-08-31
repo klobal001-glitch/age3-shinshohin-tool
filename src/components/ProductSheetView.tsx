@@ -73,13 +73,89 @@ function scrollToSection(sectionId: string) {
   }
 }
 
-const SECTIONS = [
-  { id: "sheet-basic", label: "基本データ" },
-  { id: "sheet-ingredients", label: "材料" },
-  { id: "sheet-howto", label: "作り方" },
-  { id: "sheet-visual", label: "ビジュアル" },
-  { id: "sheet-sns", label: "SNS・PR" },
-];
+/** シートが縦に長いので、上から探せるように使うスクロール先の一覧 */
+type SectionTab = { id: string; label: string; filled: number; total: number };
+
+/** 進捗パネルの下に来ている見出しを「今いるセクション」とみなす */
+function useActiveSection(ids: string[]) {
+  const [active, setActive] = useState(ids[0] ?? "");
+  const key = ids.join(",");
+
+  useEffect(() => {
+    const panel = document.getElementById("sheet-progress");
+    const scroller = panel?.closest(".md\\:overflow-y-auto") as HTMLElement | null;
+    const target: HTMLElement | Window = scroller ?? window;
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = (panel?.getBoundingClientRect().bottom ?? 0) + 24;
+      let current = ids[0] ?? "";
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= line) current = id;
+      }
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(update);
+    };
+
+    update();
+    target.addEventListener("scroll", onScroll, { passive: true });
+    /* 画面が狭いときは中の枠ではなくページ全体が動くので、両方を見る */
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      target.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return active;
+}
+
+/**
+ * 上部のタブ。押すとその見出しまでスクロールし、今いるセクションに下線が付く。
+ * 中身は隠さない（1ページに全部あるほうが「未入力だけ表示」や⌘F検索が効くため）。
+ */
+function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
+  const active = useActiveSection(tabs.map((t) => t.id));
+
+  return (
+    <nav
+      aria-label="シート内の移動"
+      className="mt-3 flex gap-1 overflow-x-auto border-b border-amber-200 print:hidden"
+    >
+      {tabs.map((t, i) => {
+        const isActive = t.id === active;
+        const done = t.total > 0 && t.filled === t.total;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            aria-current={isActive ? "true" : undefined}
+            onClick={() => scrollToSection(t.id)}
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-1.5 text-xs transition ${
+              isActive
+                ? "border-amber-600 font-medium text-amber-900"
+                : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-800"
+            }`}
+          >
+            {i + 1}. {t.label}
+            <span className={`ml-1.5 tabular-nums ${done ? "text-emerald-600" : "text-stone-400"}`}>
+              {t.filled}/{t.total}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
 
 /** 必須項目の入力済み／未入力を示す小さな点。緑＝入力済み、赤＝未入力 */
 function Dot({ filled }: { filled: boolean }) {
@@ -477,6 +553,15 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     !!info.prTimesUrl,
   ].filter(Boolean).length;
 
+  /** 上部タブに出す、セクションごとの入力状況 */
+  const sectionTabs: SectionTab[] = [
+    { id: "sheet-basic", label: "基本データ", filled: basicFilled, total: BASIC_TOTAL },
+    { id: "sheet-ingredients", label: "材料", filled: ing.filled, total: ing.total },
+    { id: "sheet-howto", label: "作り方", filled: howtoFilled, total: 2 },
+    { id: "sheet-visual", label: "ビジュアル", filled: visualFilled, total: info.visualDownloads.length },
+    { id: "sheet-sns", label: "SNS・PR", filled: snsFilled, total: 5 },
+  ];
+
   /* ---------------------------------- 材料 ---------------------------------- */
 
   const updateIngredient = (idx: number, patchRow: Partial<(typeof info.ingredients)[number]>) => {
@@ -635,9 +720,6 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           <span className="rounded-full bg-white px-3 py-1 text-stone-600">
             任意 {opt.filled}/{opt.total}
           </span>
-          <span className="rounded-full bg-white px-3 py-1 text-stone-600">
-            材料 {ing.filled}/{ing.total}件
-          </span>
 
           <div className="ml-auto flex flex-wrap items-center gap-3 print:hidden">
             <span className={`rounded-full px-3 py-1 text-xs ${saveCls}`}>{saveLabel}</span>
@@ -679,20 +761,16 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2 print:hidden">
-          {SECTIONS.map((sec, i) => (
-            <button
-              key={sec.id}
-              className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs text-stone-600 hover:border-amber-500 hover:bg-amber-50 hover:text-amber-800"
-              onClick={() => scrollToSection(sec.id)}
-            >
-              {i + 1}. {sec.label}
-            </button>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-stone-400">
-          必須が揃うと100%です。各サイズのビジュアルは、リンクが1つでも入っていれば充足とみなします。詳細スペック・使用材料＋手順・SNS/PR文面などの「任意」は、空でもOKです。
-        </p>
+        <SectionTabs tabs={sectionTabs} />
+
+        <details className="mt-2 print:hidden">
+          <summary className="cursor-pointer list-none text-xs text-stone-400 hover:text-stone-600">
+            数え方について
+          </summary>
+          <p className="mt-1 text-xs text-stone-400">
+            必須が揃うと100%です。各サイズのビジュアルは、リンクが1つでも入っていれば充足とみなします。詳細スペック・使用材料＋手順・SNS/PR文面などの「任意」は、空でもOKです。
+          </p>
+        </details>
       </div>
 
       <Section
