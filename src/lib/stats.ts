@@ -16,7 +16,7 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
 /** 商品情報シートの入力率（必須＋任意項目を合算）。必須の数はジャンルで変わる */
 export function infoFillRate(info: ProductInfo, genre: Genre): number {
   const req = requiredProgress(info, genre);
-  const opt = optionalProgress(info);
+  const opt = optionalProgress(info, genre);
   const total = req.total + opt.total;
   if (!total) return 0;
   return Math.round(((req.filled + opt.filled) / total) * 100);

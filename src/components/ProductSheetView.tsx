@@ -14,6 +14,7 @@ import {
   isRequiredVisualKey,
   optionalProgress,
   parsePriceInput,
+  snsProgress,
   requiredProgress,
   requiredVisualFilled,
   requiredVisualTotal,
@@ -531,7 +532,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const info = getInfo(selectedProduct.id);
   const genre = selectedProduct.genre;
   const req = requiredProgress(info, genre);
-  const opt = optionalProgress(info);
+  const opt = optionalProgress(info, genre);
   const ing = ingredientsProgress(info);
 
   const patch = (p: Partial<typeof info>) => updateInfo(selectedProduct.id, p);
@@ -586,16 +587,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   /* ビジュアルの進捗は「必須ぶん」で数える。レギュラー商品は3件で完成 */
   const visualFilled = requiredVisualFilled(info, genre);
   const visualTotal = requiredVisualTotal(genre);
-  const SNS_TOTAL = 7;
-  const snsFilled = [
-    !!info.descriptionJa,
-    !!info.descriptionEn,
-    !!info.igCaption,
-    !!info.xCaption,
-    !!info.threadsCaption,
-    !!info.pressEmail,
-    !!info.prTimesUrl,
-  ].filter(Boolean).length;
+  /* レギュラー商品は発売時のPR文面5件を数えないので、2件で完成になる */
+  const sns = snsProgress(info, genre);
+  const snsFilled = sns.filled;
+  const SNS_TOTAL = sns.total;
 
   /** 上部タブに出す、セクションごとの入力状況 */
   const sectionTabs: SectionTab[] = [

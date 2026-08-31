@@ -116,7 +116,22 @@ export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
 
-export function optionalProgress(info: ProductInfo): ProgressCount {
+/**
+ * 発売時のPRに使う文面。レギュラー商品は発売告知をしないので、
+ * これらが空でも入力率100%になるよう、数から外す。
+ * （入力欄は今までどおり出す。書きたくなったら書ける）
+ */
+function launchPrChecks(info: ProductInfo): boolean[] {
+  return [
+    !!info.igCaption,
+    !!info.xCaption,
+    !!info.threadsCaption,
+    !!info.pressEmail,
+    !!info.prTimesUrl,
+  ];
+}
+
+export function optionalProgress(info: ProductInfo, genre: Genre): ProgressCount {
   const checks: boolean[] = [
     !!info.nameEn,
     !!info.endDate || info.ongoing,
@@ -125,11 +140,20 @@ export function optionalProgress(info: ProductInfo): ProgressCount {
     !!info.instagramPost,
     !!info.howToVideoUrl,
     !!info.recipeNotes,
-    !!info.igCaption,
-    !!info.xCaption,
-    !!info.threadsCaption,
-    !!info.pressEmail,
-    !!info.prTimesUrl,
+    ...(isRegularGenre(genre) ? [] : launchPrChecks(info)),
+  ];
+  return { filled: checks.filter(Boolean).length, total: checks.length };
+}
+
+/**
+ * 「5 紹介文各種（SNS・PR）」の進捗。
+ * 紹介文2件は全ジャンル共通、発売時のPR文面5件はレギュラー商品では数えない。
+ */
+export function snsProgress(info: ProductInfo, genre: Genre): ProgressCount {
+  const checks: boolean[] = [
+    !!info.descriptionJa,
+    !!info.descriptionEn,
+    ...(isRegularGenre(genre) ? [] : launchPrChecks(info)),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
