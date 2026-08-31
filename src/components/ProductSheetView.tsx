@@ -278,6 +278,42 @@ function AutoTextarea({
 const cellCls =
   "w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm placeholder:text-stone-300 hover:border-stone-400 focus:border-amber-500 focus:outline-none";
 
+/**
+ * URLを入れる欄。http(s) が入っていれば右に「開く」を出す。
+ * 貼っただけだと文字が並ぶだけで、確認しに行けないため。
+ */
+function UrlInput({
+  id,
+  value,
+  placeholder,
+  onChange,
+}: {
+  id?: string;
+  value: string;
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
+  const url = value.trim();
+  const canOpen = /^https?:\/\//i.test(url);
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        id={id}
+        className={inputCls}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {canOpen && (
+        <a href={url} target="_blank" rel="noreferrer" className={linkBtnCls} title="別タブで開く">
+          開く
+        </a>
+      )}
+    </div>
+  );
+}
+
 /** 「¥」を左に固定した数値専用の価格入力欄 */
 function PriceInput({
   id,
@@ -1090,10 +1126,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               使用材料と手順は別ページで管理する想定です。ここには動画のURLと概要欄文章だけを入れます。
             </p>
             <Field label="作り方動画 YouTube URL">
-              <input
-                className={inputCls}
+              <UrlInput
                 value={info.howToVideoUrl}
-                onChange={(e) => patch({ howToVideoUrl: e.target.value })}
+                placeholder="https://youtu.be/..."
+                onChange={(v) => patch({ howToVideoUrl: v })}
               />
             </Field>
             <Field label="概要欄文章">
