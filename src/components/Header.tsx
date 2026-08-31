@@ -4,12 +4,16 @@ import Age3Logo from "@/components/Age3Logo";
 
 export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "help";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "menu", label: "🏠 メニュー" },
-  { key: "sheet", label: "📝 商品情報シート" },
-  { key: "tasks", label: "✅ 準備タスク" },
-  { key: "gallery", label: "🖼 ビジュアル一覧" },
-  { key: "help", label: "❓ 使い方" },
+/**
+ * このヘッダーはスマホ専用（PCでは左のサイドバーを使う）。
+ * 横幅が狭いので、絵文字を上・短いラベルを下に置いて5つを1画面に収める。
+ */
+const TABS: { key: TabKey; icon: string; label: string }[] = [
+  { key: "menu", icon: "🏠", label: "メニュー" },
+  { key: "sheet", icon: "📝", label: "シート" },
+  { key: "tasks", icon: "✅", label: "タスク" },
+  { key: "gallery", icon: "🖼", label: "ビジュアル" },
+  { key: "help", icon: "❓", label: "使い方" },
 ];
 
 const SUBTITLES: Record<TabKey, string> = {
@@ -32,13 +36,13 @@ export default function Header({
   return (
     <header className="border-b border-amber-900/10 bg-[#4a2f1f] text-amber-50">
       <div className="mx-auto max-w-5xl px-4 pb-3 pt-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Age3Logo className="h-6 w-auto shrink-0" />
           <h1 className="shrink-0 whitespace-nowrap text-lg font-bold leading-tight">
             新商品ツール
           </h1>
           {productName && (
-            <div className="ml-auto min-w-0 truncate text-sm text-amber-100">
+            <div className="min-w-0 flex-1 truncate text-right text-sm text-amber-100">
               商品：<span className="font-semibold">{productName}</span>
             </div>
           )}
@@ -47,18 +51,21 @@ export default function Header({
           {SUBTITLES[activeTab]}
         </p>
       </div>
-      <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3">
+      <nav className="mx-auto grid max-w-5xl grid-cols-5 gap-1 px-3 pb-3">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => onChangeTab(t.key)}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 transition ${
               activeTab === t.key
                 ? "bg-amber-50 text-amber-900"
                 : "text-amber-100 hover:bg-amber-800/60"
             }`}
           >
-            {t.label}
+            <span aria-hidden className="text-base leading-none">
+              {t.icon}
+            </span>
+            <span className="text-[11px] font-medium leading-none">{t.label}</span>
           </button>
         ))}
       </nav>

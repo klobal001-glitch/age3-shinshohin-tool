@@ -155,7 +155,8 @@ function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
   return (
     <nav
       aria-label="シート内の移動"
-      className="mt-3 flex gap-1 overflow-x-auto border-b border-amber-300 print:hidden"
+      /* 狭い画面では折り返して全部見せる。広い画面では従来どおり1行のタブ */
+      className="mt-3 flex flex-wrap gap-1 print:hidden sm:flex-nowrap sm:overflow-x-auto sm:border-b sm:border-amber-300"
     >
       {tabs.map((t, i) => {
         const isActive = t.id === active;
@@ -166,9 +167,9 @@ function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
             type="button"
             aria-current={isActive ? "true" : undefined}
             onClick={() => scrollToSection(t.id)}
-            className={`-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-lg border px-3 py-2 text-xs transition ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1.5 text-xs transition sm:-mb-px sm:rounded-b-none sm:px-3 sm:py-2 ${
               isActive
-                ? "border-amber-300 border-b-white bg-white font-medium text-stone-800"
+                ? "border-amber-300 bg-white font-medium text-stone-800 sm:border-b-white"
                 : "border-transparent text-stone-500 hover:bg-white/60 hover:text-stone-800"
             }`}
           >
@@ -179,7 +180,9 @@ function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
             >
               {i + 1}
             </span>
-            <span aria-hidden>{t.icon}</span>
+            <span aria-hidden className="hidden sm:inline">
+              {t.icon}
+            </span>
             {t.label}
             <span className={`tabular-nums ${done ? "text-emerald-600" : "text-stone-400"}`}>
               {t.filled}/{t.total}
@@ -795,7 +798,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <div
         id="sheet-progress"
-        className="sticky top-0 z-20 rounded-xl border border-amber-200 bg-amber-50/95 p-4 backdrop-blur print:static print:bg-white"
+        className="sticky top-0 z-20 rounded-xl border border-amber-200 bg-amber-50/95 p-3 backdrop-blur print:static print:bg-white sm:p-4"
       >
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="rounded-full bg-amber-200 px-3 py-1 font-medium text-amber-900">

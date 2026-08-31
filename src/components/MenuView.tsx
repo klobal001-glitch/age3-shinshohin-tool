@@ -152,17 +152,18 @@ export default function MenuView({
             <tbody className="divide-y divide-stone-100">
               {productRows.map(({ product, info, task }) => (
                 <tr key={product.id} className="hover:bg-amber-50">
-                  <td className="py-2 pr-3">
+                  <td className="w-full py-2 pr-3">
                     <button
                       onClick={() => openProduct(product.id)}
-                      className="font-medium text-stone-800 hover:text-amber-700 hover:underline"
+                      className="text-left font-medium text-stone-800 hover:text-amber-700 hover:underline"
                     >
                       {product.name}
                     </button>
                   </td>
                   <td className="whitespace-nowrap py-2 pr-3 text-stone-500">情報 {info}%</td>
                   <td className="whitespace-nowrap py-2 pr-3 text-stone-500">準備 {task}%</td>
-                  <td className="whitespace-nowrap py-2 text-right text-xs text-stone-400">
+                  {/* 狭い画面では横に入りきらないので、ジャンルは省く */}
+                  <td className="hidden whitespace-nowrap py-2 text-right text-xs text-stone-400 sm:table-cell">
                     {product.genre ? GENRE_LABELS[product.genre] : "未分類"}
                   </td>
                 </tr>
