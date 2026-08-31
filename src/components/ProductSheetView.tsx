@@ -13,7 +13,6 @@ import {
   isBlankIngredientRow,
   isRequiredVisualKey,
   optionalProgress,
-  parsePriceInput,
   snsProgress,
   requiredProgress,
   requiredVisualFilled,
@@ -22,6 +21,7 @@ import {
 import { GENRE_LABELS } from "@/lib/types";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
+import { PriceInput, inputCls } from "./PriceInput";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -245,9 +245,6 @@ function Field({
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
-
 /**
  * 中身の量に合わせて高さが伸びる文章欄。
  * 2〜3行の枠の中で長文をスクロールしながら書かなくて済むようにする。
@@ -325,38 +322,6 @@ function UrlInput({
           開く
         </a>
       )}
-    </div>
-  );
-}
-
-/** 「¥」を左に固定した数値専用の価格入力欄 */
-function PriceInput({
-  id,
-  value,
-  placeholder,
-  muted,
-  onChange,
-}: {
-  id?: string;
-  value: number | null;
-  placeholder?: string;
-  muted?: boolean;
-  onChange: (v: number | null) => void;
-}) {
-  return (
-    <div className="relative">
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">
-        ¥
-      </span>
-      <input
-        id={id}
-        type="text"
-        inputMode="numeric"
-        className={`${inputCls} pl-7 tabular-nums ${muted ? "text-stone-500" : ""}`}
-        placeholder={placeholder}
-        value={value === null ? "" : value.toLocaleString("ja-JP")}
-        onChange={(e) => onChange(parsePriceInput(e.target.value))}
-      />
     </div>
   );
 }

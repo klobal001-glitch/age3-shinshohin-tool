@@ -95,7 +95,12 @@ export interface TaskItem {
      * チェックの代わりにシートの値をそのまま出し、どちらかに付ければ両方に付く。
      * 状態は情報シート側だけが持つので、2つの画面で食い違わない。
      */
-    linkedField?: "noAlcoholPork";
+    linkedField?:
+        | "noAlcoholPork"
+        | "priceTokyo"
+        | "priceTokyoUber"
+        | "priceKama"
+        | "priceKamaUber";
 }
 
 export type DeadlineRule =

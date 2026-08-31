@@ -1,5 +1,5 @@
 import { useAppData } from "@/hooks/useAppData";
-import { requiredProgress, optionalProgress } from "./productInfo";
+import { effectiveUberPrice, optionalProgress, requiredProgress } from "./productInfo";
 import { TASK_GROUPS } from "./prepTasks";
 import { computeDeadline, daysDiffFromToday, isReleasedLongAgo } from "./deadline";
 import { Genre, Product, ProductInfo, TaskGroup, TaskItem, Milestone } from "./types";
@@ -27,7 +27,28 @@ export function infoFillRate(info: ProductInfo, genre: Genre): number {
  * チェックの保存先ではなく、シートの値を見る（食い違わないようにするため）
  */
 export function isLinkedTaskDone(task: TaskItem, info: ProductInfo): boolean {
-  return task.linkedField === "noAlcoholPork" ? info.noAlcoholPork !== null : false;
+  switch (task.linkedField) {
+    case "noAlcoholPork":
+      return info.noAlcoholPork !== null;
+    /* 取り扱いのない店舗は、価格が無くても済んだものとして数える */
+    case "priceTokyo":
+      return info.priceTokyo !== null || info.priceTokyoNotSold;
+    case "priceKama":
+      return info.priceKama !== null || info.priceKamaNotSold;
+    /* Uber は元価格からの自動計算でも埋まったとみなす */
+    case "priceTokyoUber":
+      return (
+        info.priceTokyoNotSold ||
+        effectiveUberPrice(info.priceTokyoUber, info.priceTokyo) !== null
+      );
+    case "priceKamaUber":
+      return (
+        info.priceKamaNotSold ||
+        effectiveUberPrice(info.priceKamaUber, info.priceKama) !== null
+      );
+    default:
+      return false;
+  }
 }
 
 /** 1商品ぶんの準備タスク完了状況（全グループ合算） */

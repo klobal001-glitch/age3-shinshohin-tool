@@ -7,6 +7,8 @@ import { TASK_GROUPS, countGroupLeaves, countLeaves } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
 import { isLinkedTaskDone } from "@/lib/stats";
+import { PriceInput } from "./PriceInput";
+import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
 
 /** 並べ替え・絞り込みボタンの共通スタイル */
 function ctrlCls(active: boolean) {
@@ -21,6 +23,108 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
   return childId
     ? `${groupId}|${milestoneId}|${taskId}|${childId}`
     : `${groupId}|${milestoneId}|${taskId}`;
+}
+
+/**
+ * 価格の連動タスクと、情報シートの価格欄の対応。
+ * base … 元価格の欄／uber … Uber価格の欄かどうか／notSold … 取り扱いなしの印
+ */
+const PRICE_LINKS: Record<
+  string,
+  {
+    base: "priceTokyo" | "priceKama";
+    uberKey?: "priceTokyoUber" | "priceKamaUber";
+    notSold: "priceTokyoNotSold" | "priceKamaNotSold";
+  }
+> = {
+  priceTokyo: { base: "priceTokyo", notSold: "priceTokyoNotSold" },
+  priceTokyoUber: { base: "priceTokyo", uberKey: "priceTokyoUber", notSold: "priceTokyoNotSold" },
+  priceKama: { base: "priceKama", notSold: "priceKamaNotSold" },
+  priceKamaUber: { base: "priceKama", uberKey: "priceKamaUber", notSold: "priceKamaNotSold" },
+};
+
+/**
+ * 価格を入れる連動タスクの行。
+ *
+ * 情報シートの価格欄と1対1で、ここに入れた数字はそのままシートに入る
+ * （持ち主はシート側の値だけ。2か所で持たないので食い違わない）。
+ * Uber価格は元価格 × 1.4 の自動計算で、直接入れると手入力に切り替わる。
+ */
+function LinkedPriceRow({
+  task,
+  info,
+  onPatch,
+}: {
+  task: TaskItem;
+  info: ProductInfo;
+  onPatch: (patch: Partial<ProductInfo>) => void;
+}) {
+  const link = PRICE_LINKS[task.linkedField ?? ""];
+  if (!link) return null;
+
+  const notSold = info[link.notSold];
+  const base = info[link.base];
+  const isUber = !!link.uberKey;
+  const uberExplicit = link.uberKey ? info[link.uberKey] : null;
+  const value = isUber ? effectiveUberPrice(uberExplicit, base) : base;
+  const done = notSold || value !== null;
+  const isManual = isUber && uberExplicit !== null;
+
+  return (
+    <div className="px-3 py-2.5">
+      <div className="flex items-start gap-3 text-sm">
+        <span
+          aria-hidden
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+            done ? "bg-amber-600" : "border border-stone-300 bg-white"
+          }`}
+        >
+          {done ? "✓" : ""}
+        </span>
+        <span className={done ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+        {isUber &&
+          (isManual ? (
+            <>
+              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] text-stone-600">
+                手入力
+              </span>
+              <button
+                type="button"
+                className="text-[11px] text-amber-700 hover:underline"
+                onClick={() => link.uberKey && onPatch({ [link.uberKey]: null })}
+              >
+                自動に戻す
+              </button>
+            </>
+          ) : (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
+              自動（× {UBER_RATE}）
+            </span>
+          ))}
+      </div>
+      <div className="mt-2 max-w-[220px] pl-7">
+        {notSold ? (
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
+            この店舗では取り扱いません
+          </div>
+        ) : (
+          <PriceInput
+            value={value}
+            muted={isUber && !isManual}
+            placeholder={isUber ? "元価格を入れると自動計算" : "950"}
+            onChange={(v) =>
+              onPatch(link.uberKey ? { [link.uberKey]: v } : { [link.base]: v })
+            }
+          />
+        )}
+      </div>
+      {isUber && isManual && base !== null && (
+        <p className="mt-1 pl-7 text-xs text-stone-400">
+          自動計算なら {formatYen(autoUberPrice(base))} です。
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** 情報シートと連動するタスクの選択肢 */
@@ -97,6 +201,8 @@ function MilestoneCard({
   onToggle,
   linkedValue,
   onLinkedChoose,
+  info,
+  onPatchInfo,
 }: {
   group: TaskGroup;
   milestone: Milestone;
@@ -110,6 +216,9 @@ function MilestoneCard({
   linkedValue: (t: TaskItem) => string | null;
   /** 連動するタスクで選び直したとき。情報シート側に書き込む */
   onLinkedChoose: (t: TaskItem, value: string) => void;
+  /** 価格の連動タスクで使う、情報シートの中身と書き込み口 */
+  info: ProductInfo | null;
+  onPatchInfo: (patch: Partial<ProductInfo>) => void;
 }) {
   const done = total > 0 && checked === total;
   const [open, setOpen] = useState(!done);
@@ -170,6 +279,10 @@ function MilestoneCard({
                   ))}
                 </div>
               </div>
+            ) : t.linkedField && PRICE_LINKS[t.linkedField] ? (
+              info && (
+                <LinkedPriceRow key={t.id} task={t} info={info} onPatch={onPatchInfo} />
+              )
             ) : t.linkedField ? (
               <LinkedChoiceRow
                 key={t.id}
@@ -225,6 +338,12 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
   /** 連動タスクで今選ばれている値 */
   const linkedValue = (task: TaskItem): string | null =>
     task.linkedField === "noAlcoholPork" ? (info?.noAlcoholPork ?? null) : null;
+
+  /** 価格の連動タスクから、情報シートへ書き込む */
+  const patchInfo = (patch: Partial<ProductInfo>) => {
+    if (!selectedProduct) return;
+    app.updateInfo(selectedProduct.id, patch);
+  };
 
   /** 連動タスクで選び直したとき。情報シート側に書き込む */
   const chooseLinked = (task: TaskItem, value: string) => {
@@ -451,6 +570,8 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
                       }
                       linkedValue={linkedValue}
                       onLinkedChoose={chooseLinked}
+                      info={info}
+                      onPatchInfo={patchInfo}
                     />
                   ))}
                 </div>
@@ -487,6 +608,8 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
                     }
                     linkedValue={linkedValue}
                     onLinkedChoose={chooseLinked}
+                    info={info}
+                    onPatchInfo={patchInfo}
                   />
                 ))}
             </div>
