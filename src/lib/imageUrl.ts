@@ -73,3 +73,64 @@ export function isImageUrl(rawUrl: string): boolean {
   if (IMAGE_HOSTS.some((h) => hostMatches(u.hostname, h))) return true;
   return IMAGE_EXT.test(u.pathname);
 }
+
+/**
+ * 「保存」ボタン用のURLに変換する。ここは開く用ではなく、
+ * ブラウザのダウンロードを直接始めさせるためのURL。
+ *
+ * - Dropbox: dl=1（Dropboxが添付ファイルとして返す）
+ * - Google Drive: /uc?export=download&id=<ID>
+ */
+export function toDownloadUrl(rawUrl: string): string {
+  let u: URL;
+  try {
+    u = new URL(rawUrl.trim());
+  } catch {
+    return rawUrl;
+  }
+
+  if (hostMatches(u.hostname, "dropbox.com")) {
+    u.searchParams.delete("raw");
+    u.searchParams.delete("dl");
+    u.searchParams.set("dl", "1");
+    return u.toString();
+  }
+
+  if (hostMatches(u.hostname, "drive.google.com")) {
+    const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
+    if (m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  }
+
+  return rawUrl;
+}
+
+/**
+ * 登録済みリンクを一覧で見分けるための短い名前。
+ * URLそのものではなく「Banana-Brulee3s.png」のようなファイル名を返す。
+ *
+ * name … 画面に大きく出す名前 ／ host … その下に薄く出す置き場所
+ */
+export function linkLabel(rawUrl: string): { name: string; host: string } {
+  const s = rawUrl.trim();
+  const u = parse(s);
+  if (!u) return { name: s, host: "" };
+
+  const host = u.hostname === "relative.invalid" ? "" : u.hostname.replace(/^www\./, "");
+
+  /* Google Drive は末尾が /view などで名前にならないため、置き場所の名前を出す */
+  if (hostMatches(u.hostname, "drive.google.com")) {
+    return { name: "Google Drive のファイル", host };
+  }
+
+  const segments = u.pathname.split("/").filter(Boolean);
+  const last = segments[segments.length - 1] ?? "";
+  let name = last;
+  try {
+    name = decodeURIComponent(last);
+  } catch {
+    /* エンコードが壊れていればそのまま使う */
+  }
+
+  if (!name) return { name: host || s, host: "" };
+  return { name, host };
+}
