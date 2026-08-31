@@ -21,6 +21,7 @@ import {
 } from "@/lib/productInfo";
 import { GENRE_LABELS } from "@/lib/types";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
+import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -151,12 +152,23 @@ function useActiveSection(ids: string[]) {
  * タブと見出しの両方を同じ茶色にする。選ばれたタブは下線を切って、
  * 下の中身へ口が開いているように見せる。
  */
-function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
+function SectionTabs({
+  tabs,
+  active,
+  inactive,
+}: {
+  tabs: SectionTab[];
+  active: string;
+  /** 販売終了・廃盤の商品では、区切り線もグレーにする */
+  inactive: boolean;
+}) {
   return (
     <nav
       aria-label="シート内の移動"
       /* 狭い画面では折り返して全部見せる。広い画面では従来どおり1行のタブ */
-      className="mt-3 flex flex-wrap gap-1 print:hidden sm:flex-nowrap sm:overflow-x-auto sm:border-b sm:border-amber-300"
+      className={`mt-3 flex flex-wrap gap-1 print:hidden sm:flex-nowrap sm:overflow-x-auto sm:border-b ${
+        inactive ? "sm:border-stone-300" : "sm:border-amber-300"
+      }`}
     >
       {tabs.map((t, i) => {
         const isActive = t.id === active;
@@ -591,6 +603,9 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
   const info = getInfo(selectedProduct.id);
   const genre = selectedProduct.genre;
+  /* 販売終了・廃盤の商品は、上部の帯と進捗バーをグレーにして一目で分かるようにする */
+  const status = saleStatus(info);
+  const inactive = isInactive(status);
   const req = requiredProgress(info, genre);
   const opt = optionalProgress(info, genre);
   const ing = ingredientsProgress(info);
@@ -831,10 +846,21 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
       <div
         id="sheet-progress"
-        className="sticky top-0 z-20 rounded-xl border border-amber-200 bg-amber-50/95 p-3 backdrop-blur print:static print:bg-white sm:p-4"
+        className={`sticky top-0 z-20 rounded-xl border p-3 backdrop-blur print:static print:bg-white sm:p-4 ${
+          inactive ? "border-stone-300 bg-stone-100/95" : "border-amber-200 bg-amber-50/95"
+        }`}
       >
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="rounded-full bg-amber-200 px-3 py-1 font-medium text-amber-900">
+          {inactive && (
+            <span className="rounded-full bg-stone-300 px-3 py-1 font-medium text-stone-700">
+              {SALE_STATUS_LABEL[status]}
+            </span>
+          )}
+          <span
+            className={`rounded-full px-3 py-1 font-medium ${
+              inactive ? "bg-stone-200 text-stone-600" : "bg-amber-200 text-amber-900"
+            }`}
+          >
             必須 {req.filled}/{req.total}（{req.total ? Math.round((req.filled / req.total) * 100) : 0}%）
           </span>
           <span className="rounded-full bg-white px-3 py-1 text-stone-600">
@@ -872,16 +898,20 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           </div>
         </div>
 
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-amber-200/60">
+        <div
+          className={`mt-3 h-1 overflow-hidden rounded-full ${
+            inactive ? "bg-stone-300/60" : "bg-amber-200/60"
+          }`}
+        >
           <div
             className={`h-full rounded-full transition-all ${
-              req.filled === req.total ? "bg-emerald-600" : "bg-amber-600"
+              inactive ? "bg-stone-400" : req.filled === req.total ? "bg-emerald-600" : "bg-amber-600"
             }`}
             style={{ width: `${req.total ? (req.filled / req.total) * 100 : 0}%` }}
           />
         </div>
 
-        <SectionTabs tabs={sectionTabs} active={activeSection} />
+        <SectionTabs tabs={sectionTabs} active={activeSection} inactive={inactive} />
 
         <details className="mt-2 print:hidden">
           <summary className="cursor-pointer list-none text-xs text-stone-400 hover:text-stone-600">

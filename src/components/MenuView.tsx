@@ -10,6 +10,7 @@ import {
   nearestPerProduct,
   taskCompletion,
 } from "@/lib/stats";
+import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { GENRE_LABELS } from "@/lib/types";
 import { formatJpDate } from "@/lib/deadline";
 
@@ -38,15 +39,18 @@ export default function MenuView({
   const stats = useMemo(() => computeDashboardStats(app, deadlines), [app, deadlines]);
   const nearestDeadlines = useMemo(() => nearestPerProduct(deadlines), [deadlines]);
 
+  const today = todayKey();
+
   const productRows = useMemo(() => {
     /* 廃盤はもう作らないので、この一覧にも出さない */
     const rows = products
       .filter((p) => !getInfo(p.id).discontinued)
       .map((p) => {
-        const info = infoFillRate(getInfo(p.id), p.genre);
-        const t = taskCompletion(getTaskState(p.id), getInfo(p.id));
+        const raw = getInfo(p.id);
+        const info = infoFillRate(raw, p.genre);
+        const t = taskCompletion(getTaskState(p.id), raw);
         const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
-        return { product: p, info, task };
+        return { product: p, info, task, status: saleStatus(raw, today) };
       });
     if (productSort === "name") {
       rows.sort((a, b) => a.product.name.localeCompare(b.product.name, "ja"));
@@ -150,15 +154,22 @@ export default function MenuView({
         <div className="max-h-96 overflow-y-auto">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-stone-100">
-              {productRows.map(({ product, info, task }) => (
+              {productRows.map(({ product, info, task, status }) => (
                 <tr key={product.id} className="hover:bg-amber-50">
                   <td className="w-full py-2 pr-3">
                     <button
                       onClick={() => openProduct(product.id)}
-                      className="text-left font-medium text-stone-800 hover:text-amber-700 hover:underline"
+                      className={`text-left font-medium hover:text-amber-700 hover:underline ${
+                        isInactive(status) ? "text-stone-400" : "text-stone-800"
+                      }`}
                     >
                       {product.name}
                     </button>
+                    {isInactive(status) && (
+                      <span className="ml-2 rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-500">
+                        {SALE_STATUS_LABEL[status]}
+                      </span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap py-2 pr-3 text-stone-500">情報 {info}%</td>
                   <td className="whitespace-nowrap py-2 pr-3 text-stone-500">準備 {task}%</td>

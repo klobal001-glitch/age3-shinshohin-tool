@@ -7,6 +7,7 @@ import { TabKey } from "./Header";
 import { toThumbnailUrl } from "@/lib/imageUrl";
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
 import { requiredVisualFilled, requiredVisualTotal } from "@/lib/productInfo";
+import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { requestImageSlot } from "@/lib/imageQueue";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
@@ -153,6 +154,8 @@ export default function VisualGalleryView({
   const [imageFilter, setImageFilter] = useState<ImageFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("date");
 
+  const today = todayKey();
+
   const rows = useMemo(() => {
     let list = products.map((p) => {
       const info = getInfo(p.id);
@@ -160,7 +163,14 @@ export default function VisualGalleryView({
       const done = requiredVisualFilled(info, p.genre);
       /* カードに出す画像。「画像あり」の数え方と絞り込みも必ずこれを見る */
       const card = pickCardImage(info);
-      return { product: p, info, done, total: requiredVisualTotal(p.genre), card };
+      return {
+        product: p,
+        info,
+        done,
+        total: requiredVisualTotal(p.genre),
+        card,
+        status: saleStatus(info, today),
+      };
     });
     list = list.filter((r) => !r.info.discontinued); // 廃盤は出さない
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
@@ -179,10 +189,9 @@ export default function VisualGalleryView({
     return list;
     /* getInfo は infoMap が変わると作り直される。ここに入れておかないと、
        商品より後から中身が届いたときに一覧が古いままになる */
-  }, [products, getInfo, genre, imageFilter, sortMode]);
+  }, [products, getInfo, today, genre, imageFilter, sortMode]);
 
   const withImage = rows.filter((r) => r.card !== null).length;
-  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-4">
@@ -244,10 +253,12 @@ export default function VisualGalleryView({
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map(({ product, info, done, total, card }) => (
+          {rows.map(({ product, info, done, total, card, status }) => (
             <button
               key={product.id}
-              className="overflow-hidden rounded-xl border border-stone-300 bg-white text-left transition hover:border-stone-500"
+              className={`overflow-hidden rounded-xl border bg-white text-left transition hover:border-stone-500 ${
+                isInactive(status) ? "border-stone-200 opacity-60" : "border-stone-300"
+              }`}
               onClick={() => {
                 setSelectedId(product.id);
                 onNavigate("sheet");
@@ -256,7 +267,20 @@ export default function VisualGalleryView({
               <CardThumb card={card} alt={product.name} />
 
               <div className="space-y-1 p-3">
-                <div className="text-sm font-semibold leading-snug text-stone-800">{product.name}</div>
+                <div className="flex items-start gap-1.5">
+                  <span
+                    className={`min-w-0 flex-1 text-sm font-semibold leading-snug ${
+                      isInactive(status) ? "text-stone-400" : "text-stone-800"
+                    }`}
+                  >
+                    {product.name}
+                  </span>
+                  {isInactive(status) && (
+                    <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-500">
+                      {SALE_STATUS_LABEL[status]}
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-stone-500">
                   {product.genre ? GENRE_LABELS[product.genre] : "ジャンル未設定"}
                   <span className="mx-1 text-stone-300">/</span>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
+import { SALE_STATUS_LABEL, saleStatus, todayKey } from "@/lib/saleStatus";
 import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
 
@@ -74,6 +75,8 @@ export default function Sidebar({
     };
   }, [products, query, getInfo]);
 
+  const today = todayKey();
+
   const submitAdd = () => {
     if (!newName.trim()) return;
     const id = addProduct(newName.trim(), null);
@@ -132,25 +135,42 @@ export default function Sidebar({
             </div>
             <ul>
               {items.map((p) => {
-                const pct = infoFillRate(getInfo(p.id), p.genre);
+                const info = getInfo(p.id);
+                const pct = infoFillRate(info, p.genre);
                 const active = p.id === selectedId;
+                /* 販売終了日を過ぎた商品は薄くして、代わりに印を出す */
+                const ended = saleStatus(info, today) === "ended";
                 return (
                   <li key={p.id}>
                     <button
                       onClick={() => setSelectedId(p.id)}
                       className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                        active ? "bg-amber-700 text-white" : "text-stone-700 hover:bg-white"
+                        active
+                          ? "bg-amber-700 text-white"
+                          : ended
+                            ? "text-stone-400 hover:bg-white"
+                            : "text-stone-700 hover:bg-white"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          active ? "bg-white" : fillDotColor(pct)
+                          active ? "bg-white" : ended ? "bg-stone-300" : fillDotColor(pct)
                         }`}
                       />
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                      <span className={`shrink-0 text-[11px] ${active ? "text-amber-100" : "text-stone-400"}`}>
-                        {pct}%
-                      </span>
+                      {ended ? (
+                        <span
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
+                            active ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-500"
+                          }`}
+                        >
+                          {SALE_STATUS_LABEL.ended}
+                        </span>
+                      ) : (
+                        <span className={`shrink-0 text-[11px] ${active ? "text-amber-100" : "text-stone-400"}`}>
+                          {pct}%
+                        </span>
+                      )}
                     </button>
                   </li>
                 );
@@ -186,6 +206,13 @@ export default function Sidebar({
                           }`}
                         />
                         <span className="min-w-0 flex-1 truncate line-through">{p.name}</span>
+                        <span
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
+                            active ? "bg-stone-700 text-stone-200" : "bg-stone-200 text-stone-500"
+                          }`}
+                        >
+                          {SALE_STATUS_LABEL.retired}
+                        </span>
                       </button>
                     </li>
                   );

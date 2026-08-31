@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
+import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 
 const GENRE_OPTIONS: { value: Genre; label: string }[] = [
   { value: null, label: "（指定なし）" },
@@ -40,7 +41,9 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
     );
   }
 
-  const discontinued = getInfo(selectedProduct.id).discontinued;
+  const info = getInfo(selectedProduct.id);
+  const discontinued = info.discontinued;
+  const status = saleStatus(info);
 
   /** 廃盤にする／戻す。データは消さず、現行の一覧と集計から外すだけ */
   const toggleDiscontinued = () => {
@@ -62,9 +65,9 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
         <h2 className="hidden text-lg font-bold text-stone-900 md:block">
           {selectedProduct.name}
         </h2>
-        {discontinued && (
+        {isInactive(status) && (
           <span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-600">
-            廃盤
+            {SALE_STATUS_LABEL[status]}
           </span>
         )}
         <select
