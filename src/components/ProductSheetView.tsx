@@ -866,7 +866,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         progress={`${basicFilled}/${BASIC_TOTAL}`}
         done={basicFilled === BASIC_TOTAL}
       >
-        {/* 名前 → 日付の順。2列がちょうど3段で割り切れるので、段がずれない */}
+        {/* 仲間同士を左右に並べる：品名と英語名／伝票記載名とマーク／発売日と終了日 */}
         <div className="grid gap-4 sm:grid-cols-2">
           {showRequired(!!info.nameJa) && (
             <Field label="品名（日本語）" filled={!!info.nameJa}>
@@ -878,6 +878,11 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               />
             </Field>
           )}
+          {showOptional() && (
+            <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
+              <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
+            </Field>
+          )}
           {showRequired(!!info.slipName) && (
             <Field label="伝票記載名" filled={!!info.slipName}>
               <input
@@ -886,11 +891,6 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                 value={info.slipName}
                 onChange={(e) => patch({ slipName: e.target.value })}
               />
-            </Field>
-          )}
-          {showOptional() && (
-            <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
-              <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
             </Field>
           )}
           {showRequired(info.noAlcoholPork !== null) && (
