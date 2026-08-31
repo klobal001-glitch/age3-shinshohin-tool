@@ -572,15 +572,13 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const showOptional = () => !onlyEmpty;
 
   // セクションごとの入力状況（見出しの右に出す目安）
-  const BASIC_TOTAL = 9;
+  const BASIC_TOTAL = 7;
   const basicFilled = [
     !!info.nameJa,
     info.noAlcoholPork !== null,
     !!info.releaseDate,
     !!info.endDate || info.ongoing,
     !!info.nameEn,
-    !!info.descriptionJa,
-    !!info.descriptionEn,
     info.priceTokyo !== null,
     info.priceKama !== null,
   ].filter(Boolean).length;
@@ -588,7 +586,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   /* ビジュアルの進捗は「必須ぶん」で数える。レギュラー商品は3件で完成 */
   const visualFilled = requiredVisualFilled(info, genre);
   const visualTotal = requiredVisualTotal(genre);
+  const SNS_TOTAL = 7;
   const snsFilled = [
+    !!info.descriptionJa,
+    !!info.descriptionEn,
     !!info.igCaption,
     !!info.xCaption,
     !!info.threadsCaption,
@@ -608,7 +609,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       filled: visualFilled,
       total: visualTotal,
     },
-    { id: "sheet-sns", label: "SNS・PR", icon: "📣", filled: snsFilled, total: 5 },
+    { id: "sheet-sns", label: "SNS・PR", icon: "📣", filled: snsFilled, total: SNS_TOTAL },
   ];
 
   /* ---------------------------------- 材料 ---------------------------------- */
@@ -700,8 +701,6 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       `発売日：${info.releaseDate || "―"}　販売終了日：${info.ongoing ? "継続販売中" : info.endDate || "―"}`,
       `NOアルコール・NOポーク：${info.noAlcoholPork === "mark" ? "マークを付ける" : info.noAlcoholPork === "nomark" ? "マークを付けない" : "未設定"}`,
       `品名（英語）：${info.nameEn}`,
-      `紹介文（日本語）：${info.descriptionJa}`,
-      `紹介文（英語）：${info.descriptionEn}`,
       `Instagram投稿文：${info.instagramPost}`,
       `販売価格（銀座・原宿・浅草・飛騨高山）：${formatYen(info.priceTokyo) || "―"}`,
       `　└ Uber：${formatYen(effectiveUberPrice(info.priceTokyoUber, info.priceTokyo)) || "―"}`,
@@ -716,6 +715,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       `作り方動画：${info.howToVideoUrl}`,
       "",
       "■SNS/PR文章",
+      `紹介文（日本語）：${info.descriptionJa}`,
+      `紹介文（英語）：${info.descriptionEn}`,
       `Instagram：${info.igCaption}`,
       `X：${info.xCaption}`,
       `Threads：${info.threadsCaption}`,
@@ -913,24 +914,6 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             </Field>
           )}
         </div>
-        {showOptional() && (
-          <Field label="紹介文（日本語）" hint={`${info.descriptionJa.length} 字`}>
-            <AutoTextarea
-              rows={2}
-              value={info.descriptionJa}
-              onChange={(v) => patch({ descriptionJa: v })}
-            />
-          </Field>
-        )}
-        {showOptional() && (
-          <Field label="英語（紹介文）" hint="担当AIが記入・空欄でOK">
-            <AutoTextarea
-              rows={2}
-              value={info.descriptionEn}
-              onChange={(v) => patch({ descriptionEn: v })}
-            />
-          </Field>
-        )}
         {showOptional() && (
           <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
             <AutoTextarea
@@ -1187,13 +1170,27 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         step={5}
         icon="📣"
         title="紹介文各種（SNS・PR）"
-        progress={`${snsFilled}/5`}
-        done={snsFilled === 5}
+        progress={`${snsFilled}/${SNS_TOTAL}`}
+        done={snsFilled === SNS_TOTAL}
       >
         {onlyEmpty ? (
           <p className="text-xs text-stone-400">「未入力だけ表示」がONです。この欄はすべて任意なので隠しています。</p>
         ) : (
           <>
+            <Field label="紹介文（日本語）" hint={`${info.descriptionJa.length} 字`}>
+              <AutoTextarea
+                rows={2}
+                value={info.descriptionJa}
+                onChange={(v) => patch({ descriptionJa: v })}
+              />
+            </Field>
+            <Field label="英語（紹介文）" hint="担当AIが記入・空欄でOK">
+              <AutoTextarea
+                rows={2}
+                value={info.descriptionEn}
+                onChange={(v) => patch({ descriptionEn: v })}
+              />
+            </Field>
             <Field label="Instagram 投稿文章（本文＋ハッシュタグ）">
               <AutoTextarea
                 rows={3}
