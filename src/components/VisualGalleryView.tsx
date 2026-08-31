@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
 import { toThumbnailUrl } from "@/lib/imageUrl";
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
+import { requestImageSlot } from "@/lib/imageQueue";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
   { value: "all", label: "すべてのジャンル" },
@@ -30,42 +31,102 @@ function NoImage() {
   );
 }
 
+/** 順番待ち・読み込み中の枠。「画像未登録」と紛らわしくないよう文字は出さない */
+function Loading() {
+  return <div className="aspect-[4/3] w-full animate-pulse bg-stone-100" />;
+}
+
+/** 読み込みを何回まで試すか（候補URL × 3周ぶん） */
+const MAX_ATTEMPTS = 6;
+
 /**
  * カードの画像。
  *
- * まず表示用URL（Dropbox の raw=1 など）で読み込む。情報シートのサムネイルと
- * 同じ経路で、実機で表示できている読み方。駄目なら貼られたURLをそのまま試し、
- * どちらも駄目なら「画像未登録」に戻す。壊れた画像アイコンは出さない。
+ * Dropbox は数十枚をまとめて取りに行くと弾くので、requestImageSlot で
+ * 同時に読み込む枚数を絞る。それでも失敗したときは、少し待ってから
+ * 表示用URL（raw=1）と貼られたURLを交互に試し直す。
+ * 一度の失敗で諦めると「出たり出なかったり」になるため。
  *
  * Instagram 以外の画像で代替するときは、透過PNGの輪郭が白いカードに溶けたり
  * 縦長のポスターが切れたりしないよう、薄いグレーの上に全体が入るように置く。
  */
 function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
-  /* 試すURLの順番。0=表示用に読み替えたもの、1=貼られたまま */
-  const [step, setStep] = useState(0);
+  /* 何回目の読み込みか。候補URLを交互に試すのにも使う */
+  const [attempt, setAttempt] = useState(0);
+  /* 試し切って諦めたか */
+  const [failed, setFailed] = useState(false);
+  /* 順番が回ってきた読み込みの目印。今の url と attempt に一致したら読み込む */
+  const [readyToken, setReadyToken] = useState("");
 
-  const candidates = card
-    ? [toThumbnailUrl(card.url), card.url].filter(
-        (u, i, all) => u && all.indexOf(u) === i
-      )
-    : [];
-  const src = candidates[step];
+  const url = card?.url ?? "";
+  const candidates = useMemo(
+    () =>
+      url
+        ? [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i)
+        : [],
+    [url]
+  );
 
-  if (!card || !src) return <NoImage />;
+  const releaseRef = useRef<(() => void) | null>(null);
+  const timerRef = useRef<number | null>(null);
 
-  const fullBleed = isFullBleed(card);
+  const token = `${url}#${attempt}`;
+
+  /* 順番待ちに並ぶ。読み込みが終わる（成功・失敗）まで枠を持つ */
+  useEffect(() => {
+    if (!url || failed) return;
+    const release = requestImageSlot(() => setReadyToken(token));
+    releaseRef.current = release;
+    return () => {
+      release();
+      releaseRef.current = null;
+    };
+  }, [token, url, failed]);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    },
+    []
+  );
+
+  if (!card || failed || candidates.length === 0) return <NoImage />;
+  if (readyToken !== token) return <Loading />;
+
+  const src = candidates[attempt % candidates.length];
+
+  const finish = () => {
+    releaseRef.current?.();
+    releaseRef.current = null;
+  };
+
+  const onError = () => {
+    finish();
+    const next = attempt + 1;
+    if (next >= MAX_ATTEMPTS) {
+      setFailed(true);
+      return;
+    }
+    /* 一斉に試し直すとまた弾かれるので、待ち時間を延ばしつつ少しずらす */
+    const round = Math.floor(next / candidates.length);
+    const wait = 700 * 2 ** round + Math.random() * 800;
+    timerRef.current = window.setTimeout(() => setAttempt(next), wait);
+  };
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      /* 同じURLに戻ったときも確実に読み込み直すよう、要素ごと作り直す */
+      key={attempt}
       src={src}
       alt={alt}
       className={`aspect-[4/3] w-full bg-stone-100 ${
-        fullBleed ? "object-cover" : "object-contain p-2"
+        isFullBleed(card) ? "object-cover" : "object-contain p-2"
       }`}
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setStep((n) => n + 1)}
+      onLoad={finish}
+      onError={onError}
     />
   );
 }
