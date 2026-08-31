@@ -121,7 +121,7 @@ export default function Sidebar({
             </div>
             <ul>
               {items.map((p) => {
-                const pct = infoFillRate(getInfo(p.id));
+                const pct = infoFillRate(getInfo(p.id), p.genre);
                 const active = p.id === selectedId;
                 return (
                   <li key={p.id}>

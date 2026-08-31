@@ -40,7 +40,7 @@ export default function MenuView({
 
   const productRows = useMemo(() => {
     const rows = products.map((p) => {
-      const info = infoFillRate(getInfo(p.id));
+      const info = infoFillRate(getInfo(p.id), p.genre);
       const t = taskCompletion(getTaskState(p.id));
       const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
       return { product: p, info, task };

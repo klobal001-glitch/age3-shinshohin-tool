@@ -2,7 +2,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { requiredProgress, optionalProgress } from "./productInfo";
 import { TASK_GROUPS } from "./prepTasks";
 import { computeDeadline, daysDiffFromToday, isReleasedLongAgo } from "./deadline";
-import { Product, ProductInfo, TaskGroup, Milestone } from "./types";
+import { Genre, Product, ProductInfo, TaskGroup, Milestone } from "./types";
 
 type App = ReturnType<typeof useAppData>;
 type TaskState = Record<string, boolean>;
@@ -13,9 +13,9 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
     : `${groupId}|${milestoneId}|${taskId}`;
 }
 
-/** 商品情報シートの入力率（必須＋任意項目を合算） */
-export function infoFillRate(info: ProductInfo): number {
-  const req = requiredProgress(info);
+/** 商品情報シートの入力率（必須＋任意項目を合算）。必須の数はジャンルで変わる */
+export function infoFillRate(info: ProductInfo, genre: Genre): number {
+  const req = requiredProgress(info, genre);
   const opt = optionalProgress(info);
   const total = req.total + opt.total;
   if (!total) return 0;
@@ -127,7 +127,7 @@ export function computeDashboardStats(app: App, deadlines: DeadlineEntry[]): Das
   let taskChecked = 0;
   let taskTotal = 0;
   for (const p of products) {
-    infoSum += infoFillRate(app.getInfo(p.id));
+    infoSum += infoFillRate(app.getInfo(p.id), p.genre);
     const ts = taskCompletion(app.getTaskState(p.id));
     taskChecked += ts.checked;
     taskTotal += ts.total;

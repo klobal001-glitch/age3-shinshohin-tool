@@ -1,4 +1,4 @@
-import { IngredientRow, ProductInfo, VisualLinkGroup } from "./types";
+import { Genre, IngredientRow, ProductInfo, VisualLinkGroup } from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
   { key: "product_image", label: "商品画像", size: "背景なし画像" },
@@ -17,6 +17,39 @@ export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[
   { key: "menu_fold", label: "二つ折り手元メニュー", size: "" },
   { key: "flyer", label: "各店チラシ", size: "" },
 ];
+
+/**
+ * レギュラー商品で必須にするビジュアル。
+ *
+ * レギュラー商品は Instagram・ポスター・サイネージなどを作らないため、
+ * この3つが埋まればビジュアルは完成として扱う。
+ * 残りの項目は任意として、入力欄は今までどおり出す。
+ */
+export const REGULAR_REQUIRED_VISUAL_KEYS = ["product_image", "uber_image", "airregi"];
+
+/** レギュラースイーツ／レギュラーセイボリーか */
+export function isRegularGenre(genre: Genre): boolean {
+  return genre === "regular_sweet" || genre === "regular_savory";
+}
+
+/** そのジャンルで、このビジュアルが必須かどうか */
+export function isRequiredVisualKey(genre: Genre, key: string): boolean {
+  return isRegularGenre(genre) ? REGULAR_REQUIRED_VISUAL_KEYS.includes(key) : true;
+}
+
+/** そのジャンルで必須になるビジュアルの数 */
+export function requiredVisualTotal(genre: Genre): number {
+  return isRegularGenre(genre)
+    ? REGULAR_REQUIRED_VISUAL_KEYS.length
+    : VISUAL_DOWNLOAD_DEFS.length;
+}
+
+/** 必須のビジュアルのうち、リンクが入っている数 */
+export function requiredVisualFilled(info: ProductInfo, genre: Genre): number {
+  return info.visualDownloads.filter(
+    (v) => isRequiredVisualKey(genre, v.key) && v.links.some((l) => l.trim())
+  ).length;
+}
 
 /** 新しい商品を作ったときに最初から用意しておく材料の行数。 */
 export const DEFAULT_INGREDIENT_ROWS = 5;
@@ -65,7 +98,7 @@ export interface ProgressCount {
   total: number;
 }
 
-export function requiredProgress(info: ProductInfo): ProgressCount {
+export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount {
   const checks: boolean[] = [
     !!info.nameJa,
     !!info.releaseDate,
@@ -73,8 +106,11 @@ export function requiredProgress(info: ProductInfo): ProgressCount {
     info.priceTokyo !== null,
     info.priceKama !== null,
     info.ingredients.some((i) => i.nameJa && i.amount),
-    // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）
-    ...info.visualDownloads.map((v) => v.links.some((l) => l.trim())),
+    // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）。
+    // レギュラー商品は必須が3件だけなので、それ以外は数に入れない
+    ...info.visualDownloads
+      .filter((v) => isRequiredVisualKey(genre, v.key))
+      .map((v) => v.links.some((l) => l.trim())),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }

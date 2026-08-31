@@ -6,6 +6,7 @@ import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
 import { toThumbnailUrl } from "@/lib/imageUrl";
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
+import { requiredVisualFilled, requiredVisualTotal } from "@/lib/productInfo";
 import { requestImageSlot } from "@/lib/imageQueue";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
@@ -155,10 +156,11 @@ export default function VisualGalleryView({
   const rows = useMemo(() => {
     let list = products.map((p) => {
       const info = getInfo(p.id);
-      const done = info.visualDownloads.filter((v) => v.links.some((l) => l.trim())).length;
+      /* 必須ぶんで数える。レギュラー商品はビジュアル3件で完成 */
+      const done = requiredVisualFilled(info, p.genre);
       /* カードに出す画像。「画像あり」の数え方と絞り込みも必ずこれを見る */
       const card = pickCardImage(info);
-      return { product: p, info, done, total: info.visualDownloads.length, card };
+      return { product: p, info, done, total: requiredVisualTotal(p.genre), card };
     });
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
     if (imageFilter === "has") list = list.filter((r) => r.card !== null);

@@ -11,9 +11,12 @@ import {
   formatYen,
   ingredientsProgress,
   isBlankIngredientRow,
+  isRequiredVisualKey,
   optionalProgress,
   parsePriceInput,
   requiredProgress,
+  requiredVisualFilled,
+  requiredVisualTotal,
 } from "@/lib/productInfo";
 import { GENRE_LABELS } from "@/lib/types";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
@@ -187,13 +190,16 @@ function SectionTabs({ tabs, active }: { tabs: SectionTab[]; active: string }) {
   );
 }
 
-/** 必須項目の入力済み／未入力を示す小さな点。緑＝入力済み、赤＝未入力 */
-function Dot({ filled }: { filled: boolean }) {
+/**
+ * 項目の入力状況を示す小さな点。緑＝入力済み、赤＝未入力。
+ * 任意の項目は、空でも困らないので赤ではなく薄いグレーにする。
+ */
+function Dot({ filled, optional }: { filled: boolean; optional?: boolean }) {
   return (
     <span
       aria-hidden
       className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-        filled ? "bg-emerald-500" : "bg-red-500"
+        filled ? "bg-emerald-500" : optional ? "bg-stone-300" : "bg-red-500"
       }`}
     />
   );
@@ -523,7 +529,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   }
 
   const info = getInfo(selectedProduct.id);
-  const req = requiredProgress(info);
+  const genre = selectedProduct.genre;
+  const req = requiredProgress(info, genre);
   const opt = optionalProgress(info);
   const ing = ingredientsProgress(info);
 
@@ -545,10 +552,12 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     { filled: info.priceTokyo !== null, focusId: "f-priceTokyo" },
     { filled: info.priceKama !== null, focusId: "f-priceKama" },
     { filled: ingredientsFilled, focusId: `f-ing-ja-${firstOpenIngredient}` },
-    ...info.visualDownloads.map((v) => ({
-      filled: visualFilledOf(v.links),
-      focusId: `f-visual-${v.key}`,
-    })),
+    ...info.visualDownloads
+      .filter((v) => isRequiredVisualKey(genre, v.key))
+      .map((v) => ({
+        filled: visualFilledOf(v.links),
+        focusId: `f-visual-${v.key}`,
+      })),
   ];
 
   const nextEmpty = requiredItems.find((r) => !r.filled);
@@ -576,7 +585,9 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     info.priceKama !== null,
   ].filter(Boolean).length;
   const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
-  const visualFilled = info.visualDownloads.filter((v) => visualFilledOf(v.links)).length;
+  /* ビジュアルの進捗は「必須ぶん」で数える。レギュラー商品は3件で完成 */
+  const visualFilled = requiredVisualFilled(info, genre);
+  const visualTotal = requiredVisualTotal(genre);
   const snsFilled = [
     !!info.igCaption,
     !!info.xCaption,
@@ -595,7 +606,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       label: "ビジュアル",
       icon: "🖼️",
       filled: visualFilled,
-      total: info.visualDownloads.length,
+      total: visualTotal,
     },
     { id: "sheet-sns", label: "SNS・PR", icon: "📣", filled: snsFilled, total: 5 },
   ];
@@ -1124,8 +1135,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         step={4}
         icon="🖼️"
         title="ビジュアルダウンロード（各サイズ）"
-        progress={`${visualFilled}/${info.visualDownloads.length}`}
-        done={visualFilled === info.visualDownloads.length}
+        progress={`${visualFilled}/${visualTotal}`}
+        done={visualFilled === visualTotal}
       >
         <p className="text-xs text-stone-400">
           各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを、下の枠に貼って
@@ -1133,11 +1144,18 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
         {info.visualDownloads
-          .filter((v) => showRequired(visualFilledOf(v.links)))
+          .filter((v) =>
+            isRequiredVisualKey(genre, v.key)
+              ? showRequired(visualFilledOf(v.links))
+              : showOptional()
+          )
           .map((v) => (
             <div key={v.key} className="rounded-lg border border-stone-200 p-3">
               <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-stone-600">
-                <Dot filled={visualFilledOf(v.links)} />
+                <Dot
+                  filled={visualFilledOf(v.links)}
+                  optional={!isRequiredVisualKey(genre, v.key)}
+                />
                 {v.label} {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
               </div>
               {v.links.map((l, li) => (
@@ -1158,8 +1176,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               />
             </div>
           ))}
-        {onlyEmpty && visualFilled === info.visualDownloads.length && (
-          <p className="text-xs text-stone-400">すべてのサイズにリンクが入っています。</p>
+        {onlyEmpty && visualFilled === visualTotal && (
+          <p className="text-xs text-stone-400">必須のビジュアルはすべて入っています。</p>
         )}
       </Section>
 
