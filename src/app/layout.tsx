@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Age.3 新商品ツール",
+  title: "Age.3 新商品シート",
   description: "商品情報シート・準備タスク・ビジュアル一覧をまとめて管理する社内ツール",
 };
 

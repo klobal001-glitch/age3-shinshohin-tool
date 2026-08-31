@@ -102,8 +102,8 @@ export default function Sidebar({
     <aside className="hidden w-72 shrink-0 flex-col border-r border-amber-900/10 bg-[#f4ede4] md:flex">
       <div className="bg-[#4a2f1f] px-4 py-4 text-amber-50">
         <Age3Logo className="h-7 w-auto" />
-        <h1 className="mt-2.5 text-base font-bold leading-tight">新商品ツール</h1>
-        <p className="truncate text-[11px] text-amber-200/80">揚サンド直営共有</p>
+        <h1 className="mt-2.5 text-base font-bold leading-tight">新商品シート</h1>
+        <p className="truncate text-[11px] text-amber-200/80">揚げサンド 直営店で共有</p>
       </div>
 
       <div className="px-3 pt-3">

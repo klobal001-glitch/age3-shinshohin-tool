@@ -1,4 +1,4 @@
-// Age.3 新商品ツール — データ型定義
+// Age.3 新商品シート — データ型定義
 
 export type Genre =
     | "regular_sweet" // レギュラースイーツ

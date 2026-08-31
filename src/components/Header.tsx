@@ -17,7 +17,7 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
 ];
 
 const SUBTITLES: Record<TabKey, string> = {
-  menu: "1商品ぶんの「情報シート」と「準備タスク」をまとめて管理 / 揚げサンド直営共有",
+  menu: "1商品ぶんの「情報シート」と「準備タスク」をまとめて管理 / 揚げサンド 直営店で共有",
   sheet: "商品情報シート：1商品ぶんの情報を空欄から入力",
   tasks: "準備タスク：発売月から締め切りを自動計算",
   gallery: "ビジュアル一覧（Instagram 1枚目）",
@@ -39,7 +39,7 @@ export default function Header({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Age3Logo className="h-6 w-auto shrink-0" />
           <h1 className="shrink-0 whitespace-nowrap text-lg font-bold leading-tight">
-            新商品ツール
+            新商品シート
           </h1>
           {productName && (
             <div className="min-w-0 flex-1 truncate text-right text-sm text-amber-100">
