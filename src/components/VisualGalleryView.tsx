@@ -33,18 +33,19 @@ function NoImage() {
 /**
  * カードの画像。
  *
- * 貼られたURLをそのまま出し、読み込めなければ表示用URL（Dropbox の raw=1 など）
- * を試す。どちらも駄目なら「画像未登録」に戻し、壊れた画像アイコンは出さない。
+ * まず表示用URL（Dropbox の raw=1 など）で読み込む。情報シートのサムネイルと
+ * 同じ経路で、実機で表示できている読み方。駄目なら貼られたURLをそのまま試し、
+ * どちらも駄目なら「画像未登録」に戻す。壊れた画像アイコンは出さない。
  *
  * Instagram 以外の画像で代替するときは、透過PNGの輪郭が白いカードに溶けたり
  * 縦長のポスターが切れたりしないよう、薄いグレーの上に全体が入るように置く。
  */
 function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
-  /* 試すURLの順番。0=貼られたまま、1=表示用に読み替えたもの */
+  /* 試すURLの順番。0=表示用に読み替えたもの、1=貼られたまま */
   const [step, setStep] = useState(0);
 
   const candidates = card
-    ? [card.url, toThumbnailUrl(card.url)].filter(
+    ? [toThumbnailUrl(card.url), card.url].filter(
         (u, i, all) => u && all.indexOf(u) === i
       )
     : [];
@@ -112,8 +113,9 @@ export default function VisualGalleryView({
       list.sort((a, b) => a.done - b.done || a.product.name.localeCompare(b.product.name, "ja"));
     }
     return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, genre, imageFilter, sortMode]);
+    /* getInfo は infoMap が変わると作り直される。ここに入れておかないと、
+       商品より後から中身が届いたときに一覧が古いままになる */
+  }, [products, getInfo, genre, imageFilter, sortMode]);
 
   const withImage = rows.filter((r) => r.card !== null).length;
   const today = new Date().toISOString().slice(0, 10);
