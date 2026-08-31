@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
-import { isImageUrl, toThumbnailUrl } from "@/lib/imageUrl";
+import { toThumbnailUrl } from "@/lib/imageUrl";
+import { CardImage, pickCardImage } from "@/lib/visualThumb";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
   { value: "all", label: "すべてのジャンル" },
@@ -20,31 +21,50 @@ const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
 type ImageFilter = "all" | "has" | "none";
 type SortMode = "date" | "name" | "least";
 
-/**
- * カードの画像。Dropbox/Google Drive の共有リンクは表示用URLに読み替える。
- * 読み込めなかったときは「画像未登録」と同じ枠に戻し、壊れた画像を出さない。
- */
-function CardThumb({ url, alt }: { url?: string; alt: string }) {
-  const [broken, setBroken] = useState(false);
-  const src = url?.trim();
+/** 画像が無いとき、また読み込めなかったときに出す枠 */
+function NoImage() {
+  return (
+    <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
+      画像未登録
+    </div>
+  );
+}
 
-  if (!src || broken || !isImageUrl(src)) {
-    return (
-      <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
-        画像未登録
-      </div>
-    );
-  }
+/**
+ * カードの画像。
+ *
+ * 貼られたURLをそのまま出し、読み込めなければ表示用URL（Dropbox の raw=1 など）
+ * を試す。どちらも駄目なら「画像未登録」に戻し、壊れた画像アイコンは出さない。
+ *
+ * 商品画像（背景なし画像）で代替するときは、透過PNGの輪郭が白いカードに
+ * 溶けないよう、薄いグレーの上に全体が入るように置く。
+ */
+function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
+  /* 試すURLの順番。0=貼られたまま、1=表示用に読み替えたもの */
+  const [step, setStep] = useState(0);
+
+  const candidates = card
+    ? [card.url, toThumbnailUrl(card.url)].filter(
+        (u, i, all) => u && all.indexOf(u) === i
+      )
+    : [];
+  const src = candidates[step];
+
+  if (!card || !src) return <NoImage />;
+
+  const isFallback = card.key === "product_image";
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={toThumbnailUrl(src)}
+      src={src}
       alt={alt}
-      className="aspect-[4/3] w-full bg-stone-100 object-cover"
+      className={`aspect-[4/3] w-full bg-stone-100 ${
+        isFallback ? "object-contain p-2" : "object-cover"
+      }`}
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setBroken(true)}
+      onError={() => setStep((n) => n + 1)}
     />
   );
 }
@@ -74,14 +94,13 @@ export default function VisualGalleryView({
     let list = products.map((p) => {
       const info = getInfo(p.id);
       const done = info.visualDownloads.filter((v) => v.links.some((l) => l.trim())).length;
-      const thumb = info.visualDownloads
-        .find((v) => v.key === "ig_feed")
-        ?.links.find((l) => l.trim());
-      return { product: p, info, done, total: info.visualDownloads.length, thumb };
+      /* カードに出す画像。「画像あり」の数え方と絞り込みも必ずこれを見る */
+      const card = pickCardImage(info);
+      return { product: p, info, done, total: info.visualDownloads.length, card };
     });
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
-    if (imageFilter === "has") list = list.filter((r) => r.done > 0);
-    if (imageFilter === "none") list = list.filter((r) => r.done === 0);
+    if (imageFilter === "has") list = list.filter((r) => r.card !== null);
+    if (imageFilter === "none") list = list.filter((r) => r.card === null);
 
     if (sortMode === "date") {
       list.sort((a, b) =>
@@ -96,7 +115,7 @@ export default function VisualGalleryView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, genre, imageFilter, sortMode]);
 
-  const totalDone = rows.filter((r) => r.done > 0).length;
+  const withImage = rows.filter((r) => r.card !== null).length;
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -105,7 +124,7 @@ export default function VisualGalleryView({
         <div className="flex flex-wrap items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
           <h2 className="text-base font-semibold text-stone-800">ビジュアル一覧</h2>
           <span className="text-sm tabular-nums text-stone-500">
-            {rows.length}件中 {totalDone}件に画像あり
+            {rows.length}件中 {withImage}件に画像あり
           </span>
         </div>
 
@@ -148,7 +167,7 @@ export default function VisualGalleryView({
           </div>
 
           <p className="text-xs text-stone-400">
-            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。
+            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。無い場合は商品画像（背景なし画像）を表示します。
           </p>
         </div>
       </div>
@@ -159,7 +178,7 @@ export default function VisualGalleryView({
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map(({ product, info, done, total, thumb }) => (
+          {rows.map(({ product, info, done, total, card }) => (
             <button
               key={product.id}
               className="overflow-hidden rounded-xl border border-stone-300 bg-white text-left transition hover:border-stone-500"
@@ -168,7 +187,7 @@ export default function VisualGalleryView({
                 onNavigate("sheet");
               }}
             >
-              <CardThumb url={thumb} alt={product.name} />
+              <CardThumb card={card} alt={product.name} />
 
               <div className="space-y-1 p-3">
                 <div className="text-sm font-semibold leading-snug text-stone-800">{product.name}</div>
