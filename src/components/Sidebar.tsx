@@ -67,6 +67,19 @@ export default function Sidebar({
       const key = GENRE_ORDER.includes(p.genre) ? p.genre : null;
       map.get(key)!.push(p);
     }
+    /* シーズン商品は入れ替わりが早いので、発売日が新しいものから並べる */
+    const season = map.get("season");
+    if (season) {
+      season.sort((a, b) => {
+        const ra = getInfo(a.id).releaseDate;
+        const rb = getInfo(b.id).releaseDate;
+        if (!ra && !rb) return 0;
+        if (!ra) return 1; // 発売日未設定は下に回す
+        if (!rb) return -1;
+        return rb.localeCompare(ra);
+      });
+    }
+
     return {
       grouped: GENRE_ORDER.map((g) => ({ genre: g, items: map.get(g) ?? [] })).filter(
         (section) => section.items.length > 0
