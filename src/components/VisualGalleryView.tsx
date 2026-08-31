@@ -178,9 +178,8 @@ export default function VisualGalleryView({
     if (imageFilter === "none") list = list.filter((r) => r.card === null);
 
     if (sortMode === "date") {
-      list.sort((a, b) =>
-        (a.info.releaseDate || "9999").localeCompare(b.info.releaseDate || "9999")
-      );
+      /* 発売日が新しい順。未設定は下に回す */
+      list.sort((a, b) => (b.info.releaseDate || "").localeCompare(a.info.releaseDate || ""));
     } else if (sortMode === "name") {
       list.sort((a, b) => a.product.name.localeCompare(b.product.name, "ja"));
     } else {
@@ -207,7 +206,7 @@ export default function VisualGalleryView({
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-16 shrink-0 text-sm text-stone-500">並べ替え</span>
             <button className={chipCls(sortMode === "date")} onClick={() => setSortMode("date")}>
-              発売日が古い順
+              発売日が新しい順
             </button>
             <button className={chipCls(sortMode === "name")} onClick={() => setSortMode("name")}>
               名前順
