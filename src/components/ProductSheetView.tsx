@@ -483,16 +483,21 @@ function PriceBlock({
   filled,
   base,
   uber,
+  notSold,
   onBase,
   onUber,
+  onNotSold,
 }: {
   id: string;
   label: string;
   filled: boolean;
   base: number | null;
   uber: number | null;
+  /** この店舗では売らない商品（店舗限定など）。価格が無くても充足とみなす */
+  notSold: boolean;
   onBase: (v: number | null) => void;
   onUber: (v: number | null) => void;
+  onNotSold: (v: boolean) => void;
 }) {
   const auto = autoUberPrice(base);
   const isManual = uber !== null;
@@ -500,9 +505,25 @@ function PriceBlock({
   return (
     <div className="rounded-lg border border-stone-200 p-3">
       <Field label={label} filled={filled}>
-        <PriceInput id={id} value={base} placeholder="950" onChange={onBase} />
+        {notSold ? (
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
+            この店舗では取り扱いません
+          </div>
+        ) : (
+          <PriceInput id={id} value={base} placeholder="950" onChange={onBase} />
+        )}
       </Field>
-      <div className="mt-3">
+      <label className="mt-2 flex items-center gap-2 text-sm text-stone-600">
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-amber-600"
+          checked={notSold}
+          onChange={(e) => onNotSold(e.target.checked)}
+        />
+        この店舗では取り扱いなし
+      </label>
+      {/* 取り扱いがないなら Uber 価格も出さない。入れた価格は消さずに残す */}
+      <div className={`mt-3 ${notSold ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center gap-2">
           <label className="block text-sm font-medium text-stone-600">
             └ Uber Eats 価格（税込）
@@ -585,13 +606,17 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   );
   const visualFilledOf = (links: string[]) => links.some((l) => l.trim());
 
+  /* 取り扱いのない店舗は、価格が無くても入力済みとみなす */
+  const tokyoDone = info.priceTokyo !== null || info.priceTokyoNotSold;
+  const kamaDone = info.priceKama !== null || info.priceKamaNotSold;
+
   const requiredItems: { filled: boolean; focusId: string }[] = [
     { filled: !!info.nameJa, focusId: "f-nameJa" },
     { filled: !!info.slipName, focusId: "f-slipName" },
     { filled: !!info.releaseDate, focusId: "f-releaseDate" },
     { filled: info.noAlcoholPork !== null, focusId: "f-noAlcoholPork" },
-    { filled: info.priceTokyo !== null, focusId: "f-priceTokyo" },
-    { filled: info.priceKama !== null, focusId: "f-priceKama" },
+    { filled: tokyoDone, focusId: "f-priceTokyo" },
+    { filled: kamaDone, focusId: "f-priceKama" },
     { filled: ingredientsFilled, focusId: `f-ing-ja-${firstOpenIngredient}` },
     ...info.visualDownloads
       .filter((v) => isRequiredVisualKey(genre, v.key))
@@ -621,8 +646,8 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
     !!info.releaseDate,
     !!info.endDate || info.ongoing,
     !!info.nameEn,
-    info.priceTokyo !== null,
-    info.priceKama !== null,
+    tokyoDone,
+    kamaDone,
   ].filter(Boolean).length;
   const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
   /* ビジュアルの進捗は「必須ぶん」で数える。レギュラー商品は3件で完成 */
@@ -739,10 +764,18 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       `伝票記載名：${info.slipName}`,
       `品名（英語）：${info.nameEn}`,
       `Instagram投稿文：${info.instagramPost}`,
-      `販売価格（銀座・原宿・浅草・飛騨高山）：${formatYen(info.priceTokyo) || "―"}`,
-      `　└ Uber：${formatYen(effectiveUberPrice(info.priceTokyoUber, info.priceTokyo)) || "―"}`,
-      `販売価格（嘉麻）：${formatYen(info.priceKama) || "―"}`,
-      `　└ Uber：${formatYen(effectiveUberPrice(info.priceKamaUber, info.priceKama)) || "―"}`,
+      `販売価格（銀座・原宿・浅草・飛騨高山）：${
+        info.priceTokyoNotSold ? "取り扱いなし" : formatYen(info.priceTokyo) || "―"
+      }`,
+      ...(info.priceTokyoNotSold
+        ? []
+        : [`　└ Uber：${formatYen(effectiveUberPrice(info.priceTokyoUber, info.priceTokyo)) || "―"}`]),
+      `販売価格（嘉麻）：${
+        info.priceKamaNotSold ? "取り扱いなし" : formatYen(info.priceKama) || "―"
+      }`,
+      ...(info.priceKamaNotSold
+        ? []
+        : [`　└ Uber：${formatYen(effectiveUberPrice(info.priceKamaUber, info.priceKama)) || "―"}`]),
       "",
       "■材料",
       ...info.ingredients
@@ -964,26 +997,30 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {showRequired(info.priceTokyo !== null) && (
+          {showRequired(tokyoDone) && (
             <PriceBlock
               id="f-priceTokyo"
               label="販売価格（銀座・原宿・浅草・飛騨高山／税込）"
-              filled={info.priceTokyo !== null}
+              filled={tokyoDone}
               base={info.priceTokyo}
               uber={info.priceTokyoUber}
+              notSold={info.priceTokyoNotSold}
               onBase={(v) => patch({ priceTokyo: v })}
               onUber={(v) => patch({ priceTokyoUber: v })}
+              onNotSold={(v) => patch({ priceTokyoNotSold: v })}
             />
           )}
-          {showRequired(info.priceKama !== null) && (
+          {showRequired(kamaDone) && (
             <PriceBlock
               id="f-priceKama"
               label="販売価格（嘉麻／税込）"
-              filled={info.priceKama !== null}
+              filled={kamaDone}
               base={info.priceKama}
               uber={info.priceKamaUber}
+              notSold={info.priceKamaNotSold}
               onBase={(v) => patch({ priceKama: v })}
               onUber={(v) => patch({ priceKamaUber: v })}
+              onNotSold={(v) => patch({ priceKamaNotSold: v })}
             />
           )}
         </div>

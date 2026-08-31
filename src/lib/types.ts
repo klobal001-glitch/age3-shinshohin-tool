@@ -55,6 +55,9 @@ export interface ProductInfo {
     descriptionEn: string;
     instagramPost: string;
     // 価格はすべて数値（税込・円）。未入力は null。
+  // 片方の店舗でしか売らない商品があるので、店舗ごとに「取り扱いなし」を持てる
+  priceTokyoNotSold: boolean;
+  priceKamaNotSold: boolean;
   priceTokyo: number | null; // 銀座・原宿・浅草・飛騨高山
   priceTokyoUber: number | null; // 上記のUber価格。null = 自動計算（priceTokyo × 1.4）
   priceKama: number | null; // 嘉麻

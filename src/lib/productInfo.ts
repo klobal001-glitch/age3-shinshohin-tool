@@ -74,6 +74,8 @@ export function createDefaultProductInfo(): ProductInfo {
     descriptionJa: "",
     descriptionEn: "",
     instagramPost: "",
+    priceTokyoNotSold: false,
+    priceKamaNotSold: false,
     priceTokyo: null,
     priceTokyoUber: null,
     priceKama: null,
@@ -106,8 +108,9 @@ export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount
     !!info.slipName,
     !!info.releaseDate,
     info.noAlcoholPork !== null,
-    info.priceTokyo !== null,
-    info.priceKama !== null,
+    // 取り扱いのない店舗は、価格が無くても充足とみなす
+    info.priceTokyo !== null || info.priceTokyoNotSold,
+    info.priceKama !== null || info.priceKamaNotSold,
     info.ingredients.some((i) => i.nameJa && i.amount),
     // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）。
     // レギュラー商品は必須が3件だけなので、それ以外は数に入れない
@@ -267,6 +270,8 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
 
   merged.ongoing = r.ongoing === true;
+  merged.priceTokyoNotSold = r.priceTokyoNotSold === true;
+  merged.priceKamaNotSold = r.priceKamaNotSold === true;
   merged.slipName = typeof r.slipName === "string" ? r.slipName : "";
   merged.discontinued = r.discontinued === true;
   merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
