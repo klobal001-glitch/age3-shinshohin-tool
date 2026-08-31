@@ -1087,7 +1087,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         ) : (
           <>
             <p className="text-xs text-stone-400">
-              使用材料と手順は別ページで管理する想定です。ここには動画のURLとメモだけを入れます。
+              使用材料と手順は別ページで管理する想定です。ここには動画のURLと概要欄文章だけを入れます。
             </p>
             <Field label="作り方動画 YouTube URL">
               <input
@@ -1096,7 +1096,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                 onChange={(e) => patch({ howToVideoUrl: e.target.value })}
               />
             </Field>
-            <Field label="メモ（任意）">
+            <Field label="概要欄文章">
               <AutoTextarea
                 rows={2}
                 value={info.recipeNotes}
