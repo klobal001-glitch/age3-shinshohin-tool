@@ -584,6 +584,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
   const requiredItems: { filled: boolean; focusId: string }[] = [
     { filled: !!info.nameJa, focusId: "f-nameJa" },
+    { filled: !!info.slipName, focusId: "f-slipName" },
     { filled: !!info.releaseDate, focusId: "f-releaseDate" },
     { filled: info.noAlcoholPork !== null, focusId: "f-noAlcoholPork" },
     { filled: info.priceTokyo !== null, focusId: "f-priceTokyo" },
@@ -609,9 +610,10 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const showOptional = () => !onlyEmpty;
 
   // セクションごとの入力状況（見出しの右に出す目安）
-  const BASIC_TOTAL = 7;
+  const BASIC_TOTAL = 8;
   const basicFilled = [
     !!info.nameJa,
+    !!info.slipName,
     info.noAlcoholPork !== null,
     !!info.releaseDate,
     !!info.endDate || info.ongoing,
@@ -731,6 +733,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
       `ジャンル：${selectedProduct.genre ? GENRE_LABELS[selectedProduct.genre] : "（指定なし）"}`,
       `発売日：${info.releaseDate || "―"}　販売終了日：${info.ongoing ? "継続販売中" : info.endDate || "―"}`,
       `NOアルコール・NOポーク：${info.noAlcoholPork === "mark" ? "マークを付ける" : info.noAlcoholPork === "nomark" ? "マークを付けない" : "未設定"}`,
+      `伝票記載名：${info.slipName}`,
       `品名（英語）：${info.nameEn}`,
       `Instagram投稿文：${info.instagramPost}`,
       `販売価格（銀座・原宿・浅草・飛騨高山）：${formatYen(info.priceTokyo) || "―"}`,
@@ -863,7 +866,33 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         progress={`${basicFilled}/${BASIC_TOTAL}`}
         done={basicFilled === BASIC_TOTAL}
       >
+        {/* 名前 → 日付の順。2列がちょうど3段で割り切れるので、段がずれない */}
         <div className="grid gap-4 sm:grid-cols-2">
+          {showRequired(!!info.nameJa) && (
+            <Field label="品名（日本語）" filled={!!info.nameJa}>
+              <input
+                id="f-nameJa"
+                className={inputCls}
+                value={info.nameJa}
+                onChange={(e) => patch({ nameJa: e.target.value })}
+              />
+            </Field>
+          )}
+          {showRequired(!!info.slipName) && (
+            <Field label="伝票記載名" filled={!!info.slipName}>
+              <input
+                id="f-slipName"
+                className={inputCls}
+                value={info.slipName}
+                onChange={(e) => patch({ slipName: e.target.value })}
+              />
+            </Field>
+          )}
+          {showOptional() && (
+            <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
+              <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
+            </Field>
+          )}
           {showRequired(info.noAlcoholPork !== null) && (
             <Field label="NOアルコール・NOポーク" filled={info.noAlcoholPork !== null}>
               <div className="flex gap-2">
@@ -889,16 +918,6 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                   マークを付けない
                 </button>
               </div>
-            </Field>
-          )}
-          {showRequired(!!info.nameJa) && (
-            <Field label="品名（日本語）" filled={!!info.nameJa}>
-              <input
-                id="f-nameJa"
-                className={inputCls}
-                value={info.nameJa}
-                onChange={(e) => patch({ nameJa: e.target.value })}
-              />
             </Field>
           )}
           {showRequired(!!info.releaseDate) && (
@@ -939,22 +958,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               )}
             </Field>
           )}
-          {showOptional() && (
-            <Field label="英語（品名）" hint="担当AIが記入・空欄でOK">
-              <input className={inputCls} value={info.nameEn} onChange={(e) => patch({ nameEn: e.target.value })} />
-            </Field>
-          )}
         </div>
-        {showOptional() && (
-          <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
-            <AutoTextarea
-              rows={3}
-              maxLength={140}
-              value={info.instagramPost}
-              onChange={(v) => patch({ instagramPost: v })}
-            />
-          </Field>
-        )}
         <div className="grid gap-4 sm:grid-cols-2">
           {showRequired(info.priceTokyo !== null) && (
             <PriceBlock
@@ -979,6 +983,17 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             />
           )}
         </div>
+        {/* 長い文章は一番下に置く */}
+        {showOptional() && (
+          <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
+            <AutoTextarea
+              rows={3}
+              maxLength={140}
+              value={info.instagramPost}
+              onChange={(v) => patch({ instagramPost: v })}
+            />
+          </Field>
+        )}
       </Section>
 
       <Section

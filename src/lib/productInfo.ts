@@ -65,6 +65,7 @@ export function createDefaultProductInfo(): ProductInfo {
   return {
     noAlcoholPork: null,
     nameJa: "",
+    slipName: "",
     releaseDate: "",
     endDate: "",
     ongoing: false,
@@ -102,6 +103,7 @@ export interface ProgressCount {
 export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount {
   const checks: boolean[] = [
     !!info.nameJa,
+    !!info.slipName,
     !!info.releaseDate,
     info.noAlcoholPork !== null,
     info.priceTokyo !== null,
@@ -265,6 +267,7 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
 
   merged.ongoing = r.ongoing === true;
+  merged.slipName = typeof r.slipName === "string" ? r.slipName : "";
   merged.discontinued = r.discontinued === true;
   merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
   merged.priceKama = legacyPriceToNumber(r.priceKama);

@@ -45,6 +45,7 @@ export interface ProductInfo {
     // 基本データ
   noAlcoholPork: "mark" | "nomark" | null;
     nameJa: string;
+    slipName: string; // 伝票記載名。伝票・レジに出す短い名前
     releaseDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   ongoing: boolean; // 継続販売中（販売終了日を設けないレギュラー商品など）
