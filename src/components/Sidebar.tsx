@@ -14,14 +14,15 @@ const NAV: { key: TabKey; icon: string; label: string }[] = [
   { key: "gallery", icon: "🖼", label: "ビジュアル" },
 ];
 
+/** 商品リストの並び順。今いちばん動いているものから上に出す */
 const GENRE_ORDER: Genre[] = [
+  "season",
+  "shop_limited",
   "regular_sweet",
   "regular_savory",
   "sweets_sand",
   "fruit_sand",
   "single",
-  "shop_limited",
-  "season",
   null,
 ];
 
