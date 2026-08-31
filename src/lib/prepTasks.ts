@@ -26,7 +26,11 @@ export const TASK_GROUPS: TaskGroup[] = [
           { id: "material_check", label: "材料確認（注文ロット・価格・納期・業者）" },
           { id: "cost_calc", label: "原価計算・使用量（g数）" },
           { id: "material_image", label: "材料画像・使用量（g数）→デザイン班に共有" },
-          { id: "no_alcohol_pork", label: "NOアルコール／NOポーク確認 → 全体共有" },
+          {
+            id: "no_alcohol_pork",
+            label: "NOアルコール／NOポーク確認 → 全体共有",
+            linkedField: "noAlcoholPork",
+          },
           { id: "price_tokyo", label: "販売価格（銀座・原宿・浅草・飛騨高山／税込）（幸平さんOK）" },
           { id: "price_uber", label: "販売価格（Uber／税込）（幸平さんOK）" },
           { id: "price_kama", label: "販売価格（嘉麻／税込）（幸平さんOK）" },

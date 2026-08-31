@@ -5,7 +5,8 @@ import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import { TASK_GROUPS, countGroupLeaves, countLeaves } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
-import { Milestone, TaskGroup, TaskItem } from "@/lib/types";
+import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
+import { isLinkedTaskDone } from "@/lib/stats";
 
 /** 並べ替え・絞り込みボタンの共通スタイル */
 function ctrlCls(active: boolean) {
@@ -22,6 +23,68 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
     : `${groupId}|${milestoneId}|${taskId}`;
 }
 
+/** 情報シートと連動するタスクの選択肢 */
+const LINKED_CHOICES: Record<string, { value: string; label: string }[]> = {
+  noAlcoholPork: [
+    { value: "mark", label: "マークを付ける" },
+    { value: "nomark", label: "マークを付けない" },
+  ],
+};
+
+/**
+ * 情報シートと連動するタスクの行。
+ *
+ * ただのチェックだと「どちらにしたか」が分からないので、シートと同じ選択肢を出す。
+ * 状態は情報シート側にしか無いため、どちらの画面で選んでも同じ結果になる。
+ */
+function LinkedChoiceRow({
+  task,
+  value,
+  onChoose,
+}: {
+  task: TaskItem;
+  value: string | null;
+  onChoose: (value: string) => void;
+}) {
+  const choices = LINKED_CHOICES[task.linkedField ?? ""] ?? [];
+  const answered = value !== null;
+
+  return (
+    <div className="px-3 py-2.5">
+      <div className="flex items-start gap-3 text-sm">
+        <span
+          aria-hidden
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+            answered ? "bg-amber-600" : "border border-stone-300 bg-white"
+          }`}
+        >
+          {answered ? "✓" : ""}
+        </span>
+        <span className={answered ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 pl-7">
+        {choices.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+              value === c.value
+                ? "border-amber-600 bg-amber-600 text-white"
+                : "border-stone-300 text-stone-600 hover:bg-stone-50"
+            }`}
+            onClick={() => onChoose(c.value)}
+          >
+            {c.label}
+          </button>
+        ))}
+        <span className="self-center text-xs text-stone-400">
+          情報シートの「NOアルコール・NOポーク」と連動します
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** 締め切り1区切りぶんのカード。完了済みは折りたたんだ状態で開く */
 function MilestoneCard({
   group,
@@ -32,6 +95,8 @@ function MilestoneCard({
   showGroupName,
   isChecked,
   onToggle,
+  linkedValue,
+  onLinkedChoose,
 }: {
   group: TaskGroup;
   milestone: Milestone;
@@ -41,6 +106,10 @@ function MilestoneCard({
   showGroupName?: boolean;
   isChecked: (t: TaskItem, childId?: string) => boolean;
   onToggle: (t: TaskItem, childId?: string) => void;
+  /** 情報シートと連動するタスクの、いま選ばれている値 */
+  linkedValue: (t: TaskItem) => string | null;
+  /** 連動するタスクで選び直したとき。情報シート側に書き込む */
+  onLinkedChoose: (t: TaskItem, value: string) => void;
 }) {
   const done = total > 0 && checked === total;
   const [open, setOpen] = useState(!done);
@@ -101,6 +170,13 @@ function MilestoneCard({
                   ))}
                 </div>
               </div>
+            ) : t.linkedField ? (
+              <LinkedChoiceRow
+                key={t.id}
+                task={t}
+                value={linkedValue(t)}
+                onChoose={(v) => onLinkedChoose(t, v)}
+              />
             ) : (
               <label
                 key={t.id}
@@ -140,8 +216,25 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
     app.updateInfo(selectedProduct.id, { releaseDate: release, endDate: end });
   };
 
-  const isLeafChecked = (groupId: string, milestoneId: string, task: TaskItem, childId?: string) =>
-    !!taskState[leafKey(groupId, milestoneId, task.id, childId)];
+  const isLeafChecked = (groupId: string, milestoneId: string, task: TaskItem, childId?: string) => {
+    /* 連動タスクは保存済みのチェックではなく、情報シートの値を見る */
+    if (!childId && task.linkedField) return info ? isLinkedTaskDone(task, info) : false;
+    return !!taskState[leafKey(groupId, milestoneId, task.id, childId)];
+  };
+
+  /** 連動タスクで今選ばれている値 */
+  const linkedValue = (task: TaskItem): string | null =>
+    task.linkedField === "noAlcoholPork" ? (info?.noAlcoholPork ?? null) : null;
+
+  /** 連動タスクで選び直したとき。情報シート側に書き込む */
+  const chooseLinked = (task: TaskItem, value: string) => {
+    if (!selectedProduct) return;
+    if (task.linkedField === "noAlcoholPork") {
+      app.updateInfo(selectedProduct.id, {
+        noAlcoholPork: value as ProductInfo["noAlcoholPork"],
+      });
+    }
+  };
 
   const milestoneProgress = (group: TaskGroup, m: Milestone) => {
     let checked = 0;
@@ -356,6 +449,8 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
                       onToggle={(t, childId) =>
                         toggleTask(selectedProduct.id, leafKey(group.id, m.id, t.id, childId))
                       }
+                      linkedValue={linkedValue}
+                      onLinkedChoose={chooseLinked}
                     />
                   ))}
                 </div>
@@ -390,6 +485,8 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
                     onToggle={(t, childId) =>
                       toggleTask(selectedProduct.id, leafKey(group.id, m.id, t.id, childId))
                     }
+                    linkedValue={linkedValue}
+                    onLinkedChoose={chooseLinked}
                   />
                 ))}
             </div>

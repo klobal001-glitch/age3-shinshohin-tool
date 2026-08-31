@@ -44,7 +44,7 @@ export default function MenuView({
       .filter((p) => !getInfo(p.id).discontinued)
       .map((p) => {
         const info = infoFillRate(getInfo(p.id), p.genre);
-        const t = taskCompletion(getTaskState(p.id));
+        const t = taskCompletion(getTaskState(p.id), getInfo(p.id));
         const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
         return { product: p, info, task };
       });

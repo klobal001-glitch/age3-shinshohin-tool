@@ -86,6 +86,12 @@ export interface TaskItem {
     id: string;
     label: string;
     children?: TaskLeaf[]; // 制作/入稿など、サブチェックがある場合
+    /**
+     * 情報シートの項目と連動するタスク。
+     * チェックの代わりにシートの値をそのまま出し、どちらかに付ければ両方に付く。
+     * 状態は情報シート側だけが持つので、2つの画面で食い違わない。
+     */
+    linkedField?: "noAlcoholPork";
 }
 
 export type DeadlineRule =

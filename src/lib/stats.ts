@@ -2,7 +2,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { requiredProgress, optionalProgress } from "./productInfo";
 import { TASK_GROUPS } from "./prepTasks";
 import { computeDeadline, daysDiffFromToday, isReleasedLongAgo } from "./deadline";
-import { Genre, Product, ProductInfo, TaskGroup, Milestone } from "./types";
+import { Genre, Product, ProductInfo, TaskGroup, TaskItem, Milestone } from "./types";
 
 type App = ReturnType<typeof useAppData>;
 type TaskState = Record<string, boolean>;
@@ -22,8 +22,19 @@ export function infoFillRate(info: ProductInfo, genre: Genre): number {
   return Math.round(((req.filled + opt.filled) / total) * 100);
 }
 
+/**
+ * 情報シートと連動するタスクが済んでいるか。
+ * チェックの保存先ではなく、シートの値を見る（食い違わないようにするため）
+ */
+export function isLinkedTaskDone(task: TaskItem, info: ProductInfo): boolean {
+  return task.linkedField === "noAlcoholPork" ? info.noAlcoholPork !== null : false;
+}
+
 /** 1商品ぶんの準備タスク完了状況（全グループ合算） */
-export function taskCompletion(taskState: TaskState): { checked: number; total: number } {
+export function taskCompletion(
+  taskState: TaskState,
+  info: ProductInfo
+): { checked: number; total: number } {
   let checked = 0;
   let total = 0;
   for (const g of TASK_GROUPS) {
@@ -36,7 +47,9 @@ export function taskCompletion(taskState: TaskState): { checked: number; total: 
           }
         } else {
           total++;
-          if (taskState[leafKey(g.id, m.id, t.id)]) checked++;
+          if (t.linkedField ? isLinkedTaskDone(t, info) : taskState[leafKey(g.id, m.id, t.id)]) {
+            checked++;
+          }
         }
       }
     }
@@ -131,7 +144,7 @@ export function computeDashboardStats(app: App, deadlines: DeadlineEntry[]): Das
   let taskTotal = 0;
   for (const p of products) {
     infoSum += infoFillRate(app.getInfo(p.id), p.genre);
-    const ts = taskCompletion(app.getTaskState(p.id));
+    const ts = taskCompletion(app.getTaskState(p.id), app.getInfo(p.id));
     taskChecked += ts.checked;
     taskTotal += ts.total;
   }
