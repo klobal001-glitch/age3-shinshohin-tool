@@ -237,7 +237,7 @@ export const TASK_GROUPS: TaskGroup[] = [
         label: "前月26日まで",
         rule: monthsBefore(1, 26),
         note: "※投稿2日後",
-        tasks: [{ id: "share_overseas", label: "香港・シドニー・マニラ・ドバイに『作り方スプシPDF』を共有" }],
+        tasks: [{ id: "share_overseas", label: "新商品情報共有" }],
       },
     ],
   },
