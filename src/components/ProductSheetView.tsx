@@ -951,7 +951,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         step={2}
         icon="🥘"
         title="材料（ingredients）"
-        progress={`${ing.filled}/${ing.total}（登録${info.ingredients.length}件）`}
+        progress={`${ing.filled}/${ing.total}`}
         done={ingredientsFilled}
       >
         <p className="text-xs text-stone-400">

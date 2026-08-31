@@ -158,10 +158,19 @@ export function snsProgress(info: ProductInfo, genre: Genre): ProgressCount {
   return { filled: checks.filter(Boolean).length, total: checks.length };
 }
 
+/**
+ * 材料の入力状況。
+ *
+ * 材料が2つしかない商品もあるので、空の行を「未入力」として数えない。
+ * 何か書いてある行だけを数え、品名と分量が揃っていれば充足とする。
+ * （途中まで書いた行があれば、そこだけが残りとして出る）
+ */
 export function ingredientsProgress(info: ProductInfo): ProgressCount {
+  const started = info.ingredients.filter((i) => !isBlankIngredientRow(i));
   return {
-    filled: info.ingredients.filter((i) => i.nameJa && i.amount).length,
-    total: info.ingredients.length,
+    filled: started.filter((i) => i.nameJa.trim() && i.amount.trim()).length,
+    // 1件も書いていないときは「1件は要る」という意味で 0/1 にする
+    total: Math.max(1, started.length),
   };
 }
 
