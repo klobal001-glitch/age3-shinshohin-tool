@@ -933,17 +933,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           )}
           {showOptional() && (
             <Field label="販売終了日">
-              <label className="mb-2 flex items-center gap-2 text-sm text-stone-600">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-amber-600"
-                  checked={info.ongoing}
-                  onChange={(e) =>
-                    patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })
-                  }
-                />
-                継続販売中（終了日を決めない）
-              </label>
+              {/* 日付の欄を先に置いて、左の「発売日」と高さを揃える */}
               {info.ongoing ? (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   継続販売中 — 販売終了日は設定しません
@@ -956,6 +946,17 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                   onChange={(e) => patch({ endDate: e.target.value })}
                 />
               )}
+              <label className="mt-2 flex items-center gap-2 text-sm text-stone-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-amber-600"
+                  checked={info.ongoing}
+                  onChange={(e) =>
+                    patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })
+                  }
+                />
+                継続販売中（終了日を決めない）
+              </label>
             </Field>
           )}
         </div>
