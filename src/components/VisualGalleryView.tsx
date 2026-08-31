@@ -5,7 +5,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
 import { toThumbnailUrl } from "@/lib/imageUrl";
-import { CardImage, pickCardImage } from "@/lib/visualThumb";
+import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
   { value: "all", label: "すべてのジャンル" },
@@ -36,8 +36,8 @@ function NoImage() {
  * 貼られたURLをそのまま出し、読み込めなければ表示用URL（Dropbox の raw=1 など）
  * を試す。どちらも駄目なら「画像未登録」に戻し、壊れた画像アイコンは出さない。
  *
- * 商品画像（背景なし画像）で代替するときは、透過PNGの輪郭が白いカードに
- * 溶けないよう、薄いグレーの上に全体が入るように置く。
+ * Instagram 以外の画像で代替するときは、透過PNGの輪郭が白いカードに溶けたり
+ * 縦長のポスターが切れたりしないよう、薄いグレーの上に全体が入るように置く。
  */
 function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
   /* 試すURLの順番。0=貼られたまま、1=表示用に読み替えたもの */
@@ -52,7 +52,7 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
 
   if (!card || !src) return <NoImage />;
 
-  const isFallback = card.key === "product_image";
+  const fullBleed = isFullBleed(card);
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -60,7 +60,7 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
       src={src}
       alt={alt}
       className={`aspect-[4/3] w-full bg-stone-100 ${
-        isFallback ? "object-contain p-2" : "object-cover"
+        fullBleed ? "object-cover" : "object-contain p-2"
       }`}
       loading="lazy"
       referrerPolicy="no-referrer"
@@ -167,7 +167,7 @@ export default function VisualGalleryView({
           </div>
 
           <p className="text-xs text-stone-400">
-            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。無い場合は商品画像（背景なし画像）を表示します。
+            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。無い場合は商品画像（背景なし画像）、それも無い場合は登録されている他のビジュアルを表示します。
           </p>
         </div>
       </div>
