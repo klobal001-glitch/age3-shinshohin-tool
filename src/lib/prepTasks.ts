@@ -228,20 +228,6 @@ export const TASK_GROUPS: TaskGroup[] = [
     ],
   },
   {
-    id: "g3",
-    icon: "📣",
-    title: "G-3　META広告",
-    milestones: [
-      {
-        id: "g3-m1",
-        label: "前月26日まで",
-        rule: monthsBefore(1, 26),
-        note: "※投稿2日後",
-        tasks: [{ id: "meta_confirm", label: "オーナーに広告を出すか確認" }],
-      },
-    ],
-  },
-  {
     id: "g4",
     icon: "🌏",
     title: "G-4　海外フランチャイズへ提案",
