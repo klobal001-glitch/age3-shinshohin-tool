@@ -16,6 +16,7 @@ import {
   requiredProgress,
 } from "@/lib/productInfo";
 import { GENRE_LABELS } from "@/lib/types";
+import { isImageUrl, toThumbnailUrl } from "@/lib/imageUrl";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -199,7 +200,8 @@ function PriceInput({
 /**
  * ビジュアルの登録済みリンク1行。
  * 画像として読めるURLなら左に小さなサムネイルを出す（クリックで別タブ表示）。
- * Dropbox/Google Drive の共有リンクなど、画像として読めないURLでは
+ * Dropbox/Google Drive の共有リンクは表示用URLに読み替えてサムネイルを出す。
+ * 画像として読めないURLや読み込みに失敗したURLでは、
  * サムネイルは出さず、入力欄だけを表示する。
  */
 function VisualLinkRow({
@@ -213,7 +215,7 @@ function VisualLinkRow({
 }) {
   const [broken, setBroken] = useState(false);
   const url = value.trim();
-  const showThumb = !broken && /^https?:\/\//.test(url);
+  const showThumb = !broken && isImageUrl(url);
 
   return (
     <div className="mb-2 flex items-center gap-2">
@@ -221,9 +223,11 @@ function VisualLinkRow({
         <a href={url} target="_blank" rel="noreferrer" title="別タブで開く" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={url}
+            src={toThumbnailUrl(url)}
             alt=""
             className="h-12 w-12 rounded border border-stone-200 bg-stone-50 object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
             onError={() => setBroken(true)}
             onLoad={() => setBroken(false)}
           />

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
+import { isImageUrl, toThumbnailUrl } from "@/lib/imageUrl";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
   { value: "all", label: "すべてのジャンル" },
@@ -18,6 +19,35 @@ const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
 
 type ImageFilter = "all" | "has" | "none";
 type SortMode = "date" | "name" | "least";
+
+/**
+ * カードの画像。Dropbox/Google Drive の共有リンクは表示用URLに読み替える。
+ * 読み込めなかったときは「画像未登録」と同じ枠に戻し、壊れた画像を出さない。
+ */
+function CardThumb({ url, alt }: { url?: string; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  const src = url?.trim();
+
+  if (!src || broken || !isImageUrl(src)) {
+    return (
+      <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
+        画像未登録
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={toThumbnailUrl(src)}
+      alt={alt}
+      className="aspect-[4/3] w-full bg-stone-100 object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+    />
+  );
+}
 
 /** 選択中のボタンかどうかで見た目を切り替える共通スタイル */
 function chipCls(active: boolean) {
@@ -138,19 +168,7 @@ export default function VisualGalleryView({
                 onNavigate("sheet");
               }}
             >
-              {thumb ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={thumb}
-                  alt={product.name}
-                  className="aspect-[4/3] w-full bg-stone-100 object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
-                  画像未登録
-                </div>
-              )}
+              <CardThumb url={thumb} alt={product.name} />
 
               <div className="space-y-1 p-3">
                 <div className="text-sm font-semibold leading-snug text-stone-800">{product.name}</div>
