@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
-import { SALE_STATUS_LABEL, saleStatus, todayKey } from "@/lib/saleStatus";
+import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
 
@@ -50,20 +50,14 @@ export default function Sidebar({
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
-  /** 廃盤は普段は隠す。現行の商品だけに集中できるようにするため */
-  const [showDiscontinued, setShowDiscontinued] = useState(false);
-
-  /** 現行の商品（ジャンル別）と、廃盤の商品を分けて持つ */
-  const { grouped, retired } = useMemo(() => {
+  /* 廃盤も一覧には残す。ジャンルの中に「廃盤」の印を付けて置く */
+  const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
 
-    const live = filtered.filter((p) => !getInfo(p.id).discontinued);
-    const gone = filtered.filter((p) => getInfo(p.id).discontinued);
-
     const map = new Map<Genre, typeof products>();
     for (const g of GENRE_ORDER) map.set(g, []);
-    for (const p of live) {
+    for (const p of filtered) {
       const key = GENRE_ORDER.includes(p.genre) ? p.genre : null;
       map.get(key)!.push(p);
     }
@@ -80,12 +74,9 @@ export default function Sidebar({
       });
     }
 
-    return {
-      grouped: GENRE_ORDER.map((g) => ({ genre: g, items: map.get(g) ?? [] })).filter(
-        (section) => section.items.length > 0
-      ),
-      retired: gone,
-    };
+    return GENRE_ORDER.map((g) => ({ genre: g, items: map.get(g) ?? [] })).filter(
+      (section) => section.items.length > 0
+    );
   }, [products, query, getInfo]);
 
   const today = todayKey();
@@ -138,7 +129,7 @@ export default function Sidebar({
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
-        {grouped.length === 0 && retired.length === 0 && (
+        {grouped.length === 0 && (
           <p className="px-1 py-4 text-xs text-stone-400">該当する商品がありません。</p>
         )}
         {grouped.map(({ genre, items }) => (
@@ -151,8 +142,9 @@ export default function Sidebar({
                 const info = getInfo(p.id);
                 const pct = infoFillRate(info, p.genre);
                 const active = p.id === selectedId;
-                /* 販売終了日を過ぎた商品は薄くして、代わりに印を出す */
-                const ended = saleStatus(info, today) === "ended";
+                /* 廃盤・販売終了は薄くして、入力率の代わりに印を出す */
+                const status = saleStatus(info, today);
+                const off = isInactive(status);
                 return (
                   <li key={p.id}>
                     <button
@@ -160,24 +152,24 @@ export default function Sidebar({
                       className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
                         active
                           ? "bg-amber-700 text-white"
-                          : ended
+                          : off
                             ? "text-stone-400 hover:bg-white"
                             : "text-stone-700 hover:bg-white"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          active ? "bg-white" : ended ? "bg-stone-300" : fillDotColor(pct)
+                          active ? "bg-white" : off ? "bg-stone-300" : fillDotColor(pct)
                         }`}
                       />
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                      {ended ? (
+                      {off ? (
                         <span
                           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
                             active ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-500"
                           }`}
                         >
-                          {SALE_STATUS_LABEL.ended}
+                          {SALE_STATUS_LABEL[status]}
                         </span>
                       ) : (
                         <span className={`shrink-0 text-[11px] ${active ? "text-amber-100" : "text-stone-400"}`}>
@@ -191,49 +183,6 @@ export default function Sidebar({
             </ul>
           </div>
         ))}
-
-        {retired.length > 0 && (
-          <div className="mb-3">
-            <button
-              className="mb-1 flex w-full items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400 hover:text-stone-600"
-              onClick={() => setShowDiscontinued((v) => !v)}
-            >
-              <span aria-hidden>{showDiscontinued ? "▾" : "▸"}</span>
-              廃盤 {retired.length}
-            </button>
-            {showDiscontinued && (
-              <ul>
-                {retired.map((p) => {
-                  const active = p.id === selectedId;
-                  return (
-                    <li key={p.id}>
-                      <button
-                        onClick={() => setSelectedId(p.id)}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                          active ? "bg-stone-600 text-white" : "text-stone-400 hover:bg-white"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            active ? "bg-white" : "bg-stone-300"
-                          }`}
-                        />
-                        <span className="min-w-0 flex-1 truncate line-through">{p.name}</span>
-                        <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
-                            active ? "bg-stone-700 text-stone-200" : "bg-stone-200 text-stone-500"
-                          }`}
-                        >
-                          {SALE_STATUS_LABEL.retired}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="border-t border-amber-900/10 p-3">

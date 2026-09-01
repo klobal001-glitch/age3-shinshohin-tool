@@ -172,7 +172,6 @@ export default function VisualGalleryView({
         status: saleStatus(info, today),
       };
     });
-    list = list.filter((r) => !r.info.discontinued); // 廃盤は出さない
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
     if (imageFilter === "has") list = list.filter((r) => r.card !== null);
     if (imageFilter === "none") list = list.filter((r) => r.card === null);

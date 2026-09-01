@@ -50,8 +50,9 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
     if (!discontinued) {
       const ok = confirm(
         `「${selectedProduct.name}」を廃盤にします。\n\n` +
-          "入力した情報と準備タスクのチェックは残りますが、\n" +
-          "商品リスト・ビジュアル一覧・締め切り一覧・平均入力率からは外れます。\n" +
+          "入力した情報と準備タスクのチェックは残ります。\n" +
+          "商品リストとビジュアル一覧には「廃盤」と付いたまま残りますが、\n" +
+          "締め切り一覧・平均入力率・メニューの商品一覧からは外れます。\n" +
           "いつでも戻せます。よろしいですか？"
       );
       if (!ok) return;
