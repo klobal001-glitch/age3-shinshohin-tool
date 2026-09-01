@@ -81,12 +81,12 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
     key: "q4",
     color: "#c05f8a",
     no: 4,
-    en: "Did the smell attract you?",
-    ja: "匂いにひかれましたか？",
+    en: "Would you come back?",
+    ja: "また来たいと思いますか？",
     options: [
-      { id: "a_lot", en: "Yes, a lot", ja: "強くひかれた", emoji: "😋" },
-      { id: "a_little", en: "A little", ja: "少し", emoji: "🙂" },
-      { id: "not_really", en: "Not really", ja: "あまり", emoji: "😐" },
+      { id: "definitely", en: "Definitely", ja: "ぜひまた来たい", emoji: "😍" },
+      { id: "maybe", en: "Maybe", ja: "たぶん", emoji: "🙂" },
+      { id: "probably_not", en: "Probably not", ja: "たぶん来ない", emoji: "😐" },
     ],
   },
   {
@@ -153,10 +153,12 @@ export type TallyRow = {
  */
 export function tally(responses: SurveyResponse[], q: SurveyQuestion): { rows: TallyRow[]; answered: number } {
   const counts = new Map<string, number>();
+  const known = new Set(q.options.map((o) => o.id));
   let answered = 0;
   for (const r of responses) {
     const v = r.data[q.key];
-    if (!v) continue;
+    // 設問を差し替える前の答えは、いまの選択肢と意味が違うので数えない
+    if (!v || !known.has(v)) continue;
     answered += 1;
     counts.set(v, (counts.get(v) ?? 0) + 1);
   }
