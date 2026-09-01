@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Header, ViewId } from "@/components/genba/Header";
 import { CheckView } from "@/components/genba/CheckView";
 import { SurveyView } from "@/components/genba/SurveyView";
+import { SurveyAskView } from "@/components/genba/SurveyAskView";
 import { ReportView } from "@/components/genba/ReportView";
 import { useGenbaData } from "@/hooks/useGenbaData";
 import { useIsClient } from "@/hooks/useIsClient";
@@ -28,7 +29,20 @@ export default function GenbaPage() {
 function GenbaShell() {
   const [view, setView] = useState<ViewId>("check");
   const [storeId, setStoreId] = useState(STORES[0].id);
+  /** お客様に端末を渡している間は、ほかの画面を出さない */
+  const [asking, setAsking] = useState(false);
   const data = useGenbaData();
+
+  if (asking) {
+    return (
+      <SurveyAskView
+        storeId={storeId}
+        onChangeStore={setStoreId}
+        onSubmit={data.addResponse}
+        onExit={() => setAsking(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f6f8fa] text-[#26313d]">
@@ -56,7 +70,7 @@ function GenbaShell() {
             onUpdateItem={(index, patch, immediate) => data.updateItem(storeId, index, patch, immediate)}
           />
         ) : view === "survey" ? (
-          <SurveyView responses={data.responses} onAdd={data.addResponse} onDelete={data.deleteResponse} />
+          <SurveyView responses={data.responses} onStartAsking={() => setAsking(true)} onDelete={data.deleteResponse} />
         ) : (
           <ReportView storeMap={data.storeMap} />
         )}

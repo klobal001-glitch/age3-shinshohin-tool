@@ -2,14 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { STORES } from "@/lib/genba/checkItems";
-import { SURVEY_QUESTIONS, createEmptyAnswer, hasAnyAnswer, tally, tallyCountries } from "@/lib/genba/survey";
-import { SurveyAnswer, SurveyResponse } from "@/lib/genba/types";
-
-function todayISO() {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+import { SURVEY_QUESTIONS, tally, tallyCountries } from "@/lib/genba/survey";
+import { SurveyResponse } from "@/lib/genba/types";
 
 /**
  * 設問1つ分の集計。
@@ -66,157 +60,13 @@ function QuestionTally({ responses, index }: { responses: SurveyResponse[]; inde
   );
 }
 
-function AnswerForm({
-  onSubmit,
-}: {
-  onSubmit: (storeId: string, answeredOn: string, data: SurveyAnswer) => Promise<boolean>;
-}) {
-  const [storeId, setStoreId] = useState(STORES[0].id);
-  const [answeredOn, setAnsweredOn] = useState(todayISO);
-  const [answer, setAnswer] = useState<SurveyAnswer>(createEmptyAnswer);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const ready = hasAnyAnswer(answer);
-
-  async function handleSubmit() {
-    if (!ready || busy) return;
-    setBusy(true);
-    const ok = await onSubmit(storeId, answeredOn, answer);
-    setBusy(false);
-    if (ok) {
-      setAnswer(createEmptyAnswer());
-      setMessage("1枚ぶんを登録しました。続けて次の用紙をどうぞ。");
-      window.setTimeout(() => setMessage(""), 3000);
-    } else {
-      setMessage("登録できませんでした。電波を確認して、もう一度お試しください。");
-    }
-  }
-
-  return (
-    <section className="rounded-2xl border border-[#e3e8ee] bg-white p-4">
-      <h2 className="text-[15px] font-extrabold text-[#1f3350]">アンケート用紙を1枚ずつ入力する</h2>
-      <p className="text-[11.7px] text-[#5a6b7c]">
-        店頭で回収した用紙を見ながら、丸が付いている選択肢を押してください。無回答の設問は空のままで構いません。
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-3">
-        <div className="min-w-[140px] flex-1">
-          <label className="mb-0.5 block text-[11px] font-bold text-[#5a6b7c]" htmlFor="survey-store">
-            店舗
-          </label>
-          <select
-            id="survey-store"
-            value={storeId}
-            onChange={(e) => setStoreId(e.target.value)}
-            className="w-full rounded-lg border border-[#e3e8ee] bg-[#fbfcfd] px-3 py-2 text-base"
-          >
-            {STORES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}店
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-[140px] flex-1">
-          <label className="mb-0.5 block text-[11px] font-bold text-[#5a6b7c]" htmlFor="survey-date">
-            回答日
-          </label>
-          <input
-            id="survey-date"
-            type="date"
-            value={answeredOn}
-            onChange={(e) => setAnsweredOn(e.target.value)}
-            className="w-full rounded-lg border border-[#e3e8ee] bg-[#fbfcfd] px-3 py-2 text-base"
-          />
-        </div>
-      </div>
-
-      {SURVEY_QUESTIONS.map((q) => (
-        <fieldset key={q.key} className="mt-4 rounded-xl border border-[#e3e8ee] bg-[#fbfcfd] p-3">
-          {/* 見出しが枠線に食い込まないよう、legend は読み上げ用にして表示は div で出す */}
-          <legend className="sr-only">
-            {q.no}. {q.ja} {q.en}
-          </legend>
-          {/* 答えるのはほとんどが外国のお客様なので、英語を主・日本語を従にする */}
-          <div aria-hidden="true">
-            <div className="text-[15px] leading-snug font-extrabold text-[#1f3350]">
-              {q.no}. {q.en}
-            </div>
-            <div className="text-[11px] font-semibold text-[#5a6b7c]">{q.ja}</div>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {q.options.map((o) => {
-              const on = answer[q.key] === o.id;
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setAnswer((prev) => ({ ...prev, [q.key]: on ? "" : o.id }))}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition ${
-                    on ? "border-[#2f8f9d] bg-[#2f8f9d] text-white" : "border-[#e3e8ee] bg-white text-[#26313d]"
-                  }`}
-                >
-                  <span aria-hidden="true" className="text-base">
-                    {o.emoji}
-                  </span>
-                  <span className="leading-tight">
-                    <span className="block text-[15px] font-bold">{o.en}</span>
-                    <span className={`block text-[10.5px] ${on ? "text-white/80" : "text-[#5a6b7c]"}`}>{o.ja}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {q.writeIn && (
-            <div className="mt-2">
-              <label className="mb-0.5 block leading-tight" htmlFor="survey-country">
-                <span className="block text-[13px] font-bold text-[#26313d]">Country</span>
-                <span className="block text-[10.5px] font-semibold text-[#5a6b7c]">国名</span>
-              </label>
-              <input
-                id="survey-country"
-                type="text"
-                value={answer.country}
-                placeholder="用紙に国名の記入があれば入れる"
-                onChange={(e) => setAnswer((prev) => ({ ...prev, country: e.target.value }))}
-                className="w-full rounded-lg border border-[#e3e8ee] bg-white px-3 py-2 text-base"
-              />
-            </div>
-          )}
-        </fieldset>
-      ))}
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!ready || busy}
-          className="rounded-xl bg-[#1f3350] px-5 py-3 text-sm font-extrabold text-white disabled:opacity-40"
-        >
-          {busy ? "登録中…" : "この1枚を登録する"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setAnswer(createEmptyAnswer())}
-          className="rounded-xl border border-[#e3e8ee] bg-white px-4 py-3 text-sm font-bold text-[#5a6b7c]"
-        >
-          入力をクリア
-        </button>
-        {message && <span className="text-[12.5px] font-bold text-[#2f8f9d]">{message}</span>}
-      </div>
-    </section>
-  );
-}
-
 export function SurveyView({
   responses,
-  onAdd,
+  onStartAsking,
   onDelete,
 }: {
   responses: SurveyResponse[];
-  onAdd: (storeId: string, answeredOn: string, data: SurveyAnswer) => Promise<boolean>;
+  onStartAsking: () => void;
   onDelete: (id: string) => Promise<boolean>;
 }) {
   const [filter, setFilter] = useState<string>("all");
@@ -229,7 +79,20 @@ export function SurveyView({
 
   return (
     <div className="space-y-4">
-      <AnswerForm onSubmit={onAdd} />
+      {/* お客様にスマホを渡して答えてもらう。回収した紙を入力するときも同じ画面を使う */}
+      <section className="rounded-2xl border border-[#e3e8ee] bg-white p-4">
+        <h2 className="text-[15px] font-extrabold text-[#1f3350]">お客様に答えてもらう</h2>
+        <p className="text-[11.7px] text-[#5a6b7c]">
+          この端末を渡すと、英語の大きな画面が1問ずつ出ます。回収した紙を入力するときも同じ画面が使えます。
+        </p>
+        <button
+          type="button"
+          onClick={onStartAsking}
+          className="mt-3 w-full rounded-xl bg-[#2f8f9d] px-5 py-4 text-base font-extrabold text-white"
+        >
+          アンケートを始める
+        </button>
+      </section>
 
       <section className="rounded-2xl border border-[#e3e8ee] bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">

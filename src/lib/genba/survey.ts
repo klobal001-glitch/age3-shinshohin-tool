@@ -18,6 +18,11 @@ export type SurveyQuestion = {
   options: SurveyOption[];
   /** Q2 のように「国名」を自由記入させる設問 */
   writeIn?: { key: "country"; label: string };
+  /**
+   * 設問ごとの色。お客様がスマホで答えるとき、画面が切り替わったことと
+   * どこまで進んだかが一目で分かるようにするため。
+   */
+  color: string;
 };
 
 /**
@@ -27,6 +32,7 @@ export type SurveyQuestion = {
 export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   {
     key: "q1",
+    color: "#2f8f9d",
     no: 1,
     en: "How did you hear about us?",
     ja: "何を見て来店しましたか？",
@@ -41,6 +47,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q2",
+    color: "#3d7ab8",
     no: 2,
     en: "Which country are you from?",
     ja: "どちらの国からお越しですか？",
@@ -58,6 +65,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q3",
+    color: "#c1741c",
     no: 3,
     en: "What made you want to try it?",
     ja: "食べたいと思った理由は？",
@@ -71,6 +79,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q4",
+    color: "#c05f8a",
     no: 4,
     en: "Did the smell attract you?",
     ja: "匂いにひかれましたか？",
@@ -82,6 +91,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q5",
+    color: "#46a06b",
     no: 5,
     en: "Was it easy to order?",
     ja: "注文はしやすかったですか？",
@@ -93,6 +103,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q6",
+    color: "#6c5fa8",
     no: 6,
     en: "How was the price?",
     ja: "価格の印象は？",
