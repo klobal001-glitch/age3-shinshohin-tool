@@ -17,11 +17,16 @@ export const TASK_GROUPS: TaskGroup[] = [
     title: "A-1　開発",
     milestones: [
       {
+        id: "a1-m0",
+        label: "前々月4日まで",
+        rule: monthsBefore(2, 4),
+        tasks: [{ id: "shooting", label: "商品撮影" }],
+      },
+      {
         id: "a1-m1",
         label: "前々月28日まで",
         rule: monthsBefore(2, 28),
         tasks: [
-          { id: "shooting", label: "商品撮影" },
           { id: "video_shoot", label: "作り方動画撮影 →デザイン班に共有" },
           { id: "material_check", label: "材料確認（注文ロット・価格・納期・業者）" },
           { id: "cost_calc", label: "原価計算・使用量（g数）" },
