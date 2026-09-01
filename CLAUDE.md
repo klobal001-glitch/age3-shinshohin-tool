@@ -28,6 +28,29 @@
 | `src/lib/productInfo.ts` | 入力率の数え方・価格の自動計算（Uber = 元価格 ×1.4） |
 | `src/lib/prepTasks.ts` `src/lib/deadline.ts` | タスク定義と締め切りルール |
 
+## もう1つの画面：現場チェック（/genba）
+
+直営店（銀座・浅草・原宿）の視察を記録するための、**新商品ツールとは別のアプリ**。
+同じリポジトリ・同じURLの `/genba` に置いてあるだけで、画面もデータも別。
+（Claudeのログイン無しで開けるURLが必要だったため、公開済みのここに相乗りさせている）
+
+| ファイル | 役割 |
+| --- | --- |
+| `src/app/genba/page.tsx` | 入口。3画面の切り替え |
+| `src/components/genba/CheckView.tsx` | 現場チェック（3店舗 × 10項目・写真つき） |
+| `src/components/genba/SurveyView.tsx` | お客様アンケートの入力と集計 |
+| `src/components/genba/ReportView.tsx` | 改善レポート（優先度A→B→C・印刷用） |
+| `src/hooks/useGenbaData.ts` | Supabase の読み書き。使えないときはこの端末だけに保存する |
+| `src/lib/genba/checkItems.ts` `survey.ts` | 10項目とアンケート6問の定義 |
+
+- データは Supabase の `genba_store` / `genba_survey`、写真は Storage の `genba-photos`。
+  **まだ作られていない場合は「この端末だけ」で動く**（作るSQLは別リポジトリ
+  age3-genba-check の `supabase/schema.sql`）。新商品ツールのテーブルには触らない。
+- **10項目とアンケート6問は、会長・専務に共有済みの資料および店頭配布中の紙と同じ内容。**
+  増減・言い換えは業務に直結するので、必ず確認を取ってから変える。
+- 配色は資料に合わせた紺(#1f3350)＋ティール(#2f8f9d)。新商品ツールの配色には手を入れないよう、
+  この画面の色はクラスに直接書いている（globals.css は共有）。
+
 ## 見た目の約束（勝手に変えないこと）
 
 2026年8月に「メルカリ風のすっきりした案」を出したが、**現行の見た目のままがよい**
