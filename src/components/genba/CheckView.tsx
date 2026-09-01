@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CHECK_ITEMS, PRIO_LABELS, STORES, countDone } from "@/lib/genba/checkItems";
-import { sendToLine, storeText } from "@/lib/genba/shareText";
+import { lineTextFor, sendToLine, storeText } from "@/lib/genba/shareText";
 import { Photo, Prio, StoreData } from "@/lib/genba/types";
 import { PhotoStrip } from "@/components/genba/PhotoStrip";
 
@@ -71,7 +71,7 @@ export function CheckView({
   }
 
   async function handleSendLine() {
-    const result = await sendToLine(storeText(store, data));
+    const result = await sendToLine(lineTextFor(store, data));
     if (result === "copied") {
       flash("記録が長いのでコピーしました。LINEを開いて貼り付けてください。");
     } else if (result === "opened") {
@@ -217,7 +217,7 @@ export function CheckView({
       <section className="no-print rounded-2xl border border-[#e3e8ee] bg-white p-4">
         <h2 className="text-[15px] font-extrabold text-[#1f3350]">{store.name}店の記録を送る</h2>
         <p className="text-[11.7px] text-[#5a6b7c]">
-          いまこの画面に入力した{store.name}店ぶんを、優先度つきの文章にしてLINEに送ります。
+          いまこの画面に入力した{store.name}店ぶんを、優先度つきの文章にしてLINEに送ります。写真はリンクで付きます。
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button

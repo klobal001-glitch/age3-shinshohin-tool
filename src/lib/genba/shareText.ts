@@ -36,8 +36,25 @@ function lineOf(entry: Entry): string {
 
 const FOOTER = "※現場メモの下書きです。共有・提出前に上長の確認をお願いします。";
 
-/** LINEやメールにそのまま貼れる、1店舗ぶんのまとめ */
-export function storeText(store: Store, data: StoreData): string {
+/** いま開いている画面のURL（写真をまとめて見てもらうときの案内先） */
+function appUrl(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.origin + window.location.pathname;
+}
+
+/** 写真のURLを、項目ごとにまとめて並べる */
+function photoLines(data: StoreData): string[] {
+  const lines: string[] = [];
+  data.items.forEach((item, index) => {
+    if (item.photos.length === 0) return;
+    lines.push(`${index + 1}. ${CHECK_ITEMS[index].title}`);
+    for (const p of item.photos) lines.push(p.url);
+  });
+  if (lines.length === 0) return [];
+  return ["📷 写真", ...lines];
+}
+
+function head(store: Store, data: StoreData): string[] {
   const lines = [
     `【Age.3 現場チェック】${store.name}店`,
     `訪問日：${data.visitDate || "未定"}${data.visitMemo ? `（${data.visitMemo}）` : ""}`,
@@ -49,7 +66,28 @@ export function storeText(store: Store, data: StoreData): string {
   } else {
     for (const g of groups) for (const e of g.entries) lines.push(lineOf(e));
   }
-  lines.push("━━━━━━━━━━━━━", FOOTER);
+  lines.push("━━━━━━━━━━━━━");
+  return lines;
+}
+
+/** LINEやメールにそのまま貼れる、1店舗ぶんのまとめ（写真はURLで付ける） */
+export function storeText(store: Store, data: StoreData): string {
+  const photos = photoLines(data);
+  return [...head(store, data), ...photos, ...(photos.length ? ["━━━━━━━━━━━━━"] : []), FOOTER].join("\n");
+}
+
+/**
+ * 写真が多いと LINE の本文に収まらないので、
+ * そのときは写真のURLを1本ずつではなく、画面へのリンク1本にまとめる。
+ */
+export function storeTextCompact(store: Store, data: StoreData): string {
+  const count = data.items.reduce((n, it) => n + it.photos.length, 0);
+  const lines = head(store, data);
+  if (count > 0) {
+    const url = appUrl();
+    lines.push(`📷 写真${count}枚は現場チェックで見られます${url ? "：\n" + url : ""}`, "━━━━━━━━━━━━━");
+  }
+  lines.push(FOOTER);
   return lines.join("\n");
 }
 
@@ -79,6 +117,13 @@ export function allStoresText(storeMap: Record<string, StoreData>): string {
  * どちらになったかを呼び出し側で伝えられるよう、結果を返す。
  */
 const LINE_TEXT_LIMIT = 1000;
+
+/** LINEに渡す本文。長いときは写真URLを画面へのリンク1本にまとめる。 */
+export function lineTextFor(store: Store, data: StoreData): string {
+  const full = storeText(store, data);
+  if (full.length <= LINE_TEXT_LIMIT) return full;
+  return storeTextCompact(store, data);
+}
 
 export async function sendToLine(text: string): Promise<"opened" | "copied" | "failed"> {
   if (text.length <= LINE_TEXT_LIMIT) {
