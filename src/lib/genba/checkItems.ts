@@ -55,22 +55,24 @@ export const CHECK_ITEMS: CheckItem[] = [
     memoTemplate: ["断られる率：", "立ち位置：", "タイミング：", "声掛け：", "スタッフ差："].join("\n"),
   },
   {
-    title: "お客様インタビュー",
-    hint: "詳しくは別紙アンケート用紙で。ここには要点だけ書く",
-    points: [
-      "何を見て来店したか（チラシ／SNS／Google・口コミ／通りがかり／紹介／テレビ・雑誌）",
-      "気になった点",
-      "食べたいと思ったか",
-      "価格の印象",
-    ],
-  },
-  {
     title: "商品確認（実食）",
     hint: "盛り付け・量・ソース・揚げ色・温度・提供時間・写真との差・味のばらつき",
   },
   {
     title: "店舗環境",
     hint: "BGM・香り・清潔感・ゴミ箱・イートイン導線・サイン・照明・外観",
+  },
+  {
+    title: "ブランド統一",
+    hint: "ロゴ・色・フォント・接客・制服・ブランドメッセージに店舗差がないか",
+  },
+  {
+    title: "海外・外国人対応",
+    hint: "言葉が通じなくても注文できるか",
+    points: [
+      "価格が数字で分かるか",
+      "外国人客が注文で詰まっていないか",
+    ],
   },
   {
     title: "現場スタッフ・店長に聞く",
@@ -91,20 +93,6 @@ export const CHECK_ITEMS: CheckItem[] = [
       "印象に残っているお客様の言葉：",
       "本部へ：",
     ].join("\n"),
-  },
-  {
-    title: "ブランド統一",
-    hint: "ロゴ・色・フォント・接客・制服・ブランドメッセージに店舗差がないか",
-  },
-  {
-    title: "海外・外国人対応",
-    hint: "言葉が通じなくても注文できるか",
-    points: [
-      "英語メニュー・英語表記の有無",
-      "写真・番号・指さしで注文できる作りか",
-      "価格が数字で分かるか",
-      "外国人客が注文で詰まっていないか",
-    ],
   },
 ];
 
@@ -134,7 +122,13 @@ export function normalizeStoreData(raw: unknown): StoreData {
   const base = createEmptyStoreData();
   if (!raw || typeof raw !== "object") return base;
   const r = raw as Partial<StoreData>;
-  const items = Array.isArray(r.items) ? r.items : [];
+  const saved = Array.isArray(r.items) ? r.items : [];
+  /**
+   * 項目を増やしたり減らしたりした後の古い記録は、番号がずれて別の項目の
+   * メモとして出てしまう。数が合わないときは記録を引き継がない
+   * （訪問日とメモの取り違えより、空で始めた方が安全）。
+   */
+  const items = saved.length === CHECK_ITEMS.length ? saved : [];
   return {
     visitDate: typeof r.visitDate === "string" ? r.visitDate : "",
     visitMemo: typeof r.visitMemo === "string" ? r.visitMemo : "",
