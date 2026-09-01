@@ -32,8 +32,13 @@ export const TASK_GROUPS: TaskGroup[] = [
           {
             id: "cost_calc",
             label: "原価計算・使用量確定",
-            linkUrl: "https://age3-cost-calculator.vercel.app/",
-            linkLabel: "原価計算アプリ",
+            links: [
+              { url: "https://age3-cost-calculator.vercel.app/", label: "原価計算アプリ" },
+              {
+                url: "https://docs.google.com/spreadsheets/d/1ZMAuxuIRFJt6Dndhu1RROaek9deF6EaKS5fNjJ-BlCs/edit?gid=130221884#gid=130221884",
+                label: "商品原価一覧",
+              },
+            ],
           },
           { id: "material_image", label: "材料画像・使用量（g数）→デザイン班に共有" },
           {

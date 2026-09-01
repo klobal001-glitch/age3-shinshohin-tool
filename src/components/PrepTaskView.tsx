@@ -307,16 +307,21 @@ function MilestoneCard({
                     {t.label}
                   </span>
                 </label>
-                {t.linkUrl && (
-                  <a
-                    href={t.linkUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700"
-                    title="別タブで開く"
-                  >
-                    {t.linkLabel ?? "開く"} ↗
-                  </a>
+                {t.links && t.links.length > 0 && (
+                  <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                    {t.links.map((l) => (
+                      <a
+                        key={l.url}
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700"
+                        title="別タブで開く"
+                      >
+                        {l.label} ↗
+                      </a>
+                    ))}
+                  </span>
                 )}
               </div>
             )
