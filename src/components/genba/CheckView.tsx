@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { CHECK_ITEMS, PRIO_LABELS, STORES, countDone } from "@/lib/genba/checkItems";
+import { sendToLine, storeText } from "@/lib/genba/shareText";
 import { Photo, Prio, StoreData } from "@/lib/genba/types";
 import { PhotoStrip } from "@/components/genba/PhotoStrip";
 
@@ -61,6 +63,31 @@ export function CheckView({
 }) {
   const store = STORES.find((s) => s.id === storeId) ?? STORES[0];
   const done = countDone(data);
+  const [message, setMessage] = useState("");
+
+  function flash(text: string) {
+    setMessage(text);
+    window.setTimeout(() => setMessage(""), 4000);
+  }
+
+  async function handleSendLine() {
+    const result = await sendToLine(storeText(store, data));
+    if (result === "copied") {
+      flash("記録が長いのでコピーしました。LINEを開いて貼り付けてください。");
+    } else if (result === "opened") {
+      flash("LINEを開きました。送り先を選んでください。");
+    }
+  }
+
+  async function handleCopy() {
+    const text = storeText(store, data);
+    try {
+      await navigator.clipboard.writeText(text);
+      flash("コピーしました。LINEやメールに貼り付けてください。");
+    } catch {
+      window.prompt("下の記録をコピーしてください：", text);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -185,6 +212,31 @@ export function CheckView({
           </section>
         );
       })}
+
+      {/* この店舗ぶんの記録を、そのままLINEで送れるようにする */}
+      <section className="no-print rounded-2xl border border-[#e3e8ee] bg-white p-4">
+        <h2 className="text-[15px] font-extrabold text-[#1f3350]">{store.name}店の記録を送る</h2>
+        <p className="text-[11.7px] text-[#5a6b7c]">
+          いまこの画面に入力した{store.name}店ぶんを、優先度つきの文章にしてLINEに送ります。
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSendLine}
+            className="rounded-xl bg-[#06C755] px-5 py-3 text-sm font-extrabold text-white"
+          >
+            LINEに送る
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="rounded-xl border border-[#e3e8ee] bg-white px-4 py-3 text-sm font-bold text-[#5a6b7c]"
+          >
+            文字をコピー
+          </button>
+          {message && <span className="text-[12.5px] font-bold text-[#2f8f9d]">{message}</span>}
+        </div>
+      </section>
 
       <p className="pb-6 text-center text-[11.5px] leading-relaxed text-[#9aa7b3]">
         記録は現場メモの下書きです。共有・提出の前に、必ずご自身と上長（松下専務・中嶋会長）の目でご確認ください。

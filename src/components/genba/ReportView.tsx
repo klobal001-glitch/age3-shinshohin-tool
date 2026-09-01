@@ -1,61 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CHECK_ITEMS, PRIO_LABELS, STORES, hasAnyInput } from "@/lib/genba/checkItems";
-import { ItemRecord, Prio, StoreData } from "@/lib/genba/types";
-
-type Entry = { index: number; item: ItemRecord };
-type Group = { key: Prio; label: string; note: string; color: string; entries: Entry[] };
-
-/** 1店舗分を優先度ごとにまとめる。優先度が付いていない気づきは最後に回す。 */
-function groupsOf(data: StoreData): Group[] {
-  const entries: Entry[] = data.items
-    .map((item, index) => ({ index, item }))
-    .filter((e) => hasAnyInput(e.item));
-
-  const groups: Group[] = (["A", "B", "C"] as const).map((key) => ({
-    key,
-    label: `優先度 ${key}`,
-    note: PRIO_LABELS[key].note,
-    color: PRIO_LABELS[key].color,
-    entries: entries.filter((e) => e.item.prio === key),
-  }));
-  groups.push({
-    key: "",
-    label: "その他の気づき",
-    note: "優先度なし",
-    color: "#77828d",
-    entries: entries.filter((e) => e.item.prio === ""),
-  });
-  return groups.filter((g) => g.entries.length > 0);
-}
-
-/** 会長・専務へそのまま送れる、文字だけのまとめ */
-function buildText(storeMap: Record<string, StoreData>): string {
-  const lines: string[] = ["【Age.3 現場チェック結果】", "視察：2026/9/2〜9/5　銀座・浅草・原宿", "━━━━━━━━━━━━━"];
-  for (const store of STORES) {
-    const data = storeMap[store.id];
-    if (!data) continue;
-    const date = data.visitDate || "未定";
-    lines.push(`■ ${store.name}店　訪問日：${date}${data.visitMemo ? `（${data.visitMemo}）` : ""}`);
-    const groups = groupsOf(data);
-    if (groups.length === 0) {
-      lines.push("　（記入なし）");
-    } else {
-      for (const g of groups) {
-        for (const e of g.entries) {
-          const head = `　${e.item.done ? "✓" : "□"}[${e.item.prio || "-"}] ${CHECK_ITEMS[e.index].title}`;
-          const memo = e.item.memo.trim() ? `：${e.item.memo.trim()}` : "";
-          const photo = e.item.photos.length > 0 ? ` 📷${e.item.photos.length}` : "";
-          lines.push(head + memo + photo);
-        }
-      }
-    }
-    lines.push("━━━━━━━━━━━━━");
-  }
-  lines.push("※現場メモの下書きです。共有・提出前に上長の確認をお願いします。");
-  return lines.join("\n");
-}
+import { CHECK_ITEMS, PRIO_LABELS, STORES } from "@/lib/genba/checkItems";
+import { StoreData } from "@/lib/genba/types";
+import { allStoresText, groupsOf } from "@/lib/genba/shareText";
 
 export function ReportView({ storeMap }: { storeMap: Record<string, StoreData> }) {
   const [copied, setCopied] = useState("");
@@ -74,7 +22,7 @@ export function ReportView({ storeMap }: { storeMap: Record<string, StoreData> }
   }, [storeMap]);
 
   async function copyText() {
-    const text = buildText(storeMap);
+    const text = allStoresText(storeMap);
     try {
       await navigator.clipboard.writeText(text);
       setCopied("コピーしました。LINEやメールに貼り付けてください。");
