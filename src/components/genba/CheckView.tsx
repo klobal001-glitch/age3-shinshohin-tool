@@ -200,7 +200,17 @@ export function CheckView({
               value={rec.memo}
               placeholder="気づき・改善案をメモ"
               onChange={(e) => onUpdateItem(i, { memo: e.target.value })}
-              className="mt-2 min-h-[64px] w-full resize-y rounded-lg border border-[#e3e8ee] bg-[#fbfcfd] px-3 py-2 text-base"
+              onFocus={() => {
+                // 書き始めるときに見出しを用意する
+                if (item.memoTemplate && rec.memo === "") onUpdateItem(i, { memo: item.memoTemplate });
+              }}
+              onBlur={() => {
+                // 見出しのままなら記録に残さない
+                if (item.memoTemplate && rec.memo === item.memoTemplate) onUpdateItem(i, { memo: "" }, true);
+              }}
+              className={`mt-2 w-full resize-y rounded-lg border border-[#e3e8ee] bg-[#fbfcfd] px-3 py-2 text-base ${
+                item.memoTemplate ? "min-h-[150px]" : "min-h-[64px]"
+              }`}
             />
 
             <PhotoStrip
