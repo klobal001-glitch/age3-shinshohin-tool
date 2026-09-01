@@ -1,4 +1,4 @@
-import { ItemRecord, StoreData } from "@/lib/genba/types";
+import { ItemRecord, VisitData } from "@/lib/genba/types";
 
 export type Store = {
   id: string;
@@ -106,10 +106,26 @@ export function createEmptyItem(): ItemRecord {
   return { done: false, prio: "", memo: "", photos: [] };
 }
 
-export function createEmptyStoreData(): StoreData {
+/** 訪問の記録を Supabase に入れるときの見出し（店舗と日付から作る） */
+export function makeVisitId(storeId: string, date: string): string {
+  return `${storeId}__${date}`;
+}
+
+/** 見出しから店舗と日付を読み戻す。読めないものは訪問として扱わない */
+export function parseVisitId(id: string): { storeId: string; date: string } | null {
+  const at = id.indexOf("__");
+  if (at <= 0) return null;
+  const storeId = id.slice(0, at);
+  const date = id.slice(at + 2);
+  if (!STORES.some((s) => s.id === storeId) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  return { storeId, date };
+}
+
+export function createEmptyVisit(storeId: string, date: string): VisitData {
   return {
-    visitDate: "",
-    visitMemo: "",
+    storeId,
+    date,
+    memo: "",
     items: CHECK_ITEMS.map(() => createEmptyItem()),
   };
 }
@@ -118,10 +134,10 @@ export function createEmptyStoreData(): StoreData {
  * 保存済みの JSON を、いまの項目数・項目順に合わせて読み直す。
  * 項目が増えた・保存が壊れていた場合でも画面が落ちないようにする。
  */
-export function normalizeStoreData(raw: unknown): StoreData {
-  const base = createEmptyStoreData();
+export function normalizeVisit(storeId: string, date: string, raw: unknown): VisitData {
+  const base = createEmptyVisit(storeId, date);
   if (!raw || typeof raw !== "object") return base;
-  const r = raw as Partial<StoreData>;
+  const r = raw as Partial<VisitData>;
   const saved = Array.isArray(r.items) ? r.items : [];
   /**
    * 項目を増やしたり減らしたりした後の古い記録は、番号がずれて別の項目の
@@ -130,8 +146,9 @@ export function normalizeStoreData(raw: unknown): StoreData {
    */
   const items = saved.length === CHECK_ITEMS.length ? saved : [];
   return {
-    visitDate: typeof r.visitDate === "string" ? r.visitDate : "",
-    visitMemo: typeof r.visitMemo === "string" ? r.visitMemo : "",
+    storeId,
+    date,
+    memo: typeof r.memo === "string" ? r.memo : "",
     items: CHECK_ITEMS.map((_, i) => {
       const it = items[i] as Partial<ItemRecord> | undefined;
       if (!it || typeof it !== "object") return createEmptyItem();
@@ -151,8 +168,8 @@ export function normalizeStoreData(raw: unknown): StoreData {
   };
 }
 
-/** その店舗で「見た」にチェックが入っている項目数 */
-export function countDone(data: StoreData): number {
+/** その訪問で「見た」にチェックが入っている項目数 */
+export function countDone(data: VisitData): number {
   return data.items.filter((it) => it.done).length;
 }
 

@@ -5,7 +5,7 @@ import { SaveState } from "@/lib/genba/types";
 export type ViewId = "check" | "survey" | "report";
 
 const VIEWS: { id: ViewId; label: string; note: string }[] = [
-  { id: "check", label: "現場チェック", note: "3店舗 × 10項目" },
+  { id: "check", label: "現場チェック", note: "訪問ごとに9項目" },
   { id: "survey", label: "アンケート", note: "入力と集計" },
   { id: "report", label: "改善レポート", note: "A→B→C で出力" },
 ];
@@ -35,11 +35,14 @@ export function Header({
   onChangeView,
   saveState,
   onRetry,
+  period,
 }: {
   view: ViewId;
   onChangeView: (v: ViewId) => void;
   saveState: SaveState;
   onRetry: () => void;
+  /** 追加した訪問から作った日程。訪問がなければ空 */
+  period: string;
 }) {
   return (
     <header className="no-print">
@@ -61,7 +64,7 @@ export function Header({
             </div>
             <h1 className="mt-1 text-2xl font-extrabold">現場チェック</h1>
             <p className="text-[13px] text-[#cdddec]">
-              銀座・浅草・原宿　直営店視察　／　2026年 9月2日(水)〜5日(土)
+              銀座・浅草・原宿　直営店視察{period && `　／　${period}`}
             </p>
           </div>
           <SaveBadge state={saveState} onRetry={onRetry} />

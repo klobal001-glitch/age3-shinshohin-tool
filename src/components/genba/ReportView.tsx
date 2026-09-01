@@ -2,27 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { CHECK_ITEMS, PRIO_LABELS, STORES } from "@/lib/genba/checkItems";
-import { StoreData } from "@/lib/genba/types";
-import { allStoresText, groupsOf } from "@/lib/genba/shareText";
+import { Visit } from "@/lib/genba/types";
+import { allVisitsText, groupsOf } from "@/lib/genba/shareText";
 
-export function ReportView({ storeMap }: { storeMap: Record<string, StoreData> }) {
+export function ReportView({ visits }: { visits: Visit[] }) {
   const [copied, setCopied] = useState("");
 
   const totals = useMemo(() => {
     const t = { A: 0, B: 0, C: 0, photos: 0 };
-    for (const store of STORES) {
-      const data = storeMap[store.id];
-      if (!data) continue;
-      for (const item of data.items) {
+    for (const visit of visits) {
+      for (const item of visit.items) {
         if (item.prio) t[item.prio] += 1;
         t.photos += item.photos.length;
       }
     }
     return t;
-  }, [storeMap]);
+  }, [visits]);
 
   async function copyText() {
-    const text = allStoresText(storeMap);
+    const text = allVisitsText(visits);
     try {
       await navigator.clipboard.writeText(text);
       setCopied("コピーしました。LINEやメールに貼り付けてください。");
@@ -72,71 +70,88 @@ export function ReportView({ storeMap }: { storeMap: Record<string, StoreData> }
         </div>
       </section>
 
+      {visits.length === 0 && (
+        <p className="rounded-2xl border border-dashed border-[#e3e8ee] bg-white p-6 text-center text-[13px] text-[#5a6b7c]">
+          まだ訪問がありません。「現場チェック」で訪問を追加してください。
+        </p>
+      )}
+
       {STORES.map((store) => {
-        const data = storeMap[store.id];
-        const groups = data ? groupsOf(data) : [];
+        const mine = visits.filter((v) => v.storeId === store.id);
+        if (mine.length === 0) return null;
         return (
           <section key={store.id} className="print-block rounded-2xl border border-[#e3e8ee] bg-white p-4">
             <div className="flex flex-wrap items-center gap-3 border-b border-[#e3e8ee] pb-3">
               <span
-                className="grid h-9 w-14 flex-none place-items-center rounded-lg text-[13px] font-extrabold text-white"
+                className="grid h-9 flex-none place-items-center rounded-lg px-4 text-[13px] font-extrabold text-white"
                 style={{ background: store.color }}
               >
                 {store.name}
               </span>
-              <span className="text-[13px] font-bold text-[#1f3350]">
-                訪問日：{data?.visitDate || "____/__/__"}
+              <span className="text-[12.5px] font-bold text-[#5a6b7c]">
+                {mine.length === 1 ? "1回訪問" : `${mine.length}回訪問（${mine.map((v) => v.date).join(" → ")}）`}
               </span>
-              {data?.visitMemo && <span className="text-[12.5px] text-[#5a6b7c]">{data.visitMemo}</span>}
             </div>
 
-            {groups.length === 0 ? (
-              <p className="pt-3 text-[13px] text-[#5a6b7c]">まだ記入がありません。</p>
-            ) : (
-              groups.map((g) => (
-                <div key={g.key || "none"} className="pt-4">
-                  <h3 className="text-[13px] font-extrabold" style={{ color: g.color }}>
-                    {g.label}
-                    <span className="ml-2 font-semibold text-[#5a6b7c]">
-                      {g.note}・{g.entries.length}件
-                    </span>
+            {mine.map((visit) => {
+              const groups = groupsOf(visit);
+              return (
+                <div key={visit.id} className="print-block pt-4">
+                  <h3 className="text-[14px] font-extrabold text-[#1f3350]">
+                    {visit.date}
+                    {visit.memo && <span className="ml-2 text-[12px] font-semibold text-[#5a6b7c]">{visit.memo}</span>}
                   </h3>
-                  <ul className="mt-2 space-y-3">
-                    {g.entries.map((e) => (
-                      <li
-                        key={e.index}
-                        className="print-block rounded-xl border-l-4 bg-[#fbfcfd] p-3"
-                        style={{ borderLeftColor: g.color }}
-                      >
-                        <div className="text-[14px] font-extrabold">
-                          <span className="mr-1.5 text-[#5a6b7c] tabular-nums">{e.index + 1}.</span>
-                          {CHECK_ITEMS[e.index].title}
-                        </div>
-                        {e.item.memo.trim() ? (
-                          <p className="mt-1 text-[13px] whitespace-pre-wrap">{e.item.memo}</p>
-                        ) : (
-                          <p className="mt-1 text-[12.5px] text-[#5a6b7c]">（メモなし）</p>
-                        )}
-                        {e.item.photos.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {e.item.photos.map((p) => (
-                              // 静的書き出しのため next/image ではなく img を使う
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                key={p.path}
-                                src={p.url}
-                                alt={`${CHECK_ITEMS[e.index].title}の現場写真`}
-                                className="h-28 w-28 rounded-lg border border-[#e3e8ee] object-cover"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+
+                  {groups.length === 0 ? (
+                    <p className="pt-1 text-[13px] text-[#5a6b7c]">まだ記入がありません。</p>
+                  ) : (
+                    groups.map((g) => (
+                      <div key={g.key || "none"} className="pt-3">
+                        <h4 className="text-[13px] font-extrabold" style={{ color: g.color }}>
+                          {g.label}
+                          <span className="ml-2 font-semibold text-[#5a6b7c]">
+                            {g.note}・{g.entries.length}件
+                          </span>
+                        </h4>
+                        <ul className="mt-2 space-y-3">
+                          {g.entries.map((e) => (
+                            <li
+                              key={e.index}
+                              className="print-block rounded-xl border-l-4 bg-[#fbfcfd] p-3"
+                              style={{ borderLeftColor: g.color }}
+                            >
+                              <div className="text-[14px] font-extrabold">
+                                <span className="mr-1.5 text-[#5a6b7c] tabular-nums">{e.index + 1}.</span>
+                                {CHECK_ITEMS[e.index].title}
+                              </div>
+                              {e.item.memo.trim() ? (
+                                <p className="mt-1 text-[13px] whitespace-pre-wrap">{e.item.memo}</p>
+                              ) : (
+                                <p className="mt-1 text-[12.5px] text-[#5a6b7c]">（メモなし）</p>
+                              )}
+                              {e.item.photos.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {e.item.photos.map((p) => (
+                                    // 静的書き出しのため next/image ではなく img を使う
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      key={p.path}
+                                      src={p.url}
+                                      alt={`${CHECK_ITEMS[e.index].title}の現場写真`}
+                                      className="h-28 w-28 rounded-lg border border-[#e3e8ee] object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))
-            )}
+              );
+            })}
           </section>
         );
       })}

@@ -16,15 +16,23 @@ export type ItemRecord = {
   photos: Photo[];
 };
 
-/** 1店舗分の記録。Supabase には店舗ごとに1行、この形の JSON で入る。 */
-export type StoreData = {
+/**
+ * 訪問1回分の記録。同じ店に期間中2回行くことがあるので、
+ * 「店舗ごと」ではなく「店舗＋日付ごと」に1件持つ。
+ * Supabase には訪問ごとに1行、この形の JSON で入る。
+ */
+export type VisitData = {
+  storeId: string;
   /** 訪問日（YYYY-MM-DD） */
-  visitDate: string;
+  date: string;
   /** 時間帯などの補足メモ */
-  visitMemo: string;
+  memo: string;
   /** CHECK_ITEMS と同じ並び・同じ数 */
   items: ItemRecord[];
 };
+
+/** 一覧に出すときの1件。id は店舗と日付から作る（makeVisitId） */
+export type Visit = VisitData & { id: string };
 
 /** アンケート1枚分の回答。値は選択肢の id（未回答は空文字）。 */
 export type SurveyAnswer = {

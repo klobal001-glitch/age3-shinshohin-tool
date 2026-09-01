@@ -37,17 +37,24 @@
 | ファイル | 役割 |
 | --- | --- |
 | `src/app/genba/page.tsx` | 入口。3画面の切り替え |
-| `src/components/genba/CheckView.tsx` | 現場チェック（3店舗 × 10項目・写真つき） |
-| `src/components/genba/SurveyView.tsx` | お客様アンケートの入力と集計 |
+| `src/components/genba/CheckView.tsx` | 現場チェック（訪問ごとに9項目・写真つき） |
+| `src/components/genba/SurveyAskView.tsx` | お客様にスマホを渡して答えてもらう画面（1問ずつ） |
+| `src/components/genba/SurveyView.tsx` | アンケートの集計 |
 | `src/components/genba/ReportView.tsx` | 改善レポート（優先度A→B→C・印刷用） |
 | `src/hooks/useGenbaData.ts` | Supabase の読み書き。使えないときはこの端末だけに保存する |
 | `src/lib/genba/checkItems.ts` `survey.ts` | 10項目とアンケート6問の定義 |
 
+- 記録の単位は「訪問（店舗＋日付）」。同じ店に期間中2回行っても別の記録として残り、
+  再訪の画面には前回の指摘が出る。`genba_store` の主キーに `ginza__2026-09-02` の形で入れて
+  いるので、テーブルは増やしていない（読めない行＝店舗ごとに1件だった頃の記録は引き継がない）。
 - データは Supabase の `genba_store` / `genba_survey`、写真は Storage の `genba-photos`。
   **まだ作られていない場合は「この端末だけ」で動く**（作るSQLは別リポジトリ
   age3-genba-check の `supabase/schema.sql`）。新商品ツールのテーブルには触らない。
-- **10項目とアンケート6問は、会長・専務に共有済みの資料および店頭配布中の紙と同じ内容。**
-  増減・言い換えは業務に直結するので、必ず確認を取ってから変える。
+- **9項目とアンケート6問は業務に直結する。** 増減・言い換えは必ず確認を取ってから変える。
+  2026年9月に松尾さんの判断で見直した：お客様インタビューはアンケートと重複するため削除、
+  SNS・口コミ施策は「現場スタッフ・店長に聞く」に差し替えて最後に置いた、
+  アンケートQ4は匂いから「また来たいか」に差し替え。
+  **会長・専務に共有済みの出張企画資料は見直し前の内容のまま。**
 - 配色は資料に合わせた紺(#1f3350)＋ティール(#2f8f9d)。新商品ツールの配色には手を入れないよう、
   この画面の色はクラスに直接書いている（globals.css は共有）。
 

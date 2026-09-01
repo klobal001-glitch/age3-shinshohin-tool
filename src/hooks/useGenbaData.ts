@@ -1,24 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { STORES, createEmptyStoreData, normalizeStoreData } from "@/lib/genba/checkItems";
+import {
+  STORES,
+  createEmptyVisit,
+  makeVisitId,
+  normalizeVisit,
+  parseVisitId,
+} from "@/lib/genba/checkItems";
 import { normalizeAnswer } from "@/lib/genba/survey";
-import { ItemRecord, SaveState, StoreData, SurveyAnswer, SurveyResponse } from "@/lib/genba/types";
+import { ItemRecord, SaveState, SurveyAnswer, SurveyResponse, Visit, VisitData } from "@/lib/genba/types";
 
 type StoreRow = { store_id: string; data: unknown };
 type SurveyRow = { id: string; store_id: string; answered_on: string | null; data: unknown };
 
 /** 共有データベースが使えないときの、この端末だけの控え */
-const LS_KEY = "age3_genba_v1";
+const LS_KEY = "age3_genba_v2";
 
-function buildInitialStoreMap(): Record<string, StoreData> {
-  const map: Record<string, StoreData> = {};
-  for (const s of STORES) map[s.id] = createEmptyStoreData();
-  return map;
-}
-
-type Cached = { stores: Record<string, StoreData>; surveys: SurveyResponse[] };
+type Cached = { visits: Record<string, VisitData>; surveys: SurveyResponse[] };
 
 function lsLoad(): Cached | null {
   if (typeof window === "undefined") return null;
@@ -26,59 +26,67 @@ function lsLoad(): Cached | null {
     const raw = window.localStorage.getItem(LS_KEY);
     if (!raw) return null;
     const v = JSON.parse(raw) as Partial<Cached>;
-    const stores = buildInitialStoreMap();
-    if (v.stores) {
-      for (const s of STORES) if (v.stores[s.id]) stores[s.id] = normalizeStoreData(v.stores[s.id]);
+    const visits: Record<string, VisitData> = {};
+    for (const [id, data] of Object.entries(v.visits ?? {})) {
+      const parsed = parseVisitId(id);
+      if (parsed) visits[id] = normalizeVisit(parsed.storeId, parsed.date, data);
     }
-    return { stores, surveys: Array.isArray(v.surveys) ? v.surveys : [] };
+    return { visits, surveys: Array.isArray(v.surveys) ? v.surveys : [] };
   } catch {
     return null;
   }
 }
 
-function lsSave(stores: Record<string, StoreData>, surveys: SurveyResponse[]) {
+function lsSave(visits: Record<string, VisitData>, surveys: SurveyResponse[]) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(LS_KEY, JSON.stringify({ stores, surveys }));
+    window.localStorage.setItem(LS_KEY, JSON.stringify({ visits, surveys }));
   } catch {
     // 端末の保存領域が使えないときは何もしない
   }
 }
 
+/** 日付が早い順、同じ日なら店舗の並び順 */
+function sortVisits(map: Record<string, VisitData>): Visit[] {
+  const order = new Map(STORES.map((s, i) => [s.id, i]));
+  return Object.entries(map)
+    .map(([id, data]) => ({ id, ...data }))
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) || (order.get(a.storeId) ?? 9) - (order.get(b.storeId) ?? 9)
+    );
+}
+
 /**
- * 現場チェックの記録とアンケート回答を Supabase の共有データベースに保存する。
- * チームの誰が開いても、どの端末で開いても同じデータが見える／編集できる。
+ * 訪問（店舗＋日付）ごとの記録と、アンケート回答を Supabase の共有データベースに
+ * 保存する。同じ店に期間中2回行っても、別の記録として残る。
  *
- * 共有データベースの用意ができていない・電波が届かないときは、この端末だけに
- * 保存して先に進めるようにする（視察中に入力が止まらないことを優先する）。
+ * 共有データベースが使えない・電波が届かないときは、この端末だけに保存して
+ * 先に進めるようにする（視察中に入力が止まらないことを優先する）。
  * その場合は shared が false になり、画面にその旨を出す。
- *
- * 入力は1文字ごとには送らず、600ms 止まってからまとめて送る。
  */
 export function useGenbaData() {
   /** この端末に残っている前回の内容。最初の描画に間に合うよう一度だけ読む */
   const [cached] = useState<Cached | null>(lsLoad);
 
-  const [storeMap, setStoreMap] = useState<Record<string, StoreData>>(
-    () => cached?.stores ?? buildInitialStoreMap()
-  );
+  const [visitMap, setVisitMap] = useState<Record<string, VisitData>>(() => cached?.visits ?? {});
   const [responses, setResponses] = useState<SurveyResponse[]>(() => cached?.surveys ?? []);
   const [loading, setLoading] = useState(true);
   /** true = チーム全員と共有できている、false = この端末だけ */
   const [shared, setShared] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  const storeMapRef = useRef(storeMap);
+  const visitMapRef = useRef(visitMap);
   const responsesRef = useRef(responses);
   useEffect(() => {
-    storeMapRef.current = storeMap;
-  }, [storeMap]);
+    visitMapRef.current = visitMap;
+  }, [visitMap]);
   useEffect(() => {
     responsesRef.current = responses;
   }, [responses]);
 
   const persistLocal = useCallback(() => {
-    lsSave(storeMapRef.current, responsesRef.current);
+    lsSave(visitMapRef.current, responsesRef.current);
   }, []);
 
   useEffect(() => {
@@ -101,12 +109,15 @@ export function useGenbaData() {
       let ok = true;
 
       if (!storeRes.error && storeRes.data) {
-        const map = buildInitialStoreMap();
+        const map: Record<string, VisitData> = {};
         for (const row of storeRes.data as StoreRow[]) {
-          if (map[row.store_id]) map[row.store_id] = normalizeStoreData(row.data);
+          // 訪問として読めない行（店舗ごとに1件だった頃の記録）は引き継がない
+          const parsed = parseVisitId(row.store_id);
+          if (!parsed) continue;
+          map[row.store_id] = normalizeVisit(parsed.storeId, parsed.date, row.data);
         }
-        setStoreMap(map);
-        storeMapRef.current = map;
+        setVisitMap(map);
+        visitMapRef.current = map;
       } else {
         ok = false;
         console.error("genba_store の読み込みに失敗しました", storeRes.error);
@@ -127,7 +138,7 @@ export function useGenbaData() {
       }
 
       setShared(ok);
-      if (ok) lsSave(storeMapRef.current, responsesRef.current);
+      if (ok) lsSave(visitMapRef.current, responsesRef.current);
       clearTimeout(giveUp);
       setLoading(false);
     }
@@ -140,9 +151,9 @@ export function useGenbaData() {
   }, []);
 
   /* ------------------------------------------------------------------ *
-   * 現場チェックの保存（店舗ごとにまとめ保存）
+   * 訪問の記録の保存（訪問ごとにまとめ保存）
    * ------------------------------------------------------------------ */
-  const pendingRef = useRef<Record<string, StoreData>>({});
+  const pendingRef = useRef<Record<string, VisitData>>({});
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const inflightRef = useRef(0);
   const hadErrorRef = useRef(false);
@@ -156,8 +167,8 @@ export function useGenbaData() {
   }, []);
 
   const flush = useCallback(
-    (storeId?: string) => {
-      const ids = storeId ? [storeId] : Object.keys(pendingRef.current);
+    (visitId?: string) => {
+      const ids = visitId ? [visitId] : Object.keys(pendingRef.current);
       for (const id of ids) {
         const data = pendingRef.current[id];
         if (!data) continue;
@@ -174,7 +185,7 @@ export function useGenbaData() {
           .then(({ error }) => {
             inflightRef.current = Math.max(0, inflightRef.current - 1);
             if (error) {
-              console.error("genba_store の保存に失敗しました", error);
+              console.error("訪問の記録の保存に失敗しました", error);
               // 送れなかった内容は捨てずに保存待ちへ戻す。
               // （この間に新しい入力があれば、そちらが最新なので上書きしない）
               pendingRef.current[id] = pendingRef.current[id] ?? data;
@@ -241,65 +252,116 @@ export function useGenbaData() {
     return () => clearInterval(t);
   }, [flush]);
 
-  const applyStore = useCallback(
-    (storeId: string, next: StoreData, immediate: boolean) => {
-      pendingRef.current[storeId] = next;
-      storeMapRef.current = { ...storeMapRef.current, [storeId]: next };
-      setStoreMap((prev) => ({ ...prev, [storeId]: next }));
+  const applyVisit = useCallback(
+    (visitId: string, next: VisitData, immediate: boolean) => {
+      pendingRef.current[visitId] = next;
+      visitMapRef.current = { ...visitMapRef.current, [visitId]: next };
+      setVisitMap((prev) => ({ ...prev, [visitId]: next }));
       persistLocal();
 
       hadErrorRef.current = false;
       setSaveState("saving");
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-      if (timersRef.current[storeId]) clearTimeout(timersRef.current[storeId]);
+      if (timersRef.current[visitId]) clearTimeout(timersRef.current[visitId]);
       if (immediate) {
-        flush(storeId);
+        flush(visitId);
         return;
       }
-      timersRef.current[storeId] = setTimeout(() => flush(storeId), 600);
+      timersRef.current[visitId] = setTimeout(() => flush(visitId), 600);
     },
     [flush, persistLocal]
   );
 
-  const currentStore = useCallback(
-    (storeId: string): StoreData =>
-      pendingRef.current[storeId] ?? storeMapRef.current[storeId] ?? createEmptyStoreData(),
+  const currentVisit = useCallback((visitId: string): VisitData | null => {
+    const pending = pendingRef.current[visitId];
+    if (pending) return pending;
+    return visitMapRef.current[visitId] ?? null;
+  }, []);
+
+  const visits = useMemo(() => sortVisits(visitMap), [visitMap]);
+
+  const getVisit = useCallback(
+    (visitId: string): VisitData | null => visitMap[visitId] ?? null,
+    [visitMap]
+  );
+
+  /** 訪問を1件足す。同じ店・同じ日がすでにあれば、その id をそのまま返す */
+  const addVisit = useCallback(
+    (storeId: string, date: string): string => {
+      const id = makeVisitId(storeId, date);
+      if (visitMapRef.current[id]) return id;
+      applyVisit(id, createEmptyVisit(storeId, date), true);
+      return id;
+    },
+    [applyVisit]
+  );
+
+  const removeVisit = useCallback(
+    (visitId: string) => {
+      delete pendingRef.current[visitId];
+      if (timersRef.current[visitId]) {
+        clearTimeout(timersRef.current[visitId]);
+        delete timersRef.current[visitId];
+      }
+      const next = { ...visitMapRef.current };
+      delete next[visitId];
+      visitMapRef.current = next;
+      setVisitMap(next);
+      lsSave(next, responsesRef.current);
+      supabase
+        .from("genba_store")
+        .delete()
+        .eq("store_id", visitId)
+        .then(({ error }) => {
+          if (error) console.error("訪問の削除に失敗しました", error);
+        });
+    },
     []
   );
 
-  const updateStore = useCallback(
-    (storeId: string, patch: Partial<Pick<StoreData, "visitDate" | "visitMemo">>) => {
-      applyStore(storeId, { ...currentStore(storeId), ...patch }, false);
+  /** 時間帯などの補足メモ */
+  const updateMemo = useCallback(
+    (visitId: string, memo: string) => {
+      const base = currentVisit(visitId);
+      if (!base) return;
+      applyVisit(visitId, { ...base, memo }, false);
     },
-    [applyStore, currentStore]
+    [applyVisit, currentVisit]
   );
 
   const updateItem = useCallback(
-    (storeId: string, index: number, patch: Partial<ItemRecord>, immediate = false) => {
-      const base = currentStore(storeId);
+    (visitId: string, index: number, patch: Partial<ItemRecord>, immediate = false) => {
+      const base = currentVisit(visitId);
+      if (!base) return;
       const items = base.items.map((it, i) => (i === index ? { ...it, ...patch } : it));
-      applyStore(storeId, { ...base, items }, immediate);
+      applyVisit(visitId, { ...base, items }, immediate);
     },
-    [applyStore, currentStore]
+    [applyVisit, currentVisit]
   );
 
-  const getStore = useCallback(
-    (storeId: string): StoreData => storeMap[storeId] ?? createEmptyStoreData(),
-    [storeMap]
+  /**
+   * 同じ店の、この訪問より前で最も新しい記録。
+   * 再訪したときに「前回の指摘」を出すために使う。
+   */
+  const previousVisit = useCallback(
+    (visitId: string): Visit | null => {
+      const here = visitMap[visitId];
+      if (!here) return null;
+      const earlier = visits.filter((v) => v.storeId === here.storeId && v.date < here.date);
+      return earlier.length ? earlier[earlier.length - 1] : null;
+    },
+    [visitMap, visits]
   );
 
   /* ------------------------------------------------------------------ *
    * アンケート回答（1枚ずつ追加・削除）
    * ------------------------------------------------------------------ */
-  const addLocalResponse = useCallback(
-    (row: SurveyResponse) => {
-      const next = [...responsesRef.current, row];
-      responsesRef.current = next;
-      setResponses(next);
-      lsSave(storeMapRef.current, next);
-    },
-    []
-  );
+  const addLocalResponse = useCallback((row: SurveyResponse) => {
+    const next = [...responsesRef.current, row];
+    responsesRef.current = next;
+    setResponses(next);
+    lsSave(visitMapRef.current, next);
+  }, []);
 
   const addResponse = useCallback(
     async (storeId: string, answeredOn: string, data: SurveyAnswer): Promise<boolean> => {
@@ -333,33 +395,33 @@ export function useGenbaData() {
     [addLocalResponse, markSaved]
   );
 
-  const deleteResponse = useCallback(
-    async (id: string): Promise<boolean> => {
-      const next = responsesRef.current.filter((r) => r.id !== id);
-      responsesRef.current = next;
-      setResponses(next);
-      lsSave(storeMapRef.current, next);
-      if (id.startsWith("local-")) return true;
+  const deleteResponse = useCallback(async (id: string): Promise<boolean> => {
+    const next = responsesRef.current.filter((r) => r.id !== id);
+    responsesRef.current = next;
+    setResponses(next);
+    lsSave(visitMapRef.current, next);
+    if (id.startsWith("local-")) return true;
 
-      const { error } = await supabase.from("genba_survey").delete().eq("id", id);
-      if (error) {
-        console.error("アンケート回答の削除に失敗しました", error);
-        setShared(false);
-        return false;
-      }
-      return true;
-    },
-    []
-  );
+    const { error } = await supabase.from("genba_survey").delete().eq("id", id);
+    if (error) {
+      console.error("アンケート回答の削除に失敗しました", error);
+      setShared(false);
+      return false;
+    }
+    return true;
+  }, []);
 
   return {
     loading,
     shared,
     saveState,
     retrySave,
-    storeMap,
-    getStore,
-    updateStore,
+    visits,
+    getVisit,
+    previousVisit,
+    addVisit,
+    removeVisit,
+    updateMemo,
     updateItem,
     responses,
     addResponse,

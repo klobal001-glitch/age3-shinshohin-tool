@@ -1,11 +1,11 @@
-import { CHECK_ITEMS, PRIO_LABELS, STORES, Store, hasAnyInput } from "@/lib/genba/checkItems";
-import { ItemRecord, Prio, StoreData } from "@/lib/genba/types";
+import { CHECK_ITEMS, PRIO_LABELS, STORES, hasAnyInput } from "@/lib/genba/checkItems";
+import { ItemRecord, Prio, Visit, VisitData } from "@/lib/genba/types";
 
 export type Entry = { index: number; item: ItemRecord };
 export type Group = { key: Prio; label: string; note: string; color: string; entries: Entry[] };
 
 /** 1店舗分を優先度ごとにまとめる。優先度が付いていない気づきは最後に回す。 */
-export function groupsOf(data: StoreData): Group[] {
+export function groupsOf(data: VisitData): Group[] {
   const entries: Entry[] = data.items
     .map((item, index) => ({ index, item }))
     .filter((e) => hasAnyInput(e.item));
@@ -43,7 +43,7 @@ function appUrl(): string {
 }
 
 /** 写真のURLを、項目ごとにまとめて並べる */
-function photoLines(data: StoreData): string[] {
+function photoLines(data: VisitData): string[] {
   const lines: string[] = [];
   data.items.forEach((item, index) => {
     if (item.photos.length === 0) return;
@@ -54,10 +54,14 @@ function photoLines(data: StoreData): string[] {
   return ["📷 写真", ...lines];
 }
 
-function head(store: Store, data: StoreData): string[] {
+function storeName(storeId: string): string {
+  return (STORES.find((s) => s.id === storeId) ?? STORES[0]).name;
+}
+
+function head(data: VisitData): string[] {
   const lines = [
-    `【Age.3 現場チェック】${store.name}店`,
-    `訪問日：${data.visitDate || "未定"}${data.visitMemo ? `（${data.visitMemo}）` : ""}`,
+    `【Age.3 現場チェック】${storeName(data.storeId)}店`,
+    `訪問日：${data.date}${data.memo ? `（${data.memo}）` : ""}`,
     "━━━━━━━━━━━━━",
   ];
   const groups = groupsOf(data);
@@ -70,19 +74,19 @@ function head(store: Store, data: StoreData): string[] {
   return lines;
 }
 
-/** LINEやメールにそのまま貼れる、1店舗ぶんのまとめ（写真はURLで付ける） */
-export function storeText(store: Store, data: StoreData): string {
+/** LINEやメールにそのまま貼れる、訪問1回ぶんのまとめ（写真はURLで付ける） */
+export function visitText(data: VisitData): string {
   const photos = photoLines(data);
-  return [...head(store, data), ...photos, ...(photos.length ? ["━━━━━━━━━━━━━"] : []), FOOTER].join("\n");
+  return [...head(data), ...photos, ...(photos.length ? ["━━━━━━━━━━━━━"] : []), FOOTER].join("\n");
 }
 
 /**
  * 写真が多いと LINE の本文に収まらないので、
  * そのときは写真のURLを1本ずつではなく、画面へのリンク1本にまとめる。
  */
-export function storeTextCompact(store: Store, data: StoreData): string {
+export function visitTextCompact(data: VisitData): string {
   const count = data.items.reduce((n, it) => n + it.photos.length, 0);
-  const lines = head(store, data);
+  const lines = head(data);
   if (count > 0) {
     const url = appUrl();
     lines.push(`📷 写真${count}枚は現場チェックで見られます${url ? "：\n" + url : ""}`, "━━━━━━━━━━━━━");
@@ -91,20 +95,22 @@ export function storeTextCompact(store: Store, data: StoreData): string {
   return lines.join("\n");
 }
 
-/** 3店舗ぶんをまとめたもの（改善レポート用） */
-export function allStoresText(storeMap: Record<string, StoreData>): string {
-  const lines = ["【Age.3 現場チェック結果】", "視察：2026/9/2〜9/5　銀座・浅草・原宿", "━━━━━━━━━━━━━"];
+/** 全訪問をまとめたもの（改善レポート用）。店舗ごとに、日付順で並べる */
+export function allVisitsText(visits: Visit[]): string {
+  const lines = ["【Age.3 現場チェック結果】", "━━━━━━━━━━━━━"];
   for (const store of STORES) {
-    const data = storeMap[store.id];
-    if (!data) continue;
-    lines.push(`■ ${store.name}店　訪問日：${data.visitDate || "未定"}${data.visitMemo ? `（${data.visitMemo}）` : ""}`);
-    const groups = groupsOf(data);
-    if (groups.length === 0) {
-      lines.push("　（記入なし）");
-    } else {
-      for (const g of groups) for (const e of g.entries) lines.push(lineOf(e));
+    const mine = visits.filter((v) => v.storeId === store.id);
+    if (mine.length === 0) continue;
+    for (const v of mine) {
+      lines.push(`■ ${store.name}店　${v.date}${v.memo ? `（${v.memo}）` : ""}`);
+      const groups = groupsOf(v);
+      if (groups.length === 0) {
+        lines.push("　（記入なし）");
+      } else {
+        for (const g of groups) for (const e of g.entries) lines.push(lineOf(e));
+      }
+      lines.push("━━━━━━━━━━━━━");
     }
-    lines.push("━━━━━━━━━━━━━");
   }
   lines.push(FOOTER);
   return lines.join("\n");
@@ -119,10 +125,10 @@ export function allStoresText(storeMap: Record<string, StoreData>): string {
 const LINE_TEXT_LIMIT = 1000;
 
 /** LINEに渡す本文。長いときは写真URLを画面へのリンク1本にまとめる。 */
-export function lineTextFor(store: Store, data: StoreData): string {
-  const full = storeText(store, data);
+export function lineTextFor(data: VisitData): string {
+  const full = visitText(data);
   if (full.length <= LINE_TEXT_LIMIT) return full;
-  return storeTextCompact(store, data);
+  return visitTextCompact(data);
 }
 
 export async function sendToLine(text: string): Promise<"opened" | "copied" | "failed"> {
