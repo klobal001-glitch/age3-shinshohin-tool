@@ -291,20 +291,34 @@ function MilestoneCard({
                 onChoose={(v) => onLinkedChoose(t, v)}
               />
             ) : (
-              <label
+              <div
                 key={t.id}
-                className="flex cursor-pointer items-start gap-3 px-3 py-2.5 text-sm hover:bg-amber-50/60"
+                className="flex items-start gap-3 px-3 py-2.5 text-sm hover:bg-amber-50/60"
               >
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-amber-600"
-                  checked={isChecked(t)}
-                  onChange={() => onToggle(t)}
-                />
-                <span className={isChecked(t) ? "text-stone-400 line-through" : "text-stone-700"}>
-                  {t.label}
-                </span>
-              </label>
+                {/* チェックの当たり判定はラベルまで。右のボタンは別扱いにする */}
+                <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-amber-600"
+                    checked={isChecked(t)}
+                    onChange={() => onToggle(t)}
+                  />
+                  <span className={isChecked(t) ? "text-stone-400 line-through" : "text-stone-700"}>
+                    {t.label}
+                  </span>
+                </label>
+                {t.linkUrl && (
+                  <a
+                    href={t.linkUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700"
+                    title="別タブで開く"
+                  >
+                    {t.linkLabel ?? "開く"} ↗
+                  </a>
+                )}
+              </div>
             )
           )}
         </div>

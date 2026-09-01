@@ -29,7 +29,12 @@ export const TASK_GROUPS: TaskGroup[] = [
         tasks: [
           { id: "video_shoot", label: "作り方動画撮影 →デザイン班に共有" },
           { id: "material_check", label: "材料確認（注文ロット・価格・納期・業者）" },
-          { id: "cost_calc", label: "原価計算・使用量（g数）" },
+          {
+            id: "cost_calc",
+            label: "原価計算・使用量確定",
+            linkUrl: "https://age3-cost-calculator.vercel.app/",
+            linkLabel: "原価計算アプリ",
+          },
           { id: "material_image", label: "材料画像・使用量（g数）→デザイン班に共有" },
           {
             id: "no_alcohol_pork",
