@@ -29,6 +29,8 @@ export function SurveyAskView({
   onSubmit: (storeId: string, answeredOn: string, data: SurveyAnswer) => Promise<boolean>;
   onExit: () => void;
 }) {
+  /** 表紙を出しているか。お客様に渡す前の状態 */
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [answer, setAnswer] = useState<SurveyAnswer>(createEmptyAnswer);
   const [done, setDone] = useState(false);
@@ -67,11 +69,81 @@ export function SurveyAskView({
     else setStep((s) => s + 1);
   }
 
+  /** 次のお客様のために、表紙から始め直す */
   function reset() {
     setAnswer(createEmptyAnswer());
     setStep(0);
     setDone(false);
     setFailed(false);
+    setStarted(false);
+  }
+
+  /* ---------------- 表紙（お客様に渡す前） ---------------- */
+  if (!started) {
+    return (
+      <div className="min-h-screen bg-[#f6f8fa]">
+        <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5 py-6">
+          {/* ここはスタッフが触るところ。お客様に渡す前に店舗を合わせる */}
+          <div className="flex items-center gap-3">
+            <select
+              value={storeId}
+              onChange={(e) => onChangeStore(e.target.value)}
+              aria-label="店舗"
+              className="rounded-lg border border-[#e3e8ee] bg-white px-2 py-1 text-[12px] font-bold text-[#5a6b7c]"
+            >
+              {STORES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}店
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onExit}
+              aria-label="アンケートを終了する"
+              className="ml-auto px-1 text-lg leading-none font-bold text-[#8c9aa8]"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-center py-8 text-center">
+            <div className="text-[11px] font-bold tracking-[0.28em] text-[#2f8f9d] uppercase">
+              Age.3　Deep-fried Sandwich
+            </div>
+            <h1 className="mt-3 text-[32px] leading-tight font-extrabold text-[#1f3350]">
+              Thank you for visiting!
+            </h1>
+            <p className="mt-1 text-[13px] text-[#5a6b7c]">ご来店ありがとうございます。</p>
+
+            <div className="mt-8 rounded-2xl border border-[#e3e8ee] bg-white p-6">
+              <p className="text-[20px] leading-snug font-extrabold text-[#26313d]">
+                6 quick questions
+                <span className="block text-[15px] text-[#2f8f9d]">about 30 seconds</span>
+              </p>
+              <p className="mt-1 text-[12px] text-[#5a6b7c]">
+                かんたんな6つの質問です。30秒ほどで終わります。
+              </p>
+              <p className="mt-4 text-[13px] leading-snug font-bold text-[#26313d]">
+                Your answers help us make the shop better.
+                <span className="block text-[11.5px] font-semibold text-[#5a6b7c]">
+                  いただいた回答は、お店をより良くするために使わせていただきます。
+                </span>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStarted(true)}
+              className="mt-8 rounded-2xl bg-[#2f8f9d] px-6 py-6 text-[22px] font-extrabold text-white"
+            >
+              Start
+              <span className="block text-[13px] font-semibold opacity-90">はじめる</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   /* ---------------- お礼の画面 ---------------- */
@@ -111,19 +183,6 @@ export function SurveyAskView({
       {/* 上の細い帯：店舗と、いま何問目か */}
       <div className="sticky top-0 z-10 bg-white/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center gap-3">
-          <select
-            value={storeId}
-            onChange={(e) => onChangeStore(e.target.value)}
-            aria-label="店舗"
-            className="rounded-lg border border-[#e3e8ee] bg-white px-2 py-1 text-[12px] font-bold text-[#5a6b7c]"
-          >
-            {STORES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}店
-              </option>
-            ))}
-          </select>
-
           <div className="flex flex-1 justify-center gap-1.5" aria-hidden="true">
             {SURVEY_QUESTIONS.map((item, i) => (
               <span
