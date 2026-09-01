@@ -1,4 +1,4 @@
-import { Genre, IngredientRow, ProductInfo, VisualLinkGroup } from "./types";
+import { Genre, IngredientRow, ProductInfo, VisualLinkGroup, VisualYearArchive } from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
   { key: "product_image", label: "商品画像", size: "背景なし画像" },
@@ -88,7 +88,9 @@ export function createDefaultProductInfo(): ProductInfo {
     })),
     howToVideoUrl: "",
     recipeNotes: "",
+    visualYear: "",
     visualDownloads,
+    visualArchives: [],
     igCaption: "",
     xCaption: "",
     threadsCaption: "",
@@ -221,6 +223,28 @@ export function formatYen(value: number | null): string {
   return `¥${value.toLocaleString("ja-JP")}`;
 }
 
+/**
+ * ビジュアルの15項目をそろえる。
+ * 定義が増えたときに足りないグループを空リンクで補い、順番も定義どおりに直す。
+ * 現行の年と過去の年で同じ処理を使う。
+ */
+function normalizeVisualGroups(groups: unknown): VisualLinkGroup[] {
+  const existing = new Map(
+    (Array.isArray(groups) ? groups : [])
+      .filter((v): v is VisualLinkGroup => !!v && typeof (v as VisualLinkGroup).key === "string")
+      .map((v) => [v.key, v])
+  );
+  return VISUAL_DOWNLOAD_DEFS.map((d) => {
+    const cur = existing.get(d.key);
+    return {
+      key: d.key,
+      label: d.label,
+      size: d.size,
+      links: Array.isArray(cur?.links) ? cur.links : [],
+    };
+  });
+}
+
 /** 品名・分量・詳細スペックがすべて空の行か */
 export function isBlankIngredientRow(row: IngredientRow): boolean {
   return (
@@ -285,19 +309,11 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
     merged.ingredients = normalizeIngredientRows(merged.ingredients);
   }
 
-  // ビジュアルDLの定義が増えた場合に備えて、足りないグループを補う
-  const existing = new Map(
-    (Array.isArray(merged.visualDownloads) ? merged.visualDownloads : []).map((v) => [v.key, v])
-  );
-  merged.visualDownloads = VISUAL_DOWNLOAD_DEFS.map((d) => {
-    const cur = existing.get(d.key);
-    return {
-      key: d.key,
-      label: d.label,
-      size: d.size,
-      links: Array.isArray(cur?.links) ? cur.links : [],
-    };
-  });
+  merged.visualYear = typeof r.visualYear === "string" ? r.visualYear : "";
+  merged.visualDownloads = normalizeVisualGroups(merged.visualDownloads);
+  merged.visualArchives = (Array.isArray(merged.visualArchives) ? merged.visualArchives : [])
+    .filter((a): a is VisualYearArchive => !!a && typeof a.year === "string")
+    .map((a) => ({ year: a.year, groups: normalizeVisualGroups(a.groups) }));
 
   return merged;
 }

@@ -34,6 +34,12 @@ export interface IngredientRow {
     specs: string[]; // 詳細スペック（任意・複数可）
 }
 
+/** 過去の年のビジュアル一式。参照用に取っておくだけで、必須の数には入らない */
+export interface VisualYearArchive {
+    year: string; // 例 "2025"
+    groups: VisualLinkGroup[];
+}
+
 export interface VisualLinkGroup {
     key: string;
     label: string;
@@ -71,7 +77,12 @@ export interface ProductInfo {
     recipeNotes: string;
 
   // ビジュアルダウンロード
+  // ビジュアルは年ごとに作り直すことがある。visualDownloads は「一番新しい年」＝
+  // 今準備している年で、必須の数え方・カード画像・入力率はすべてこちらだけを見る。
+  // 古い年は visualArchives に参照用として残す。
+  visualYear: string; // 一番新しい年のラベル。空なら年で分けていない
   visualDownloads: VisualLinkGroup[];
+  visualArchives: VisualYearArchive[];
 
   // 紹介文各種（SNS・PR）
   igCaption: string;

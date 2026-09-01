@@ -5,6 +5,7 @@ import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import {
   DEFAULT_INGREDIENT_ROWS,
+  createDefaultProductInfo,
   UBER_RATE,
   autoUberPrice,
   effectiveUberPrice,
@@ -559,6 +560,11 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const [copyMsg, setCopyMsg] = useState("");
   /** 入力済みの項目を隠して、残っている必須項目だけを出す */
   const [onlyEmpty, setOnlyEmpty] = useState(false);
+  /**
+   * ビジュアルで見ている過去の年。null なら一番新しい年。
+   * 商品を切り替えたときに前の商品の年が残らないよう、商品IDも一緒に持つ。
+   */
+  const [visualYearTab, setVisualYearTab] = useState<{ id: string; year: string } | null>(null);
   /** 今どのセクションを見ているか。タブと見出しの両方を同じ色にするのに使う */
   const activeSection = useActiveSection(SECTION_IDS);
 
@@ -709,10 +715,58 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
 
   /* -------------------------------- ビジュアル -------------------------------- */
 
+  /**
+   * ビジュアルは年ごとに作り直すことがある。
+   * visualDownloads が「一番新しい年（今準備している年）」で、必須の数え方・
+   * カード画像・入力率はすべてそちらだけを見る。過去の年は参照用。
+   */
+  const currentYear = info.visualYear;
+  const viewingYear =
+    visualYearTab && visualYearTab.id === selectedProduct.id ? visualYearTab.year : currentYear;
+  const archive = info.visualArchives.find((a) => a.year === viewingYear);
+  /* 過去の年を見ているときは、その年のリンクを出す */
+  const shownVisuals = archive ? archive.groups : info.visualDownloads;
+  const viewingPast = !!archive;
+
   const updateVisual = (key: string, links: string[]) => {
+    if (archive) {
+      patch({
+        visualArchives: info.visualArchives.map((a) =>
+          a.year === archive.year
+            ? { ...a, groups: a.groups.map((v) => (v.key === key ? { ...v, links } : v)) }
+            : a
+        ),
+      });
+      return;
+    }
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
     });
+  };
+
+  /**
+   * 新しい年を作る。今の内容は過去の年として残し、新しい年は空から始める。
+   * 前の年のリンクが残っていて古い画像を使ってしまう事故を避けるため。
+   */
+  const addVisualYear = () => {
+    const next = prompt("新しく作る年を入れてください（例: 2026）")?.trim();
+    if (!next) return;
+    if (next === currentYear || info.visualArchives.some((a) => a.year === next)) {
+      alert(`「${next}」はすでにあります。`);
+      return;
+    }
+    let label = currentYear;
+    if (!label) {
+      label =
+        prompt("いま入っているビジュアルは何年のものですか？（例: 2025）")?.trim() ?? "";
+      if (!label) return;
+    }
+    patch({
+      visualYear: next,
+      visualDownloads: createDefaultProductInfo().visualDownloads,
+      visualArchives: [{ year: label, groups: info.visualDownloads }, ...info.visualArchives],
+    });
+    setVisualYearTab(null);
   };
 
   /**
@@ -1208,18 +1262,71 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
-        {info.visualDownloads
+
+        {/* 年ごとに作り直す商品のための切り替え。年を分けていない商品では出さない */}
+        <div className="flex flex-wrap items-center gap-1.5 print:hidden">
+          {currentYear && (
+            <>
+              <button
+                type="button"
+                onClick={() => setVisualYearTab(null)}
+                className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                  !viewingPast
+                    ? "border-amber-600 bg-amber-600 font-medium text-white"
+                    : "border-stone-300 text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                {currentYear}
+                <span className={`ml-1.5 ${!viewingPast ? "text-amber-100" : "text-stone-400"}`}>
+                  今準備中
+                </span>
+              </button>
+              {info.visualArchives.map((a) => (
+                <button
+                  key={a.year}
+                  type="button"
+                  onClick={() => setVisualYearTab({ id: selectedProduct.id, year: a.year })}
+                  className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                    viewingYear === a.year
+                      ? "border-stone-600 bg-stone-600 font-medium text-white"
+                      : "border-stone-300 text-stone-500 hover:bg-stone-50"
+                  }`}
+                >
+                  {a.year}
+                </button>
+              ))}
+            </>
+          )}
+          <button
+            type="button"
+            onClick={addVisualYear}
+            className="rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-amber-500 hover:text-amber-700"
+          >
+            ＋ 年を追加
+          </button>
+        </div>
+
+        {viewingPast && (
+          <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">
+            {viewingYear} は過去のぶんです。直せますが、必須の数・入力率・ビジュアル一覧の画像には入りません
+            （それらは「{currentYear}」を見ています）。
+          </p>
+        )}
+
+        {shownVisuals
           .filter((v) =>
-            isRequiredVisualKey(genre, v.key)
-              ? showRequired(visualFilledOf(v.links))
-              : showOptional()
+            viewingPast
+              ? true
+              : isRequiredVisualKey(genre, v.key)
+                ? showRequired(visualFilledOf(v.links))
+                : showOptional()
           )
           .map((v) => (
             <div key={v.key} className="rounded-lg border border-stone-200 p-3">
               <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-stone-600">
                 <Dot
                   filled={visualFilledOf(v.links)}
-                  optional={!isRequiredVisualKey(genre, v.key)}
+                  optional={viewingPast || !isRequiredVisualKey(genre, v.key)}
                 />
                 {v.label} {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
               </div>
@@ -1232,7 +1339,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                 />
               ))}
               <input
-                id={`f-visual-${v.key}`}
+                id={viewingPast ? undefined : `f-visual-${v.key}`}
                 className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
                 placeholder="URLを貼って Enter（複数まとめて貼ってもOK）"
                 aria-label={`${v.label}のリンクを追加`}
@@ -1241,7 +1348,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
               />
             </div>
           ))}
-        {onlyEmpty && visualFilled === visualTotal && (
+        {!viewingPast && onlyEmpty && visualFilled === visualTotal && (
           <p className="text-xs text-stone-400">必須のビジュアルはすべて入っています。</p>
         )}
       </Section>
