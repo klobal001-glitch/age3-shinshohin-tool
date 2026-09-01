@@ -83,12 +83,6 @@ export function SurveyAskView({
           <h1 className="mt-4 text-3xl font-extrabold text-[#1f3350]">Thank you!</h1>
           <p className="mt-1 text-sm text-[#5a6b7c]">ご協力ありがとうございました。</p>
 
-          <div className="mt-7 rounded-2xl border border-[#e3e8ee] bg-white p-5">
-            <div className="text-4xl">🎁</div>
-            <p className="mt-2 text-lg font-bold text-[#26313d]">A small gift for you!</p>
-            <p className="text-xs text-[#5a6b7c]">お礼にアクリルキーホルダーをどうぞ</p>
-          </div>
-
           {failed && (
             <p className="mt-5 rounded-xl border border-[#c0392b] bg-white px-4 py-3 text-[13px] font-bold text-[#c0392b]">
               電波が届かず、この端末に保存しました。電波の良い場所で開くと送られます。
