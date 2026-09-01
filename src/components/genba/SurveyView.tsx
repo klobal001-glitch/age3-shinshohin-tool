@@ -138,9 +138,12 @@ function AnswerForm({
           <legend className="sr-only">
             {q.no}. {q.ja} {q.en}
           </legend>
-          <div className="text-[12.5px] font-extrabold text-[#1f3350]" aria-hidden="true">
-            {q.no}. {q.ja}
-            <span className="ml-2 text-[11px] font-semibold text-[#5a6b7c]">{q.en}</span>
+          {/* 答えるのはほとんどが外国のお客様なので、英語を主・日本語を従にする */}
+          <div aria-hidden="true">
+            <div className="text-[15px] leading-snug font-extrabold text-[#1f3350]">
+              {q.no}. {q.en}
+            </div>
+            <div className="text-[11px] font-semibold text-[#5a6b7c]">{q.ja}</div>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {q.options.map((o) => {
@@ -151,22 +154,26 @@ function AnswerForm({
                   type="button"
                   aria-pressed={on}
                   onClick={() => setAnswer((prev) => ({ ...prev, [q.key]: on ? "" : o.id }))}
-                  className={`rounded-lg border px-3 py-2 text-[12.5px] font-bold transition ${
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition ${
                     on ? "border-[#2f8f9d] bg-[#2f8f9d] text-white" : "border-[#e3e8ee] bg-white text-[#26313d]"
                   }`}
                 >
-                  <span aria-hidden="true" className="mr-1">
+                  <span aria-hidden="true" className="text-base">
                     {o.emoji}
                   </span>
-                  {o.ja}
+                  <span className="leading-tight">
+                    <span className="block text-[15px] font-bold">{o.en}</span>
+                    <span className={`block text-[10.5px] ${on ? "text-white/80" : "text-[#5a6b7c]"}`}>{o.ja}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
           {q.writeIn && (
             <div className="mt-2">
-              <label className="mb-0.5 block text-[11px] font-bold text-[#5a6b7c]" htmlFor="survey-country">
-                {q.writeIn.label}
+              <label className="mb-0.5 block leading-tight" htmlFor="survey-country">
+                <span className="block text-[13px] font-bold text-[#26313d]">Country</span>
+                <span className="block text-[10.5px] font-semibold text-[#5a6b7c]">国名</span>
               </label>
               <input
                 id="survey-country"
