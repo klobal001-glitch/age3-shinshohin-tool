@@ -8,6 +8,7 @@ import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/l
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
 import { isLinkedTaskDone } from "@/lib/stats";
 import { PriceInput } from "./PriceInput";
+import { VisualLinkRow } from "./VisualLinkRow";
 import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
 
 /** 並べ替え・絞り込みボタンの共通スタイル */
@@ -23,6 +24,70 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
   return childId
     ? `${groupId}|${milestoneId}|${taskId}|${childId}`
     : `${groupId}|${milestoneId}|${taskId}`;
+}
+
+/**
+ * 画像を貼る連動タスクの行（レシピ作成）。
+ *
+ * ビジュアルの欄と同じ操作にしてある。URLを貼って Enter で登録され、
+ * 1枚でも入っていればチェックが付く（チェック自体は保存していない）。
+ */
+function LinkedImageRow({
+  task,
+  links,
+  onChange,
+}: {
+  task: TaskItem;
+  links: string[];
+  onChange: (links: string[]) => void;
+}) {
+  const done = links.some((l) => l.trim());
+
+  /** 追加欄の中身を登録して空にする。まとめて貼り付けてもよい */
+  const commit = (el: HTMLInputElement) => {
+    const added = el.value.split(/\s+/).map((v) => v.trim()).filter(Boolean);
+    if (added.length === 0) return;
+    onChange([...links, ...added]);
+    el.value = "";
+  };
+
+  return (
+    <div className="px-3 py-2.5">
+      <div className="flex items-start gap-3 text-sm">
+        <span
+          aria-hidden
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+            done ? "bg-amber-600" : "border border-stone-300 bg-white"
+          }`}
+        >
+          {done ? "✓" : ""}
+        </span>
+        <span className={done ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+        <span className="text-xs text-stone-400">画像を貼ると完了になります</span>
+      </div>
+      <div className="mt-2 pl-7">
+        {links.map((l, i) => (
+          <VisualLinkRow
+            key={i}
+            value={l}
+            onChange={(v) => onChange(links.map((x, j) => (j === i ? v : x)))}
+            onRemove={() => onChange(links.filter((_, j) => j !== i))}
+          />
+        ))}
+        <input
+          className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
+          placeholder="レシピ画像のURLを貼って Enter（複数まとめて貼ってもOK）"
+          aria-label="レシピ画像のリンクを追加"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            commit(e.currentTarget);
+          }}
+          onBlur={(e) => commit(e.currentTarget)}
+        />
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -279,6 +344,15 @@ function MilestoneCard({
                   ))}
                 </div>
               </div>
+            ) : t.linkedField === "recipeImages" ? (
+              info && (
+                <LinkedImageRow
+                  key={t.id}
+                  task={t}
+                  links={info.recipeImages}
+                  onChange={(links) => onPatchInfo({ recipeImages: links })}
+                />
+              )
             ) : t.linkedField && PRICE_LINKS[t.linkedField] ? (
               info && (
                 <LinkedPriceRow key={t.id} task={t} info={info} onPatch={onPatchInfo} />

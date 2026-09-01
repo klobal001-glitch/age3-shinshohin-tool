@@ -87,6 +87,7 @@ export function createDefaultProductInfo(): ProductInfo {
       specs: [] as string[],
     })),
     howToVideoUrl: "",
+    recipeImages: [],
     recipeNotes: "",
     visualYear: "",
     visualDownloads,
@@ -309,6 +310,9 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
     merged.ingredients = normalizeIngredientRows(merged.ingredients);
   }
 
+  merged.recipeImages = Array.isArray(merged.recipeImages)
+    ? merged.recipeImages.filter((l): l is string => typeof l === "string")
+    : [];
   merged.visualYear = typeof r.visualYear === "string" ? r.visualYear : "";
   merged.visualDownloads = normalizeVisualGroups(merged.visualDownloads);
   merged.visualArchives = (Array.isArray(merged.visualArchives) ? merged.visualArchives : [])

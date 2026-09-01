@@ -74,6 +74,8 @@ export interface ProductInfo {
 
   // 作り方
   howToVideoUrl: string;
+  // レシピの画像。準備タスクの「レシピ作成」から貼る。1枚でも入れば完了扱い
+  recipeImages: string[];
     recipeNotes: string;
 
   // ビジュアルダウンロード
@@ -110,6 +112,7 @@ export interface TaskItem {
      */
     linkedField?:
         | "noAlcoholPork"
+        | "recipeImages"
         | "priceTokyo"
         | "priceTokyoUber"
         | "priceKama"

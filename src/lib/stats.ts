@@ -30,6 +30,9 @@ export function isLinkedTaskDone(task: TaskItem, info: ProductInfo): boolean {
   switch (task.linkedField) {
     case "noAlcoholPork":
       return info.noAlcoholPork !== null;
+    /* レシピは画像が1枚でも貼られていれば完了 */
+    case "recipeImages":
+      return info.recipeImages.some((l) => l.trim());
     /* 取り扱いのない店舗は、価格が無くても済んだものとして数える */
     case "priceTokyo":
       return info.priceTokyo !== null || info.priceTokyoNotSold;

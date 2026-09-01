@@ -67,7 +67,11 @@ export const TASK_GROUPS: TaskGroup[] = [
             linkedField: "priceKamaUber",
           },
           { id: "stock_setting", label: "在庫設定" },
-          { id: "recipe_create", label: "レシピ作成" },
+          {
+            id: "recipe_create",
+            label: "レシピ作成",
+            linkedField: "recipeImages",
+          },
           { id: "final_decision", label: "商品名・画像・価格(東京価格と嘉麻価格)・期間 最終決定 → リーダーへ共有" },
           { id: "hida_recipe", label: "飛騨高山にレシピを公開、仕入れを促す。" },
         ],
