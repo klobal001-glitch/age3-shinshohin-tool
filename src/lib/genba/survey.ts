@@ -21,8 +21,11 @@ export type SurveyQuestion = {
   /**
    * 設問ごとの色。お客様がスマホで答えるとき、画面が切り替わったことと
    * どこまで進んだかが一目で分かるようにするため。
+   * color は見出しとボタン、tint は画面全体の下地。
+   * 揚げサンドの店なので、社内用の紺ではなく暖色を中心にしている。
    */
   color: string;
+  tint: string;
 };
 
 /**
@@ -32,7 +35,8 @@ export type SurveyQuestion = {
 export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   {
     key: "q1",
-    color: "#2f8f9d",
+    color: "#d9522a",
+    tint: "#fdeee7",
     no: 1,
     en: "How did you hear about us?",
     ja: "何を見て来店しましたか？",
@@ -47,7 +51,8 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q2",
-    color: "#3d7ab8",
+    color: "#b8730f",
+    tint: "#fcf3e2",
     no: 2,
     en: "Which country are you from?",
     ja: "どちらの国からお越しですか？",
@@ -65,7 +70,8 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q3",
-    color: "#c1741c",
+    color: "#c23a63",
+    tint: "#fcedf2",
     no: 3,
     en: "What made you want to try it?",
     ja: "食べたいと思った理由は？",
@@ -79,7 +85,8 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q4",
-    color: "#c05f8a",
+    color: "#8b4a9c",
+    tint: "#f6eef8",
     no: 4,
     en: "Would you come back?",
     ja: "また来たいと思いますか？",
@@ -91,7 +98,8 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q5",
-    color: "#46a06b",
+    color: "#2e8b62",
+    tint: "#e9f5ef",
     no: 5,
     en: "Was it easy to order?",
     ja: "注文はしやすかったですか？",
@@ -103,7 +111,8 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
   {
     key: "q6",
-    color: "#6c5fa8",
+    color: "#1f7f91",
+    tint: "#e8f3f5",
     no: 6,
     en: "How was the price?",
     ja: "価格の印象は？",

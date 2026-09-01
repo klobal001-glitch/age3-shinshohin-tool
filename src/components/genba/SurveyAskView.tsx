@@ -81,7 +81,7 @@ export function SurveyAskView({
   /* ---------------- 表紙（お客様に渡す前） ---------------- */
   if (!started) {
     return (
-      <div className="min-h-screen bg-[#f6f8fa]">
+      <div className="min-h-screen bg-[linear-gradient(165deg,#fff7ef_0%,#ffe7d4_55%,#ffdcc4_100%)]">
         <div className="mx-auto flex min-h-screen max-w-lg flex-col px-5 py-6">
           {/* ここはスタッフが触るところ。お客様に渡す前に店舗を合わせる */}
           <div className="flex items-center gap-3">
@@ -108,18 +108,18 @@ export function SurveyAskView({
           </div>
 
           <div className="flex flex-1 flex-col justify-center py-8 text-center">
-            <div className="text-[11px] font-bold tracking-[0.28em] text-[#2f8f9d] uppercase">
+            <div className="text-[11px] font-bold tracking-[0.28em] text-[#d9522a] uppercase">
               Age.3　Deep-fried Sandwich
             </div>
-            <h1 className="mt-3 text-[32px] leading-tight font-extrabold text-[#1f3350]">
+            <h1 className="mt-3 text-[32px] leading-tight font-extrabold text-[#8a3b12]">
               Thank you for visiting!
             </h1>
             <p className="mt-1 text-[13px] text-[#5a6b7c]">ご来店ありがとうございます。</p>
 
-            <div className="mt-8 rounded-2xl border border-[#e3e8ee] bg-white p-6">
+            <div className="mt-8 rounded-2xl border border-white bg-white/80 p-6 shadow-sm">
               <p className="text-[20px] leading-snug font-extrabold text-[#26313d]">
                 6 quick questions
-                <span className="block text-[15px] text-[#2f8f9d]">about 30 seconds</span>
+                <span className="block text-[15px] text-[#d9522a]">about 30 seconds</span>
               </p>
               <p className="mt-1 text-[12px] text-[#5a6b7c]">
                 かんたんな6つの質問です。30秒ほどで終わります。
@@ -135,7 +135,7 @@ export function SurveyAskView({
             <button
               type="button"
               onClick={() => setStarted(true)}
-              className="mt-8 rounded-2xl bg-[#2f8f9d] px-6 py-6 text-[22px] font-extrabold text-white"
+              className="mt-8 rounded-2xl bg-[#d9522a] px-6 py-6 text-[22px] font-extrabold text-white shadow-lg shadow-[#d9522a]/30"
             >
               Start
               <span className="block text-[13px] font-semibold opacity-90">はじめる</span>
@@ -149,10 +149,10 @@ export function SurveyAskView({
   /* ---------------- お礼の画面 ---------------- */
   if (done) {
     return (
-      <div className="min-h-screen bg-[#f6f8fa]">
+      <div className="min-h-screen bg-[linear-gradient(165deg,#fff7ef_0%,#ffe7d4_55%,#ffdcc4_100%)]">
         <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10 text-center">
           <div className="text-6xl">🎉</div>
-          <h1 className="mt-4 text-3xl font-extrabold text-[#1f3350]">Thank you!</h1>
+          <h1 className="mt-4 text-4xl font-extrabold text-[#8a3b12]">Thank you!</h1>
           <p className="mt-1 text-sm text-[#5a6b7c]">ご協力ありがとうございました。</p>
 
           {failed && (
@@ -164,12 +164,12 @@ export function SurveyAskView({
           <button
             type="button"
             onClick={reset}
-            className="mt-8 rounded-2xl bg-[#1f3350] px-6 py-5 text-lg font-extrabold text-white"
+            className="mt-8 rounded-2xl bg-[#d9522a] px-6 py-5 text-lg font-extrabold text-white shadow-lg shadow-[#d9522a]/30"
           >
             次の方へ
             <span className="block text-xs font-semibold opacity-75">Next customer</span>
           </button>
-          <button type="button" onClick={onExit} className="mt-3 py-2 text-[13px] font-bold text-[#5a6b7c]">
+          <button type="button" onClick={onExit} className="mt-3 py-2 text-[13px] font-bold text-[#a0765c]">
             終了する
           </button>
         </div>
@@ -179,9 +179,9 @@ export function SurveyAskView({
 
   /* ---------------- 設問の画面 ---------------- */
   return (
-    <div className="min-h-screen bg-[#f6f8fa]">
-      {/* 上の細い帯：店舗と、いま何問目か */}
-      <div className="sticky top-0 z-10 bg-white/95 px-4 py-3 backdrop-blur">
+    <div className="min-h-screen transition-colors duration-300" style={{ background: q.tint }}>
+      {/* 上の細い帯：いま何問目か */}
+      <div className="sticky top-0 z-10 px-4 py-3 backdrop-blur" style={{ background: `${q.tint}f2` }}>
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="flex flex-1 justify-center gap-1.5" aria-hidden="true">
             {SURVEY_QUESTIONS.map((item, i) => (
@@ -216,8 +216,10 @@ export function SurveyAskView({
           >
             Question {q.no} / {SURVEY_QUESTIONS.length}
           </div>
-          <h1 className="mt-1 text-[26px] leading-tight font-extrabold text-[#1f3350]">{q.en}</h1>
-          <p className="mt-1 text-[13px] text-[#5a6b7c]">{q.ja}</p>
+          <h1 className="mt-1 text-[27px] leading-tight font-extrabold" style={{ color: q.color }}>
+            {q.en}
+          </h1>
+          <p className="mt-1 text-[13px] text-[#6b5c53]">{q.ja}</p>
         </div>
 
         {/* 選択肢 */}
@@ -230,23 +232,23 @@ export function SurveyAskView({
                 type="button"
                 aria-pressed={on}
                 onClick={() => choose(o.id)}
-                className="flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition"
+                className="flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left shadow-sm transition"
                 style={{
-                  borderColor: on ? q.color : "#e3e8ee",
+                  borderColor: on ? q.color : "#ffffff",
                   background: on ? q.color : "#ffffff",
                   color: on ? "#ffffff" : "#26313d",
                 }}
               >
                 <span
                   className="grid h-11 w-11 flex-none place-items-center rounded-xl text-2xl"
-                  style={{ background: on ? "rgba(255,255,255,.2)" : "#f2f6f9" }}
+                  style={{ background: on ? "rgba(255,255,255,.22)" : q.tint }}
                   aria-hidden="true"
                 >
                   {o.emoji}
                 </span>
                 <span className="leading-tight">
                   <span className="block text-[18px] font-extrabold">{o.en}</span>
-                  <span className={`block text-[11.5px] ${on ? "text-white/85" : "text-[#5a6b7c]"}`}>
+                  <span className={`block text-[11.5px] ${on ? "text-white/85" : "text-[#6b5c53]"}`}>
                     {o.ja}
                   </span>
                 </span>
@@ -260,7 +262,7 @@ export function SurveyAskView({
           <div className="mt-4">
             <label htmlFor="ask-country" className="mb-1 block leading-tight">
               <span className="block text-[15px] font-bold text-[#26313d]">Country name</span>
-              <span className="block text-[11px] font-semibold text-[#5a6b7c]">国名（任意）</span>
+              <span className="block text-[11px] font-semibold text-[#6b5c53]">国名（任意）</span>
             </label>
             <input
               id="ask-country"
@@ -268,20 +270,20 @@ export function SurveyAskView({
               value={answer.country}
               placeholder="e.g. Taiwan"
               onChange={(e) => setAnswer((prev) => ({ ...prev, country: e.target.value }))}
-              className="w-full rounded-xl border-2 border-[#e3e8ee] bg-white px-4 py-3 text-base"
+              className="w-full rounded-xl border-2 border-white bg-white px-4 py-3 text-base shadow-sm"
             />
           </div>
         )}
       </div>
 
       {/* 下の操作 */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-[#e3e8ee] bg-white px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 bg-white/90 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <button
             type="button"
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0 || busy}
-            className="rounded-xl border border-[#e3e8ee] px-4 py-3 text-sm font-bold text-[#5a6b7c] disabled:opacity-35"
+            className="rounded-xl border border-[#e6ddd6] px-4 py-3 text-sm font-bold text-[#6b5c53] disabled:opacity-35"
           >
             ← Back
           </button>
