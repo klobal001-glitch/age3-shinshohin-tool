@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CHECK_ITEMS, PRIO_LABELS, STORES } from "@/lib/genba/checkItems";
 import { Visit } from "@/lib/genba/types";
 import { allVisitsText, groupsOf } from "@/lib/genba/shareText";
+import { PhotoThumb } from "@/components/genba/PhotoThumb";
 
 export function ReportView({ visits }: { visits: Visit[] }) {
   const [copied, setCopied] = useState("");
@@ -132,12 +133,13 @@ export function ReportView({ visits }: { visits: Visit[] }) {
                               {e.item.photos.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {e.item.photos.map((p) => (
-                                    // 静的書き出しのため next/image ではなく img を使う
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
+                                    // 印刷でも確実に出るよう、ここは待たずに読み込む
+                                    <PhotoThumb
                                       key={p.path}
-                                      src={p.url}
+                                      url={p.url}
                                       alt={`${CHECK_ITEMS[e.index].title}の現場写真`}
+                                      size={112}
+                                      lazy={false}
                                       className="h-28 w-28 rounded-lg border border-[#e3e8ee] object-cover"
                                     />
                                   ))}

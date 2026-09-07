@@ -74,3 +74,21 @@ export async function removePhoto(photo: Photo): Promise<void> {
   const { error } = await supabase.storage.from(PHOTO_BUCKET).remove([photo.path]);
   if (error) console.error("写真の削除に失敗しました", error);
 }
+
+/**
+ * 一覧に並べる小さい画像のURL。
+ *
+ * 保存してある写真は長辺1600px・1枚1MBほどある。80pxの枠に並べるだけでも
+ * 端末は原寸のまま展開するので、写真が増えるとiPhoneの表示が重くなり、
+ * ページごと落ちて開けなくなることがある（1枚あたり約7MB、30枚で200MB超）。
+ * Supabase の画像変換で小さく作り直したものを渡して、これを避ける。
+ *
+ * 変換が使えない画像（HEIC など）は 400 が返るので、呼び出し側で
+ * 元のURLに戻せるようにしてある（PhotoThumb の onError）。
+ */
+export function thumbUrl(url: string, size: number): string {
+  const marker = "/storage/v1/object/public/";
+  if (!url.includes(marker)) return url;
+  const base = url.split("?")[0].replace(marker, "/storage/v1/render/image/public/");
+  return `${base}?width=${size}&height=${size}&resize=cover&quality=70`;
+}

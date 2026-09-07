@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { removePhoto, uploadPhoto } from "@/lib/genba/photos";
+import { PhotoThumb } from "@/components/genba/PhotoThumb";
 import { Photo } from "@/lib/genba/types";
 
 /**
@@ -55,11 +56,10 @@ export function PhotoStrip({
         {photos.map((photo) => (
           <div key={photo.path} className="group relative">
             <a href={photo.url} target="_blank" rel="noreferrer">
-              {/* 静的書き出しのため next/image ではなく img を使う */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.url}
+              <PhotoThumb
+                url={photo.url}
                 alt="現場写真"
+                size={80}
                 className="h-20 w-20 rounded-lg border border-[#e3e8ee] object-cover"
               />
             </a>
