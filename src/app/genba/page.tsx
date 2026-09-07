@@ -27,8 +27,27 @@ export default function GenbaPage() {
   return <GenbaShell />;
 }
 
+/** URL の末尾（#survey など）で開く画面を決める。現場でアンケートだけ開きたいとき用 */
+const VIEW_IDS: ViewId[] = ["check", "survey", "report"];
+
+function viewFromHash(): ViewId {
+  if (typeof window === "undefined") return "check";
+  const id = window.location.hash.replace("#", "") as ViewId;
+  return VIEW_IDS.includes(id) ? id : "check";
+}
+
 function GenbaShell() {
-  const [view, setView] = useState<ViewId>("check");
+  /**
+   * 開く画面。#survey / #report を付けたURLを開くと、その画面から始まる。
+   * お客様に渡す端末は /genba#survey をホーム画面に置いておけば、
+   * 写真の多い現場チェックを通らずにアンケートを開ける。
+   */
+  const [view, setViewState] = useState<ViewId>(viewFromHash);
+  const setView = (next: ViewId) => {
+    setViewState(next);
+    // 履歴を増やさずにURLだけ合わせる（戻るボタンの邪魔をしない）
+    window.history.replaceState(null, "", next === "check" ? window.location.pathname : `#${next}`);
+  };
   /** お客様に端末を渡している間は、ほかの画面を出さない */
   const [asking, setAsking] = useState(false);
   const [pickedVisit, setPickedVisit] = useState("");
