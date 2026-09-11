@@ -29,3 +29,84 @@ body {
           display: none !important;
     }
 }
+
+/* ───────── スマホ（〜767px）での調整 ─────────
+   見た目の約束（配色・カードの形・絵文字）はそのままに、
+   指で操作したときの引っかかりだけを取り除くための指定。 */
+@media (max-width: 767px) {
+    /* iOS Safari は文字が16px未満の入力欄をタップすると画面を勝手に拡大する。
+       拡大されたまま横スクロールが必要になり、入力のたびに戻す手間がかかるので、
+       スマホのときだけ入力欄の文字を16pxにして拡大を止める。 */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+          font-size: 16px;
+    }
+
+    /* 材料の表は横に広く、スマホだと横スクロールしながらの入力になってしまう。
+       スマホでは「1行＝1枚のカード」として縦に積み、横スクロールを無くす。
+       表の作り（Tabで右のセル・最後の行でEnterで行追加）はそのまま。 */
+    .ing-table,
+    .ing-table tbody,
+    .ing-table tr,
+    .ing-table td {
+          display: block;
+          width: 100%;
+    }
+
+    .ing-table thead {
+          display: none;
+    }
+
+    .ing-table tr {
+          position: relative;
+          margin-bottom: 0.75rem;
+          border: 1px solid #e7e5e4;
+          border-radius: 0.75rem;
+          background: #fff;
+          padding: 0.5rem 0.75rem 0.75rem;
+    }
+
+    .ing-table td {
+          padding: 0.25rem 0 !important;
+    }
+
+    .ing-table td[data-label]::before {
+          content: attr(data-label);
+          display: block;
+          margin-bottom: 0.125rem;
+          font-size: 11px;
+          color: #a8a29e;
+    }
+
+    /* 行番号はカードの見出しに、削除の × は右上に逃がす */
+    .ing-table td.ing-no {
+          padding: 0 0 0.25rem 0 !important;
+          text-align: left;
+          font-size: 11px;
+          color: #a8a29e;
+    }
+
+    .ing-table td.ing-del {
+          position: absolute;
+          top: 0.25rem;
+          right: 0.5rem;
+          width: auto;
+          padding: 0 !important;
+    }
+
+    /* 横に流すタブの、スクロールバーを隠す */
+    .scroll-x-clean {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+    }
+
+    .scroll-x-clean::-webkit-scrollbar {
+          display: none;
+    }
+}
+
+/* ホーム画面から開いたときに、下端のホームバーと重ならないようにする */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}

@@ -38,7 +38,8 @@ function AppShell() {
         <div className="md:hidden">
           <Header activeTab={tab} onChangeTab={setTab} productName={app.selectedProduct?.name} />
         </div>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+        {/* スマホは下端のタブに隠れないよう、本文の下に余白を足す */}
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-6 md:pb-6">
           {tab === "menu" && <MenuView app={app} onNavigate={setTab} />}
           {tab === "sheet" && <ProductSheetView app={app} />}
           {tab === "tasks" && <PrepTaskView app={app} />}
