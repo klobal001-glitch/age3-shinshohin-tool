@@ -135,7 +135,8 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
 
 /** 選択中のボタンかどうかで見た目を切り替える共通スタイル */
 function chipCls(active: boolean) {
-  return `rounded-lg border px-3 py-1.5 text-sm transition ${
+  /* スマホでも指で押しやすいよう、高さを44px以上に保つ */
+  return `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm transition md:min-h-0 ${
     active
       ? "border-stone-700 bg-stone-700 font-medium text-white"
       : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
@@ -202,7 +203,8 @@ export default function VisualGalleryView({
         </div>
 
         <div className="space-y-3 p-4">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* 狭い画面では折り返さず横に流す（4行にふくらんでカードが見えなくなるため） */}
+          <div className="scroll-x-clean flex items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
             <span className="w-16 shrink-0 text-sm text-stone-500">並べ替え</span>
             <button className={chipCls(sortMode === "date")} onClick={() => setSortMode("date")}>
               発売日が新しい順
@@ -215,7 +217,7 @@ export default function VisualGalleryView({
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="scroll-x-clean flex items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
             <span className="w-16 shrink-0 text-sm text-stone-500">絞り込み</span>
             <button className={chipCls(imageFilter === "all")} onClick={() => setImageFilter("all")}>
               すべて
@@ -227,7 +229,7 @@ export default function VisualGalleryView({
               画像ありだけ
             </button>
             <select
-              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700"
+              className="min-h-11 shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700 md:min-h-0"
               value={genre === "all" ? "" : genre ?? ""}
               onChange={(e) => setGenre((e.target.value || "all") as Genre | "all")}
             >

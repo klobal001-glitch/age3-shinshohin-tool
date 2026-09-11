@@ -71,7 +71,10 @@ export default function MenuView({
       <div>
         <h2 className="text-xl font-bold text-stone-800">こんにちは。今日の状況です</h2>
         <p className="mt-1 text-sm text-stone-500">
-          商品ごとの「商品情報シート」と「準備タスク（G-1〜G-5）」をまとめて管理します。左のリストから商品を選ぶか、下の一覧から直接開けます。
+          商品ごとの「商品情報シート」と「準備タスク（G-1〜G-5）」をまとめて管理します。
+          {/* スマホには左のリストが無いので、案内の書き方を画面幅で変える */}
+          <span className="hidden md:inline">左のリストから商品を選ぶか、</span>
+          下の一覧から商品を直接開けます。
         </p>
       </div>
 
@@ -134,7 +137,7 @@ export default function MenuView({
           <span className="text-xs text-stone-400">{productRows.length}件</span>
           <div className="ml-auto flex gap-1">
             <button
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
+              className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-medium md:min-h-0 ${
                 productSort === "progress" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
               }`}
               onClick={() => setProductSort("progress")}
@@ -142,7 +145,7 @@ export default function MenuView({
               進捗が低い順
             </button>
             <button
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
+              className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-medium md:min-h-0 ${
                 productSort === "name" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
               }`}
               onClick={() => setProductSort("name")}

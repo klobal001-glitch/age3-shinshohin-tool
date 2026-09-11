@@ -13,7 +13,8 @@ import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/p
 
 /** 並べ替え・絞り込みボタンの共通スタイル */
 function ctrlCls(active: boolean) {
-  return `rounded-lg border px-3 py-1.5 text-sm transition ${
+  /* スマホでも指で押しやすいよう、高さを44px以上に保つ */
+  return `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm transition md:min-h-0 ${
     active
       ? "border-stone-700 bg-stone-700 font-medium text-white"
       : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
@@ -331,11 +332,11 @@ function MilestoneCard({
                   {t.children.map((c) => (
                     <label
                       key={c.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
+                      className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 sm:min-h-0"
                     >
                       <input
                         type="checkbox"
-                        className="h-4 w-4 accent-amber-600"
+                        className="h-5 w-5 accent-amber-600 sm:h-4 sm:w-4"
                         checked={isChecked(t, c.id)}
                         onChange={() => onToggle(t, c.id)}
                       />
@@ -367,13 +368,15 @@ function MilestoneCard({
             ) : (
               <div
                 key={t.id}
-                className="flex items-start gap-3 px-3 py-2.5 text-sm hover:bg-amber-50/60"
+                /* 狭い画面では、右のボタンを下の行に落とす。
+                   横に並べたままだとタスク名が1文字ずつ折り返されて読めなくなる */
+                className="flex flex-col gap-2 px-3 py-3 text-sm hover:bg-amber-50/60 sm:flex-row sm:items-start sm:gap-3 sm:py-2.5"
               >
                 {/* チェックの当たり判定はラベルまで。右のボタンは別扱いにする */}
                 <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
                   <input
                     type="checkbox"
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-amber-600"
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-amber-600 sm:h-4 sm:w-4"
                     checked={isChecked(t)}
                     onChange={() => onToggle(t)}
                   />
@@ -382,14 +385,14 @@ function MilestoneCard({
                   </span>
                 </label>
                 {t.links && t.links.length > 0 && (
-                  <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <span className="flex flex-wrap gap-1.5 pl-8 sm:shrink-0 sm:justify-end sm:pl-0">
                     {t.links.map((l) => (
                       <a
                         key={l.url}
                         href={l.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700"
+                        className="inline-flex min-h-10 items-center rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700 sm:min-h-0"
                         title="別タブで開く"
                       >
                         {l.label} ↗
@@ -597,7 +600,8 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
             <span className="text-xs text-stone-400">この2つから締め切りを計算します</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {/* 狭い画面では折り返さず横に流す */}
+          <div className="scroll-x-clean flex items-center gap-2 overflow-x-auto print:hidden md:flex-wrap md:overflow-visible">
             <span className="w-16 shrink-0 text-sm text-stone-500">並べ替え</span>
             <button className={ctrlCls(sortMode === "group")} onClick={() => setSortMode("group")}>
               グループ別
@@ -729,7 +733,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
       </div>
 
       <p className="rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-stone-500">
-        ※これは新商品1つ分の準備業務（G-1〜G-5）です。締め切りは発売月から自動計算した目安（前々月＝2か月前／前月＝1か月前）。G-5「販売終了後」は「販売終了月」を選ぶと月末の日付が出ます。チェックはこの端末に保存されます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
+        ※これは新商品1つ分の準備業務（G-1〜G-5）です。締め切りは発売月から自動計算した目安（前々月＝2か月前／前月＝1か月前）。G-5「販売終了後」は「販売終了月」を選ぶと月末の日付が出ます。チェックは共有データベースに自動保存され、チーム全員が同じ状態を見ます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
     </div>
   );

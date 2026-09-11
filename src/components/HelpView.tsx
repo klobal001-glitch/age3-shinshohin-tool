@@ -6,11 +6,11 @@ export default function HelpView() {
       <div className="rounded-xl border border-amber-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-stone-800">使い方</h2>
         <ol className="list-decimal space-y-2 pl-5 text-sm text-stone-600">
-          <li>「🏠 メニュー」で商品を選ぶ（新商品は「＋ 商品を追加」）。</li>
+          <li>「🏠 メニュー」で商品を選ぶ（新商品は「＋ 商品を追加」）。スマホでは画面の下に並んだタブで切り替えます。</li>
           <li>「📝 商品情報シート」で品名・価格・材料・SNS文章などを入力する。</li>
           <li>「✅ 準備タスク」で発売月を設定すると、A-1〜G-5の締め切りが自動計算される。各タスクをチェックして進捗を管理する。</li>
-          <li>「🖼 ビジュアル一覧」で全商品の発売時期・ジャンルを俯瞰できる。カードをクリックすると商品情報シートに飛ぶ。</li>
-          <li>入力・チェックはこの端末のブラウザに自動保存されます。別の端末では表示されないため、共有が必要な場合は「コピー用に書き出し」や印刷（PDF）をご利用ください。</li>
+          <li>「🖼 ビジュアル一覧」で全商品の発売時期・ジャンルを俯瞰できる。カードを押すと商品情報シートに飛ぶ。</li>
+          <li>入力・チェックは共有データベースに自動保存されます。チーム全員が同じ内容を見るので、別の端末で開いても続きから作業できます。</li>
         </ol>
       </div>
       <div className="rounded-xl border border-amber-200 bg-white p-5">

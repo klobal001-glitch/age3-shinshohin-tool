@@ -32,6 +32,9 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
   const [newName, setNewName] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  /* スマホでは「追加・改名・廃盤・削除」をひとまとめに畳んでおく。
+     日々の入力では使わないうえ、指で押す画面だと事故のもとになるため。 */
+  const [showManage, setShowManage] = useState(false);
 
   if (!selectedProduct) {
     return (
@@ -72,7 +75,8 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
           </span>
         )}
         <select
-          className="min-w-[220px] rounded-lg border border-stone-300 px-3 py-1.5 text-sm md:hidden"
+          aria-label="商品を選ぶ"
+          className="w-full min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm md:hidden"
           value={selectedProduct.id}
           onChange={(e) => setSelectedId(e.target.value)}
         >
@@ -96,15 +100,26 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
           ))}
         </select>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="ml-auto min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600 md:hidden"
+          onClick={() => setShowManage((v) => !v)}
+          aria-expanded={showManage}
+        >
+          商品の管理 {showManage ? "▲" : "▼"}
+        </button>
+
+        <div
+          className={`${showManage ? "flex" : "hidden"} w-full flex-wrap items-center gap-2 md:ml-auto md:flex md:w-auto`}
+        >
           <button
-            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+            className="min-h-11 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 md:min-h-0"
             onClick={() => setAdding((v) => !v)}
           >
             ＋ 商品を追加
           </button>
           <button
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50"
+            className="min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50 md:min-h-0"
             onClick={() => {
               setRenameValue(selectedProduct.name);
               setRenaming((v) => !v);
@@ -113,7 +128,7 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
             名前を変える
           </button>
           <button
-            className={`rounded-lg border px-3 py-1.5 text-sm ${
+            className={`min-h-11 rounded-lg border px-3 py-1.5 text-sm md:min-h-0 ${
               discontinued
                 ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
                 : "border-stone-300 hover:bg-stone-50"
@@ -125,7 +140,7 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
           <span className="mx-1 hidden h-5 w-px bg-stone-200 sm:block" aria-hidden />
           {/* 押し間違いを避けるため、削除だけは枠のない控えめな表示にしている */}
           <button
-            className="rounded px-2 py-1.5 text-sm text-stone-400 underline-offset-4 hover:text-red-600 hover:underline"
+            className="min-h-11 rounded px-2 py-1.5 text-sm text-stone-400 underline-offset-4 hover:text-red-600 hover:underline md:min-h-0"
             onClick={() => {
               if (
                 confirm(

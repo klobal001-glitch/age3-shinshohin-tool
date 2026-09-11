@@ -163,11 +163,19 @@ function SectionTabs({
   /** 販売終了・廃盤の商品では、区切り線もグレーにする */
   inactive: boolean;
 }) {
+  /* 狭い画面ではタブが横に流れて画面外に出るので、
+     今いるセクションのタブが必ず見えるところに来るようにする */
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [active]);
+
   return (
     <nav
       aria-label="シート内の移動"
-      /* 狭い画面では折り返して全部見せる。広い画面では従来どおり1行のタブ */
-      className={`mt-3 flex flex-wrap gap-1 print:hidden sm:flex-nowrap sm:overflow-x-auto sm:border-b ${
+      /* 常に1行。狭い画面でも折り返さず横に流す（折り返すと貼り付いた見出しが画面の
+         半分近くを占めてしまい、肝心の入力欄が見えなくなるため） */
+      className={`scroll-x-clean mt-3 flex flex-nowrap gap-1 overflow-x-auto print:hidden sm:border-b ${
         inactive ? "sm:border-stone-300" : "sm:border-amber-300"
       }`}
     >
@@ -178,6 +186,7 @@ function SectionTabs({
           <button
             key={t.id}
             type="button"
+            ref={isActive ? activeRef : undefined}
             aria-current={isActive ? "true" : undefined}
             onClick={() => scrollToSection(t.id)}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1.5 text-xs transition sm:-mb-px sm:rounded-b-none sm:px-3 sm:py-2 ${
@@ -236,10 +245,15 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-stone-600">
-        {filled !== undefined && <Dot filled={filled} />}
-        {label}
-        {hint && <span className="ml-1 text-xs font-normal text-stone-400">{hint}</span>}
+      {/* 狭い画面では補足を次の行に落とす（ラベル自体が途中で折れると読みにくいため） */}
+      <label className="mb-1 flex flex-wrap items-center gap-x-1.5 text-sm font-medium text-stone-600">
+        <span className="flex items-center gap-1.5">
+          {filled !== undefined && <Dot filled={filled} />}
+          {label}
+        </span>
+        {hint && (
+          <span className="basis-full text-xs font-normal text-stone-400 sm:basis-auto">{hint}</span>
+        )}
       </label>
       {children}
     </div>
@@ -980,8 +994,9 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           を押すと行が増えます。
         </p>
 
-        <div className="-mx-2 overflow-x-auto px-2">
-          <table className="w-full min-w-[680px] border-collapse text-sm">
+        {/* スマホでは1行＝1枚のカードに積み替える（見た目の指定は globals.css の .ing-table） */}
+        <div className="-mx-2 px-2 md:overflow-x-auto">
+          <table className="ing-table w-full border-collapse text-sm md:min-w-[680px]">
             <thead>
               <tr className="text-left text-[11px] font-medium text-stone-400">
                 <th className="w-8 pb-1" />
@@ -995,10 +1010,13 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
             <tbody>
               {info.ingredients.map((row, idx) => (
                 <tr key={idx} className="group align-top">
-                  <td className="py-1 pr-1 text-center text-[11px] tabular-nums text-stone-400">
-                    <span className="inline-block py-1.5">{idx + 1}</span>
+                  <td className="ing-no py-1 pr-1 text-center text-[11px] tabular-nums text-stone-400">
+                    <span className="inline-block py-1.5">
+                      {idx + 1}
+                      <span className="md:hidden">つ目</span>
+                    </span>
                   </td>
-                  <td className="px-0.5 py-1">
+                  <td className="px-0.5 py-1" data-label="品名（日本語）">
                     <input
                       id={`f-ing-ja-${idx}`}
                       className={cellCls}
@@ -1007,7 +1025,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                       onKeyDown={(e) => onIngredientEnter(e, idx, "ja")}
                     />
                   </td>
-                  <td className="px-0.5 py-1">
+                  <td className="px-0.5 py-1" data-label="品名（英語）">
                     <input
                       id={`f-ing-en-${idx}`}
                       className={cellCls}
@@ -1016,7 +1034,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                       onKeyDown={(e) => onIngredientEnter(e, idx, "en")}
                     />
                   </td>
-                  <td className="px-0.5 py-1">
+                  <td className="px-0.5 py-1" data-label="分量">
                     <input
                       id={`f-ing-amount-${idx}`}
                       className={cellCls}
@@ -1025,7 +1043,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                       onKeyDown={(e) => onIngredientEnter(e, idx, "amount")}
                     />
                   </td>
-                  <td className="px-0.5 py-1">
+                  <td className="px-0.5 py-1" data-label="詳細スペック（任意）">
                     <div className="flex items-center gap-1">
                       <input
                         id={`f-ing-spec-${idx}`}
@@ -1057,7 +1075,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
                       />
                     ))}
                   </td>
-                  <td className="py-1 pl-1 text-center">
+                  <td className="ing-del py-1 pl-1 text-center">
                     <button
                       type="button"
                       title="この行を消す"
