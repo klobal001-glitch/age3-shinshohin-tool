@@ -14,6 +14,28 @@ export default function HelpView() {
         </ol>
       </div>
       <div className="rounded-xl border border-amber-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold text-stone-800">商品名の書き方（産地名）</h2>
+        <p className="text-sm leading-relaxed text-stone-600">
+          産地をうたう商品は、<strong className="font-semibold text-stone-800">産地名を品名の前に置きます。</strong>
+          「シナモンアップルパイ（青森県）」ではなく「青森県 シナモンアップルパイ」の形です。
+          産地名と品名の間は全角スペースを1つ空けます。
+        </p>
+        <ul className="mt-2 space-y-1 pl-5 text-sm text-stone-600 list-disc">
+          <li>青森県 シナモンアップルパイ</li>
+          <li>石川県 旨だれ牛カルビ焼肉</li>
+          <li>宮崎県 チキン南蛮</li>
+          <li>北海道 炙りチーズサーモン（スモークサーモン）</li>
+        </ul>
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          産地ではない補足（原料の種類・店舗限定など）は、これまでどおり品名のうしろに括弧で付けます。
+          上の例の「（スモークサーモン）」や「（茅ヶ崎限定）」がこれにあたります。
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">
+          この表記は「商品名マスタ（2026年10月1日適用・全店改変）」に合わせたものです。
+          迷ったときはマスタの表記が正になります。
+        </p>
+      </div>
+      <div className="rounded-xl border border-amber-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-stone-800">締め切りの計算方法</h2>
         <p className="text-sm leading-relaxed text-stone-600">
           「前々月」は発売月の2か月前、「前月」は発売月の1か月前を指します。各グループの締め切りは、

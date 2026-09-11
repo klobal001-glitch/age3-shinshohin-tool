@@ -827,7 +827,11 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         {/* 仲間同士を左右に並べる：品名と英語名／伝票記載名とマーク／発売日と終了日 */}
         <div className="grid gap-4 sm:grid-cols-2">
           {showRequired(!!info.nameJa) && (
-            <Field label="品名（日本語）" filled={!!info.nameJa}>
+            <Field
+              label="品名（日本語）"
+              hint="産地名は前に置く（例：青森県 シナモンアップルパイ）"
+              filled={!!info.nameJa}
+            >
               <input
                 id="f-nameJa"
                 className={inputCls}
