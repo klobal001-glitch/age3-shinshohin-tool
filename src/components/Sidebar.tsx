@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
-import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
+import { SALE_STATUS_LABEL, SaleStatus, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
 
@@ -31,6 +31,9 @@ function genreLabel(g: Genre) {
   return g ? GENRE_LABELS[g] : "未分類";
 }
 
+/** 並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる */
+const SALE_RANK: Record<SaleStatus, number> = { active: 0, ended: 1, retired: 2 };
+
 function fillDotColor(pct: number) {
   if (pct >= 70) return "bg-emerald-500";
   if (pct >= 30) return "bg-amber-500";
@@ -50,10 +53,11 @@ export default function Sidebar({
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
-  /* 廃盤も一覧には残す。ジャンルの中に「廃盤」の印を付けて置く */
+  /* 廃盤も一覧には残す。ジャンルの中に「廃盤」の印を付けて、いちばん下に回す */
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
+    const day = todayKey();
 
     const map = new Map<Genre, typeof products>();
     for (const g of GENRE_ORDER) map.set(g, []);
@@ -61,10 +65,18 @@ export default function Sidebar({
       const key = GENRE_ORDER.includes(p.genre) ? p.genre : null;
       map.get(key)!.push(p);
     }
-    /* シーズン商品は入れ替わりが早いので、発売日が新しいものから並べる */
-    const season = map.get("season");
-    if (season) {
-      season.sort((a, b) => {
+
+    const rank = (p: (typeof products)[number]) => SALE_RANK[saleStatus(getInfo(p.id), day)];
+
+    for (const g of GENRE_ORDER) {
+      const items = map.get(g);
+      if (!items) continue;
+      items.sort((a, b) => {
+        /* 販売していない商品は、ジャンルの下に落とす */
+        const byStatus = rank(a) - rank(b);
+        if (byStatus !== 0) return byStatus;
+        /* シーズン商品は入れ替わりが早いので、発売日が新しいものから並べる */
+        if (g !== "season") return 0; // sort は安定なので、他のジャンルは元の並びが残る
         const ra = getInfo(a.id).releaseDate;
         const rb = getInfo(b.id).releaseDate;
         if (!ra && !rb) return 0;
