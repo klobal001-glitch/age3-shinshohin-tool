@@ -174,13 +174,13 @@ export default function MenuView({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="登録商品数" value={String(stats.productCount)} suffix="件" />
         <StatCard
-          label="情報シート平均入力率"
+          label="シート 平均入力率"
           value={String(stats.avgInfoFill)}
           suffix="%"
           pct={stats.avgInfoFill}
         />
         <StatCard
-          label="準備タスク平均完了率"
+          label="タスク 平均完了率"
           value={String(stats.avgTaskCompletion)}
           suffix="%"
           pct={stats.avgTaskCompletion}
