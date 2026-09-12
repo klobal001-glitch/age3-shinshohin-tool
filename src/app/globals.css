@@ -1,38 +1,134 @@
 @import "tailwindcss";
 
-:root {
-    --background: #ffffff;
-    --foreground: #171717;
+/* ═══════════════════════════════════════════════════════════════
+   配色とタイポグラフィ（2026年9月 全面見直し）
+
+   以前の「ベージュ地＋こげ茶の帯＋マスタード」は、色そのものが濁っていて
+   古く見えていた。よく使われている業務アプリ（Linear / Notion / Things /
+   Stripe）がやっていることに合わせて、次の3点に整理した。
+
+   1. 地はほぼ白。情報を載せる面（カード）を白にして、地をわずかに沈める
+   2. 色は1色だけ。オレンジ（ember）を「今おすところ」にだけ使う
+   3. それ以外は温かみのあるグレー。線は細く薄く、影で浮かせる
+
+   Tailwind の stone / amber をここで丸ごと差し替えているので、
+   画面側のクラス名（text-stone-700 など）は書き換えていない。
+   色を変えたいときは、まずここを直す。
+   ═══════════════════════════════════════════════════════════════ */
+
+@theme {
+    /* ── 温かみのあるグレー（文字・線・面） ── */
+    --color-stone-50: #faf9f8;
+    --color-stone-100: #f4f2f0;
+    --color-stone-200: #e8e5e1;
+    --color-stone-300: #d8d4ce;
+    --color-stone-400: #a8a49d;
+    --color-stone-500: #7a766f;
+    --color-stone-600: #5c5850;
+    --color-stone-700: #403c36;
+    --color-stone-800: #2a2621;
+    --color-stone-900: #1a1713;
+
+    /* ── アクセント（ember）。以前のマスタードをやめ、赤みのある橙に ── */
+    --color-amber-50: #fff6f0;
+    --color-amber-100: #ffe9dc;
+    --color-amber-200: #fdd3bd;
+    --color-amber-300: #fab18c;
+    --color-amber-400: #f58853;
+    --color-amber-500: #ee6522;
+    --color-amber-600: #dc5109;
+    --color-amber-700: #b84208;
+    --color-amber-800: #93350a;
+    --color-amber-900: #772d0c;
+
+    /* ── 状態を示す色。彩度を落として、地の白から浮きすぎないようにする ── */
+    --color-emerald-50: #ecfdf4;
+    --color-emerald-100: #d3f8e3;
+    --color-emerald-500: #1a9c5f;
+    --color-emerald-600: #13854f;
+    --color-emerald-700: #106b41;
+    --color-red-50: #fef2f2;
+    --color-red-100: #fee2e2;
+    --color-red-500: #e0413f;
+    --color-red-600: #cc2f2d;
+    --color-red-700: #a82523;
+
+    /* ── 名前のある面 ── */
+    --color-canvas: #f6f5f3; /* 画面の地 */
+    --color-rail: #fbfaf9; /* サイドバー・上下の帯 */
+    --color-line: #e8e5e1; /* 面の区切り */
+
+    /* ── 影。線を濃くする代わりに、うっすら浮かせる ── */
+    --shadow-xs: 0 1px 2px rgb(26 23 19 / 0.04);
+    --shadow-sm: 0 1px 2px rgb(26 23 19 / 0.04), 0 1px 3px rgb(26 23 19 / 0.05);
+    --shadow-md: 0 4px 14px rgb(26 23 19 / 0.07), 0 1px 3px rgb(26 23 19 / 0.05);
+    --shadow-lg: 0 16px 40px rgb(26 23 19 / 0.13), 0 3px 8px rgb(26 23 19 / 0.06);
+
+    /* ── 文字。Arial をやめ、OS標準の書体（Mac は SF Pro ＋ ヒラギノ）を使う。
+         Web フォントを読みに行かないので、表示が遅れてガタつくこともない ── */
+    --font-sans:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+        "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui,
+        sans-serif;
 }
 
-@theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-          --background: #0a0a0a;
-          --foreground: #ededed;
-    }
+html {
+    background: var(--color-canvas);
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    background: var(--color-canvas);
+    color: var(--color-stone-800);
+    font-family: var(--font-sans);
+    /* 数字を等幅にして、％や件数が並んだときに桁が揃うようにする */
+    font-variant-numeric: tabular-nums;
+}
+
+/* 見出しは字間をわずかに詰める。日本語より欧文・数字に効く */
+h1,
+h2,
+h3 {
+    letter-spacing: -0.011em;
+}
+
+::selection {
+    background: var(--color-amber-100);
+    color: var(--color-amber-900);
+}
+
+/* スクロールバーを細く、地になじませる（Mac以外で目立つため） */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-stone-300) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--color-stone-300);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--color-stone-400);
+    border: 3px solid transparent;
+    background-clip: content-box;
 }
 
 /* 現場チェックの改善レポートを紙・PDFで出すとき用 */
 @media print {
     .no-print {
-          display: none !important;
+        display: none !important;
     }
 }
 
-/* ───────── スマホ（〜767px）での調整 ─────────
-   見た目の約束（配色・カードの形・絵文字）はそのままに、
-   指で操作したときの引っかかりだけを取り除くための指定。 */
+/* ───────── スマホ（〜767px）での調整 ───────── */
 @media (max-width: 767px) {
     /* iOS Safari は文字が16px未満の入力欄をタップすると画面を勝手に拡大する。
        拡大されたまま横スクロールが必要になり、入力のたびに戻す手間がかかるので、
@@ -40,7 +136,7 @@ body {
     input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea {
-          font-size: 16px;
+        font-size: 16px;
     }
 
     /* 材料の表は横に広く、スマホだと横スクロールしながらの入力になってしまう。
@@ -50,60 +146,61 @@ body {
     .ing-table tbody,
     .ing-table tr,
     .ing-table td {
-          display: block;
-          width: 100%;
+        display: block;
+        width: 100%;
     }
 
     .ing-table thead {
-          display: none;
+        display: none;
     }
 
     .ing-table tr {
-          position: relative;
-          margin-bottom: 0.75rem;
-          border: 1px solid #e7e5e4;
-          border-radius: 0.75rem;
-          background: #fff;
-          padding: 0.5rem 0.75rem 0.75rem;
+        position: relative;
+        margin-bottom: 0.625rem;
+        border: 1px solid var(--color-line);
+        border-radius: 0.75rem;
+        background: #fff;
+        padding: 0.5rem 0.75rem 0.75rem;
+        box-shadow: var(--shadow-xs);
     }
 
     .ing-table td {
-          padding: 0.25rem 0 !important;
+        padding: 0.25rem 0 !important;
     }
 
     .ing-table td[data-label]::before {
-          content: attr(data-label);
-          display: block;
-          margin-bottom: 0.125rem;
-          font-size: 11px;
-          color: #a8a29e;
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.125rem;
+        font-size: 0.75rem;
+        color: var(--color-stone-400);
     }
 
     /* 行番号はカードの見出しに、削除の × は右上に逃がす */
     .ing-table td.ing-no {
-          padding: 0 0 0.25rem 0 !important;
-          text-align: left;
-          font-size: 11px;
-          color: #a8a29e;
+        padding: 0 0 0.25rem 0 !important;
+        text-align: left;
+        font-size: 0.75rem;
+        color: var(--color-stone-400);
     }
 
     .ing-table td.ing-del {
-          position: absolute;
-          top: 0.25rem;
-          right: 0.5rem;
-          width: auto;
-          padding: 0 !important;
+        position: absolute;
+        top: 0.25rem;
+        right: 0.5rem;
+        width: auto;
+        padding: 0 !important;
     }
+}
 
-    /* 横に流すタブの、スクロールバーを隠す */
-    .scroll-x-clean {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-    }
+/* 横に流す列の、スクロールバーを隠す（端が切れているほうが「続きがある」と伝わる） */
+.scroll-x-clean {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
 
-    .scroll-x-clean::-webkit-scrollbar {
-          display: none;
-    }
+.scroll-x-clean::-webkit-scrollbar {
+    display: none;
 }
 
 /* ホーム画面から開いたときに、下端のホームバーと重ならないようにする */

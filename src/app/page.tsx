@@ -17,7 +17,7 @@ export default function Home() {
 
   if (!isClient) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f4ede4] text-stone-400">
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-stone-400">
         読み込み中…
       </div>
     );
@@ -44,7 +44,7 @@ function AppShell() {
   const openSwitcher = () => setSwitcherOpen(true);
 
   return (
-    <div className="flex min-h-screen bg-[#f4ede4] md:h-screen md:overflow-hidden">
+    <div className="flex min-h-screen bg-canvas md:h-screen md:overflow-hidden">
       <Sidebar app={app} activeTab={tab} onChangeTab={setTab} />
       <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
         <div className="md:hidden">
