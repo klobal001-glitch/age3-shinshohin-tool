@@ -236,11 +236,14 @@ function Field({
   label,
   children,
   hint,
+  hintTone,
   filled,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: string;
+  /** 目安をはみ出しているときに赤くする */
+  hintTone?: "danger";
   /** 渡すと必須項目として扱い、左に点を出す */
   filled?: boolean;
 }) {
@@ -253,7 +256,13 @@ function Field({
           {label}
         </span>
         {hint && (
-          <span className="basis-full text-xs font-normal text-stone-400 sm:basis-auto">{hint}</span>
+          <span
+            className={`basis-full text-xs font-normal sm:basis-auto ${
+              hintTone === "danger" ? "font-medium text-red-600" : "text-stone-400"
+            }`}
+          >
+            {hint}
+          </span>
         )}
       </label>
       {children}
@@ -978,12 +987,18 @@ export default function ProductSheetView({
             />
           )}
         </div>
-        {/* 長い文章は一番下に置く */}
+        {/* 長い文章は一番下に置く。
+            目安は140字。ぴったりで切れると文章が壊れるので、入力そのものは145字まで受ける
+            （2026年9月・松尾さんの指示）。140字を超えたら数字を赤くして気付けるようにする */}
         {showOptional() && (
-          <Field label="Instagram投稿文（日本語・全角140字以内）" hint={`${info.instagramPost.length} / 140`}>
+          <Field
+            label="Instagram投稿文（日本語・全角140字以内）"
+            hint={`${info.instagramPost.length} / 140`}
+            hintTone={info.instagramPost.length > 140 ? "danger" : undefined}
+          >
             <AutoTextarea
               rows={3}
-              maxLength={140}
+              maxLength={145}
               value={info.instagramPost}
               onChange={(v) => patch({ instagramPost: v })}
             />
