@@ -499,7 +499,7 @@ export default function ProductSheetView({
     { filled: kamaDone, focusId: "f-priceKama" },
     { filled: ingredientsFilled, focusId: `f-ing-ja-${firstOpenIngredient}` },
     ...info.visualDownloads
-      .filter((v) => isRequiredVisualKey(genre, v.key))
+      .filter((v) => isRequiredVisualKey(genre, v.key, v))
       .map((v) => ({
         filled: visualFilledOf(v.links),
         focusId: `f-visual-${v.key}`,
@@ -532,7 +532,7 @@ export default function ProductSheetView({
   const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
   /* ビジュアルの進捗は「必須ぶん」で数える。レギュラー商品は3件で完成 */
   const visualFilled = requiredVisualFilled(info, genre);
-  const visualTotal = requiredVisualTotal(genre);
+  const visualTotal = requiredVisualTotal(genre, info);
   /* レギュラー商品は発売時のPR文面5件を数えないので、2件で完成になる */
   const sns = snsProgress(info, genre);
   const snsFilled = sns.filled;
@@ -635,6 +635,24 @@ export default function ProductSheetView({
     }
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
+    });
+  };
+
+  /**
+   * その商品に「このビジュアルは無い」印を切り替える。
+   *
+   * レギュラー商品はInstagram投稿やポスターを作らないので、枠が未入力のまま
+   * 残り続けて進捗が実態と合わなかった。押すと分母から外れる。
+   * 逆にバナナブリュレのようにシーズンから移ってきて全部そろっている商品は、
+   * 「あります」に戻すとジャンルの既定を無視して必須に数える。
+   * 過去の年を見ているときは触らせない（数に入らないため）。
+   */
+  const toggleVisualNa = (key: string, required: boolean) => {
+    if (archive) return;
+    patch({
+      visualDownloads: info.visualDownloads.map((v) =>
+        v.key === key ? { ...v, na: required } : v
+      ),
     });
   };
 
@@ -1208,18 +1226,45 @@ export default function ProductSheetView({
           .filter((v) =>
             viewingPast
               ? true
-              : isRequiredVisualKey(genre, v.key)
+              : isRequiredVisualKey(genre, v.key, v)
                 ? showRequired(visualFilledOf(v.links))
                 : showOptional()
           )
-          .map((v) => (
-            <div key={v.key} className="rounded-lg border border-stone-200 p-3">
-              <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-stone-600">
-                <Dot
-                  filled={visualFilledOf(v.links)}
-                  optional={viewingPast || !isRequiredVisualKey(genre, v.key)}
-                />
-                {v.label} {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
+          .map((v) => {
+            const required = isRequiredVisualKey(genre, v.key, v);
+            /* 「ありません」にしてある枠。押して戻せる */
+            const isNa = v.na === true;
+            return (
+            <div
+              key={v.key}
+              className={`rounded-lg border p-3 ${
+                isNa ? "border-stone-200 bg-stone-50" : "border-stone-200"
+              }`}
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-medium text-stone-600">
+                <Dot filled={visualFilledOf(v.links)} optional={viewingPast || !required} />
+                <span className={isNa ? "text-stone-400" : ""}>{v.label}</span>
+                {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
+                {isNa && <span className={badge("neutral", "ml-0.5")}>ありません</span>}
+                {/* 過去の年は数に入らないので、切り替えは出さない */}
+                {!viewingPast && (
+                  <button
+                    type="button"
+                    onClick={() => toggleVisualNa(v.key, isNa)}
+                    className={`ml-auto inline-flex min-h-10 shrink-0 items-center rounded-lg border px-2.5 py-1 text-xs font-normal transition sm:min-h-0 ${
+                      isNa
+                        ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
+                        : "border-stone-300 bg-white text-stone-500 hover:border-stone-400 hover:text-stone-700"
+                    }`}
+                    title={
+                      isNa
+                        ? "この商品にもこのビジュアルがあることにして、必須に戻す"
+                        : "この商品にはこのビジュアルが無いので、必須の数から外す"
+                    }
+                  >
+                    {isNa ? "↩ あります に戻す" : "ありません"}
+                  </button>
+                )}
               </div>
               {v.links.map((l, li) => (
                 <VisualLinkRow
@@ -1238,7 +1283,8 @@ export default function ProductSheetView({
                 onBlur={(e) => commitVisualInput(e.currentTarget, v.key, v.links)}
               />
             </div>
-          ))}
+            );
+          })}
         {!viewingPast && onlyEmpty && visualFilled === visualTotal && (
           <p className="text-xs text-stone-400">必須のビジュアルはすべて入っています。</p>
         )}

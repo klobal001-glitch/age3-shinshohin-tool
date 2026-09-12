@@ -178,7 +178,7 @@ export default function VisualGalleryView({
         product: p,
         info,
         done,
-        total: requiredVisualTotal(p.genre),
+        total: requiredVisualTotal(p.genre, info),
         card,
         status: saleStatus(info, today),
       };
@@ -215,7 +215,7 @@ export default function VisualGalleryView({
           product: p,
           info,
           done: requiredVisualFilled(info, p.genre),
-          total: requiredVisualTotal(p.genre),
+          total: requiredVisualTotal(p.genre, info),
           card: pickCardImage(info),
           status: saleStatus(info, today),
         };
