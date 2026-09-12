@@ -54,6 +54,22 @@ export default function HelpView() {
         </p>
       </div>
       <div className={`${card} p-5`}>
+        <h2 className={`mb-3 ${h3}`}>ビジュアル一覧の見方</h2>
+        <p className="text-sm leading-relaxed text-stone-600">
+          ますに出しているのは
+          <strong className="font-semibold text-stone-800">Instagramフィード投稿画像</strong>
+          です。無ければ商品画像（背景なし）、それも無ければ登録済みの他のビジュアルを出します。
+          ますを押すと全画面で開き、
+          <strong className="font-semibold text-stone-800">左右にスワイプ（PCは ← → キー）</strong>
+          で次の商品に移れます。下にスワイプするか Esc で閉じます。
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          いちばん下の細い線は、その商品のビジュアルがどこまで揃っているかです。全部そろうと緑になります。
+          上の丸い列はこれから発売する商品で、
+          <strong className="font-semibold text-stone-800">橙の輪が付いているものはビジュアルがまだ足りません。</strong>
+        </p>
+      </div>
+      <div className={`${card} p-5`}>
         <h2 className={`mb-3 ${h3}`}>締め切りの計算方法</h2>
         <p className="text-sm leading-relaxed text-stone-600">
           「前々月」は発売月の2か月前、「前月」は発売月の1か月前を指します。各グループの締め切りは、

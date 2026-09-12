@@ -8,8 +8,10 @@ import { toThumbnailUrl } from "@/lib/imageUrl";
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
 import { requiredVisualFilled, requiredVisualTotal } from "@/lib/productInfo";
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
-import { card, cardHead, chip, field, h3 } from "@/lib/ui";
+import { card, chip, eyebrow, field, focusRing, h3, muted } from "@/lib/ui";
 import { requestImageSlot } from "@/lib/imageQueue";
+import Icon from "@/components/Icon";
+import VisualViewer, { ViewerItem } from "@/components/VisualViewer";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
   { value: "all", label: "すべてのジャンル" },
@@ -25,35 +27,26 @@ const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
 type ImageFilter = "all" | "has" | "none";
 type SortMode = "date" | "name" | "least";
 
-/** 画像が無いとき、また読み込めなかったときに出す枠 */
-function NoImage() {
-  return (
-    <div className="flex aspect-[4/3] items-center justify-center border-b border-dashed border-stone-300 bg-stone-50 text-xs text-stone-400">
-      画像未登録
-    </div>
-  );
-}
-
-/** 順番待ち・読み込み中の枠。「画像未登録」と紛らわしくないよう文字は出さない */
-function Loading() {
-  return <div className="aspect-[4/3] w-full animate-pulse bg-stone-100" />;
-}
-
 /** 読み込みを何回まで試すか（候補URL × 3周ぶん） */
 const MAX_ATTEMPTS = 6;
 
 /**
- * カードの画像。
+ * ますの中の画像。
  *
  * Dropbox は数十枚をまとめて取りに行くと弾くので、requestImageSlot で
  * 同時に読み込む枚数を絞る。それでも失敗したときは、少し待ってから
  * 表示用URL（raw=1）と貼られたURLを交互に試し直す。
  * 一度の失敗で諦めると「出たり出なかったり」になるため。
- *
- * Instagram 以外の画像で代替するときは、透過PNGの輪郭が白いカードに溶けたり
- * 縦長のポスターが切れたりしないよう、薄いグレーの上に全体が入るように置く。
  */
-function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
+function Thumb({
+  card,
+  alt,
+  className = "",
+}: {
+  card: CardImage | null;
+  alt: string;
+  className?: string;
+}) {
   /* 何回目の読み込みか。候補URLを交互に試すのにも使う */
   const [attempt, setAttempt] = useState(0);
   /* 試し切って諦めたか */
@@ -63,10 +56,7 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
 
   const url = card?.url ?? "";
   const candidates = useMemo(
-    () =>
-      url
-        ? [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i)
-        : [],
+    () => (url ? [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i) : []),
     [url]
   );
 
@@ -93,8 +83,9 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
     []
   );
 
-  if (!card || failed || candidates.length === 0) return <NoImage />;
-  if (readyToken !== token) return <Loading />;
+  if (!card || failed || candidates.length === 0) return null;
+  if (readyToken !== token)
+    return <div className={`h-full w-full animate-pulse bg-stone-200 ${className}`} />;
 
   const src = candidates[attempt % candidates.length];
 
@@ -123,9 +114,7 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
       key={attempt}
       src={src}
       alt={alt}
-      className={`aspect-[4/3] w-full bg-stone-100 ${
-        isFullBleed(card) ? "object-cover" : "object-contain p-2"
-      }`}
+      className={`h-full w-full ${isFullBleed(card) ? "object-cover" : "object-contain p-1.5"} ${className}`}
       loading="lazy"
       referrerPolicy="no-referrer"
       onLoad={finish}
@@ -133,10 +122,6 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
     />
   );
 }
-
-/** 選択中のボタンかどうかで見た目を切り替える共通スタイル */
-/** 選択肢の見た目は全画面で共通。実体は @/lib/ui の chip */
-const chipCls = chip;
 
 export default function VisualGalleryView({
   app,
@@ -149,6 +134,8 @@ export default function VisualGalleryView({
   const [genre, setGenre] = useState<Genre | "all">("all");
   const [imageFilter, setImageFilter] = useState<ImageFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("date");
+  /* 全画面で見ている商品。null なら閉じている */
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const today = todayKey();
 
@@ -157,7 +144,7 @@ export default function VisualGalleryView({
       const info = getInfo(p.id);
       /* 必須ぶんで数える。レギュラー商品はビジュアル3件で完成 */
       const done = requiredVisualFilled(info, p.genre);
-      /* カードに出す画像。「画像あり」の数え方と絞り込みも必ずこれを見る */
+      /* ますに出す画像。「画像あり」の数え方と絞り込みも必ずこれを見る */
       const card = pickCardImage(info);
       return {
         product: p,
@@ -187,122 +174,224 @@ export default function VisualGalleryView({
 
   const withImage = rows.filter((r) => r.card !== null).length;
 
+  /**
+   * 上の丸い列：これから発売する商品を、発売日が近い順に並べる。
+   * 画像がまだ足りないものには輪を付けて、先に手を付けるものが分かるようにする。
+   * 絞り込みの影響は受けない（いつでも同じ場所にある方が押しやすい）。
+   */
+  const upcoming = useMemo(() => {
+    return products
+      .map((p) => {
+        const info = getInfo(p.id);
+        return {
+          product: p,
+          info,
+          done: requiredVisualFilled(info, p.genre),
+          total: requiredVisualTotal(p.genre),
+          card: pickCardImage(info),
+          status: saleStatus(info, today),
+        };
+      })
+      .filter((r) => !r.info.discontinued && r.info.releaseDate && r.info.releaseDate >= today)
+      .sort((a, b) => (a.info.releaseDate || "").localeCompare(b.info.releaseDate || ""))
+      .slice(0, 14);
+  }, [products, getInfo, today]);
+
+  const viewerItems: ViewerItem[] = useMemo(
+    () =>
+      rows.map((r) => ({
+        id: r.product.id,
+        name: r.product.name,
+        genre: r.product.genre,
+        releaseDate: r.info.releaseDate,
+        card: r.card,
+        done: r.done,
+        total: r.total,
+        status: r.status,
+      })),
+    [rows]
+  );
+
+  const openSheet = (id: string) => {
+    setSelectedId(id);
+    setViewerIndex(null);
+    onNavigate("sheet");
+  };
+
+  /* 丸い列から押されたら、その商品をますの一覧の中から探して全画面で開く */
+  const openById = (id: string) => {
+    const i = rows.findIndex((r) => r.product.id === id);
+    if (i >= 0) setViewerIndex(i);
+    else openSheet(id);
+  };
+
   return (
     <div className="space-y-4">
-      <div className={`overflow-hidden ${card}`}>
-        <div className={cardHead}>
+      <div className={card}>
+        <div className="flex items-center gap-2.5 border-b border-stone-200 px-4 py-3.5 sm:px-5">
           <h2 className={h3}>ビジュアル一覧</h2>
           <span className="text-sm tabular-nums text-stone-500">
             {rows.length}件中 {withImage}件に画像あり
           </span>
         </div>
 
-        <div className="space-y-3 p-4">
-          {/* 狭い画面では折り返さず横に流す（4行にふくらんでカードが見えなくなるため） */}
-          <div className="scroll-x-clean flex items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
-            <span className="w-16 shrink-0 text-sm text-stone-500">並べ替え</span>
-            <button className={chipCls(sortMode === "date")} onClick={() => setSortMode("date")}>
-              発売日が新しい順
-            </button>
-            <button className={chipCls(sortMode === "name")} onClick={() => setSortMode("name")}>
-              名前順
-            </button>
-            <button className={chipCls(sortMode === "least")} onClick={() => setSortMode("least")}>
-              画像が少ない順
-            </button>
-          </div>
+        {/* 並べ替えと絞り込みは1列にまとめる。上の操作盤が画面の半分を占めると、
+            肝心の画像までスクロールしないと辿り着けないため */}
+        <div className="scroll-x-clean flex items-center gap-1.5 overflow-x-auto p-3 sm:flex-wrap sm:p-4">
+          <button className={chip(sortMode === "date", "", "sm")} onClick={() => setSortMode("date")}>
+            発売日が新しい順
+          </button>
+          <button className={chip(sortMode === "name", "", "sm")} onClick={() => setSortMode("name")}>
+            名前順
+          </button>
+          <button className={chip(sortMode === "least", "", "sm")} onClick={() => setSortMode("least")}>
+            画像が少ない順
+          </button>
 
-          <div className="scroll-x-clean flex items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
-            <span className="w-16 shrink-0 text-sm text-stone-500">絞り込み</span>
-            <button className={chipCls(imageFilter === "all")} onClick={() => setImageFilter("all")}>
-              すべて
-            </button>
-            <button className={chipCls(imageFilter === "none")} onClick={() => setImageFilter("none")}>
-              画像なしだけ
-            </button>
-            <button className={chipCls(imageFilter === "has")} onClick={() => setImageFilter("has")}>
-              画像ありだけ
-            </button>
-            <select
-              className={`${field} w-auto shrink-0`}
-              value={genre === "all" ? "" : genre ?? ""}
-              onChange={(e) => setGenre((e.target.value || "all") as Genre | "all")}
-            >
-              {GENRE_OPTIONS.map((g) => (
-                <option key={g.label} value={g.value === "all" ? "" : g.value ?? ""}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-stone-200" />
 
-          <p className="text-xs text-stone-400">
-            カードを押すと、その商品の情報シートが開きます。画像はInstagramフィード投稿画像を表示しています。無い場合は商品画像（背景なし画像）、それも無い場合は登録されている他のビジュアルを表示します。
-          </p>
+          <button
+            className={chip(imageFilter === "all", "", "sm")}
+            onClick={() => setImageFilter("all")}
+          >
+            すべて
+          </button>
+          <button
+            className={chip(imageFilter === "none", "", "sm")}
+            onClick={() => setImageFilter("none")}
+          >
+            画像なしだけ
+          </button>
+          <button
+            className={chip(imageFilter === "has", "", "sm")}
+            onClick={() => setImageFilter("has")}
+          >
+            画像ありだけ
+          </button>
+          <select
+            className={`${field} !min-h-10 w-auto shrink-0 !py-1 text-xs md:!min-h-8`}
+            value={genre === "all" ? "" : genre ?? ""}
+            onChange={(e) => setGenre((e.target.value || "all") as Genre | "all")}
+          >
+            {GENRE_OPTIONS.map((g) => (
+              <option key={g.label} value={g.value === "all" ? "" : g.value ?? ""}>
+                {g.label}
+              </option>
+            ))}
+          </select>
         </div>
+
+        <p className={`border-t border-stone-100 px-3 pb-3 pt-2.5 sm:px-4 ${muted}`}>
+          画像を押すと全画面で開きます（左右にスワイプ／← →キーで次の商品）。
+        </p>
       </div>
 
+      {/* これから発売する商品。丸く並べて、画像が足りないものに輪を付ける */}
+      {upcoming.length > 0 && (
+        <div>
+          <div className={`mb-2 px-0.5 ${eyebrow}`}>これから発売（発売日が近い順）</div>
+          <div className="scroll-x-clean -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+            {upcoming.map((u) => {
+              const short = u.done < u.total;
+              return (
+                <button
+                  key={u.product.id}
+                  type="button"
+                  onClick={() => openById(u.product.id)}
+                  className={`flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-lg pb-1 pt-0.5 ${focusRing}`}
+                >
+                  <span
+                    className={`rounded-full p-0.5 ${
+                      short ? "bg-amber-500" : "bg-stone-200"
+                    }`}
+                  >
+                    <span className="block overflow-hidden rounded-full border-2 border-white bg-stone-100">
+                      <span className="block h-14 w-14">
+                        {u.card ? (
+                          <Thumb card={u.card} alt={u.product.name} />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-stone-300">
+                            <Icon name="gallery" className="h-5 w-5" />
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="line-clamp-2 w-full text-center text-xs leading-tight text-stone-600">
+                    {u.product.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {rows.length === 0 ? (
-        <p className="rounded-xl border border-stone-300 bg-white p-8 text-center text-sm text-stone-500">
+        <p className="rounded-xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
           条件に合う商品がありません。絞り込みを変えてください。
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map(({ product, info, done, total, card, status }) => (
-            <button
-              key={product.id}
-              className={`overflow-hidden rounded-xl border bg-white text-left transition hover:border-stone-500 ${
-                isInactive(status) ? "border-stone-200 opacity-60" : "border-stone-300"
-              }`}
-              onClick={() => {
-                setSelectedId(product.id);
-                onNavigate("sheet");
-              }}
-            >
-              <CardThumb card={card} alt={product.name} />
+        /* ますの一覧。写真アプリと同じで、枠も余白も置かず画像そのものを並べる。
+           スマホは画面の端まで使いたいので、本文の余白（px-4）を打ち消している */
+        <div className="-mx-4 grid grid-cols-3 gap-0.5 sm:mx-0 sm:grid-cols-4 sm:gap-1 lg:grid-cols-6">
+          {rows.map(({ product, info, done, total, card, status }, i) => {
+            const off = isInactive(status);
+            const pct = total ? (done / total) * 100 : 0;
+            const soon = info.releaseDate && info.releaseDate > today;
+            return (
+              <button
+                key={product.id}
+                onClick={() => setViewerIndex(i)}
+                className={`group relative aspect-square overflow-hidden bg-stone-100 text-left transition sm:rounded-lg ${focusRing}`}
+              >
+                {card ? (
+                  <Thumb card={card} alt={product.name} />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-stone-100 text-stone-300">
+                    <Icon name="gallery" className="h-6 w-6" />
+                  </span>
+                )}
 
-              <div className="space-y-1 p-3">
-                <div className="flex items-start gap-1.5">
+                {/* 名前は画像の上に重ねる。ますだけだとどの商品か分からないため */}
+                <span
+                  className={`pointer-events-none absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-5 text-xs font-medium leading-tight ${
+                    card
+                      ? "bg-gradient-to-t from-black/75 via-black/35 to-transparent text-white"
+                      : "text-stone-600"
+                  }`}
+                >
+                  <span className="line-clamp-2">{product.name}</span>
+                </span>
+
+                {/* 左上の印。発売前・販売終了・廃盤だけ出す */}
+                {(off || soon) && (
+                  <span className="pointer-events-none absolute left-1 top-1 rounded bg-stone-900/55 px-1.5 py-0.5 text-xs text-white">
+                    {off ? SALE_STATUS_LABEL[status] : "発売前"}
+                  </span>
+                )}
+
+                {/* いちばん下の細い線がビジュアルの埋まり具合 */}
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-white/25">
                   <span
-                    className={`min-w-0 flex-1 text-sm font-semibold leading-snug ${
-                      isInactive(status) ? "text-stone-400" : "text-stone-800"
-                    }`}
-                  >
-                    {product.name}
-                  </span>
-                  {isInactive(status) && (
-                    <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-xs text-stone-500">
-                      {SALE_STATUS_LABEL[status]}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-stone-500">
-                  {product.genre ? GENRE_LABELS[product.genre] : "ジャンル未設定"}
-                  <span className="mx-1 text-stone-300">/</span>
-                  <span className="tabular-nums">
-                    {info.releaseDate ? info.releaseDate.replaceAll("-", "/") : "発売日未設定"}
-                  </span>
-                  {info.releaseDate && info.releaseDate > today && "（発売前）"}
-                </div>
-
-                <div className="pt-1">
-                  <div className="mb-1 flex items-baseline justify-between text-xs">
-                    <span className="text-stone-500">ビジュアル</span>
-                    <span className="tabular-nums text-stone-600">
-                      {done}/{total}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
-                    <div
-                      className={`h-full rounded-full ${done === total ? "bg-emerald-500" : "bg-stone-600"}`}
-                      style={{ width: `${total ? (done / total) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
+                    className={`block h-full ${done === total ? "bg-emerald-400" : "bg-amber-400"}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </span>
+              </button>
+            );
+          })}
         </div>
+      )}
+
+      {viewerIndex !== null && viewerItems[viewerIndex] && (
+        <VisualViewer
+          items={viewerItems}
+          index={viewerIndex}
+          onIndexChange={setViewerIndex}
+          onClose={() => setViewerIndex(null)}
+          onOpenSheet={openSheet}
+        />
       )}
     </div>
   );

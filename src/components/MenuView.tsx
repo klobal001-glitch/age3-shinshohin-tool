@@ -232,13 +232,13 @@ export default function MenuView({
           <span className="text-xs tabular-nums text-stone-400">{productRows.length}件</span>
           <div className="ml-auto flex gap-1.5">
             <button
-              className={chip(productSort === "progress", "min-h-9 px-2.5 text-xs")}
+              className={chip(productSort === "progress", "", "sm")}
               onClick={() => setProductSort("progress")}
             >
               進捗が低い順
             </button>
             <button
-              className={chip(productSort === "name", "min-h-9 px-2.5 text-xs")}
+              className={chip(productSort === "name", "", "sm")}
               onClick={() => setProductSort("name")}
             >
               名前順
