@@ -8,7 +8,7 @@ import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted } from "@
 import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
-import { isLinkedTaskDone, skipKey } from "@/lib/stats";
+import { canSkipTask, isLinkedTaskDone, skipKey } from "@/lib/stats";
 import { PriceInput } from "./PriceInput";
 import { VisualLinkRow } from "./VisualLinkRow";
 import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
@@ -536,15 +536,15 @@ export default function PrepTaskView({
 
   /** その項目が「今回は作らない」になっているか */
   const isSkipped = (groupId: string, milestoneId: string, t: TaskItem) =>
-    Boolean(t.children && t.children.length > 0 && taskState[skipKey(groupId, milestoneId, t.id)]);
+    canSkipTask(t) && Boolean(taskState[skipKey(groupId, milestoneId, t.id)]);
 
   const milestoneProgress = (group: TaskGroup, m: Milestone) => {
     let checked = 0;
     let total = 0;
     for (const t of m.tasks) {
+      /* 「今回は作らない」にしたものは分母から外す（子のあるなしを問わず） */
+      if (isSkipped(group.id, m.id, t)) continue;
       if (t.children && t.children.length > 0) {
-        /* 「今回は作らない」にしたものは分母から外す */
-        if (isSkipped(group.id, m.id, t)) continue;
         for (const c of t.children) {
           total++;
           if (isLeafChecked(group.id, m.id, t, c.id)) checked++;
