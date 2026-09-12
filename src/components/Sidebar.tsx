@@ -19,7 +19,8 @@ const NAV: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "gallery", icon: "gallery", label: "ビジュアル" },
 ];
 
-/** 並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる */
+/** シーズン以外の並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる
+    （シーズンは発売日だけで並べる。下の sort を参照） */
 const SALE_RANK: Record<SaleStatus, number> = { active: 0, ended: 1, retired: 2 };
 
 function fillDotColor(pct: number) {
@@ -60,17 +61,24 @@ export default function Sidebar({
       const items = map.get(g);
       if (!items) continue;
       items.sort((a, b) => {
-        /* 販売していない商品は、ジャンルの下に落とす */
-        const byStatus = rank(a) - rank(b);
-        if (byStatus !== 0) return byStatus;
-        /* シーズン商品は入れ替わりが早いので、発売日が新しいものから並べる */
-        if (g !== "season") return 0; // sort は安定なので、他のジャンルは元の並びが残る
-        const ra = getInfo(a.id).releaseDate;
-        const rb = getInfo(b.id).releaseDate;
-        if (!ra && !rb) return 0;
-        if (!ra) return 1; // 発売日未設定は下に回す
-        if (!rb) return -1;
-        return rb.localeCompare(ra);
+        if (g === "season") {
+          /* シーズンは「発売日が新しいものが上」。これから発売するものも含めて
+             日付だけで並べ、古いものが下に沈むようにする（2026年9月・松尾さんの指示）。
+             販売終了かどうかでは分けない。終わった商品でも、最近のものほど上にある方が探しやすい。
+             廃盤だけは作らない商品なので、いちばん下に回す */
+          const da = getInfo(a.id).discontinued ? 1 : 0;
+          const db = getInfo(b.id).discontinued ? 1 : 0;
+          if (da !== db) return da - db;
+          const ra = getInfo(a.id).releaseDate;
+          const rb = getInfo(b.id).releaseDate;
+          if (!ra && !rb) return 0;
+          if (!ra) return 1; // 発売日未設定は下に回す
+          if (!rb) return -1;
+          return rb.localeCompare(ra);
+        }
+        /* 他のジャンルは、販売していない商品をジャンルの下に落とすだけ。
+           sort は安定なので、それ以外は元の並びが残る */
+        return rank(a) - rank(b);
       });
     }
 
