@@ -38,43 +38,59 @@ const MAX_ATTEMPTS = 6;
  * 表示用URL（raw=1）と貼られたURLを交互に試し直す。
  * 一度の失敗で諦めると「出たり出なかったり」になるため。
  */
-function Thumb({
-  card,
-  alt,
-  className = "",
-}: {
-  card: CardImage | null;
-  alt: string;
-  className?: string;
-}) {
+function Thumb({ card, alt }: { card: CardImage | null; alt: string }) {
   /* 何回目の読み込みか。候補URLを交互に試すのにも使う */
   const [attempt, setAttempt] = useState(0);
   /* 試し切って諦めたか */
   const [failed, setFailed] = useState(false);
+  /* 実際に絵が出たか。出るまでは薄いグレーの下敷きを見せる */
+  const [loaded, setLoaded] = useState(false);
   /* 順番が回ってきた読み込みの目印。今の url と attempt に一致したら読み込む */
   const [readyToken, setReadyToken] = useState("");
+  /* 画面に入った（近づいた）か。97件ぶんを一度に取りに行くと Dropbox に弾かれる */
+  const [near, setNear] = useState(false);
+
+  const boxRef = useRef<HTMLSpanElement | null>(null);
+  const releaseRef = useRef<(() => void) | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   const url = card?.url ?? "";
   const candidates = useMemo(
     () => (url ? [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i) : []),
     [url]
   );
-
-  const releaseRef = useRef<(() => void) | null>(null);
-  const timerRef = useRef<number | null>(null);
-
   const token = `${url}#${attempt}`;
+
+  /* 画面に近づいてから読み込む。下のほうのますは、そこまで来るまで取りに行かない */
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   /* 順番待ちに並ぶ。読み込みが終わる（成功・失敗）まで枠を持つ */
   useEffect(() => {
-    if (!url || failed) return;
+    if (!near || !url || failed) return;
     const release = requestImageSlot(() => setReadyToken(token));
     releaseRef.current = release;
     return () => {
       release();
       releaseRef.current = null;
     };
-  }, [token, url, failed]);
+  }, [near, token, url, failed]);
 
   useEffect(
     () => () => {
@@ -83,12 +99,6 @@ function Thumb({
     []
   );
 
-  if (!card || failed || candidates.length === 0) return null;
-  if (readyToken !== token)
-    return <div className={`h-full w-full animate-pulse bg-stone-200 ${className}`} />;
-
-  const src = candidates[attempt % candidates.length];
-
   const finish = () => {
     releaseRef.current?.();
     releaseRef.current = null;
@@ -96,6 +106,7 @@ function Thumb({
 
   const onError = () => {
     finish();
+    setLoaded(false);
     const next = attempt + 1;
     if (next >= MAX_ATTEMPTS) {
       setFailed(true);
@@ -107,19 +118,36 @@ function Thumb({
     timerRef.current = window.setTimeout(() => setAttempt(next), wait);
   };
 
+  const show = near && !failed && candidates.length > 0 && readyToken === token;
+  const src = candidates[attempt % candidates.length];
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      /* 同じURLに戻ったときも確実に読み込み直すよう、要素ごと作り直す */
-      key={attempt}
-      src={src}
-      alt={alt}
-      className={`h-full w-full ${isFullBleed(card) ? "object-cover" : "object-contain p-1.5"} ${className}`}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      onLoad={finish}
-      onError={onError}
-    />
+    <span ref={boxRef} className="relative block h-full w-full overflow-hidden bg-stone-100">
+      {/* 下敷き。読めなかったときも空っぽにならず、「画像なし」と同じ見た目で止まる */}
+      {!loaded && (
+        <span className="flex h-full w-full items-center justify-center text-stone-300">
+          <Icon name="gallery" className="h-6 w-6" />
+        </span>
+      )}
+      {show && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          /* 同じURLに戻ったときも確実に読み込み直すよう、要素ごと作り直す */
+          key={attempt}
+          src={src}
+          alt={alt}
+          className={`absolute inset-0 h-full w-full transition-opacity duration-200 ${
+            card && isFullBleed(card) ? "object-cover" : "object-contain p-1.5"
+          } ${loaded ? "opacity-100" : "opacity-0"}`}
+          referrerPolicy="no-referrer"
+          onLoad={() => {
+            setLoaded(true);
+            finish();
+          }}
+          onError={onError}
+        />
+      )}
+    </span>
   );
 }
 
@@ -307,13 +335,7 @@ export default function VisualGalleryView({
                   >
                     <span className="block overflow-hidden rounded-full border-2 border-white bg-stone-100">
                       <span className="block h-14 w-14">
-                        {u.card ? (
-                          <Thumb card={u.card} alt={u.product.name} />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-stone-300">
-                            <Icon name="gallery" className="h-5 w-5" />
-                          </span>
-                        )}
+                        <Thumb card={u.card} alt={u.product.name} />
                       </span>
                     </span>
                   </span>
@@ -345,13 +367,7 @@ export default function VisualGalleryView({
                 onClick={() => setViewerIndex(i)}
                 className={`group relative aspect-square overflow-hidden bg-stone-100 text-left transition sm:rounded-lg ${focusRing}`}
               >
-                {card ? (
-                  <Thumb card={card} alt={product.name} />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center bg-stone-100 text-stone-300">
-                    <Icon name="gallery" className="h-6 w-6" />
-                  </span>
-                )}
+                <Thumb card={card} alt={product.name} />
 
                 {/* 名前は画像の上に重ねる。ますだけだとどの商品か分からないため */}
                 <span
