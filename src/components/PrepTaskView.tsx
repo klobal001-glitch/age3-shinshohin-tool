@@ -15,6 +15,26 @@ import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/p
 /** 並べ替え・絞り込みボタンの共通スタイル。実体は @/lib/ui の chip */
 const ctrlCls = chip;
 
+/**
+ * タスク名と、そのうしろの小さな注記。
+ *
+ * 「自動入力欄へ」のような案内をタスク名と同じ大きさ・濃さで書くと、
+ * 見なければいけないタスク名そのものが読み取りにくくなる。
+ * 注記は一段小さく・薄くして、タスク名が先に目に入るようにする。
+ */
+function TaskLabel({ task, className = "" }: { task: TaskItem; className?: string }) {
+  return (
+    <span className={`min-w-0 ${className}`}>
+      {task.label}
+      {task.note && (
+        <span className="ml-1.5 whitespace-nowrap align-middle text-xs font-normal text-stone-400">
+          🔗 {task.note}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function leafKey(groupId: string, milestoneId: string, taskId: string, childId?: string) {
   return childId
     ? `${groupId}|${milestoneId}|${taskId}|${childId}`
@@ -57,7 +77,7 @@ function LinkedImageRow({
         >
           {done ? "✓" : ""}
         </span>
-        <span className={done ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+        <TaskLabel task={task} className={done ? "text-stone-400" : "text-stone-700"} />
         <span className="text-xs text-stone-400">画像を貼ると完了になります</span>
       </div>
       <div className="mt-2 pl-7">
@@ -141,7 +161,7 @@ function LinkedPriceRow({
         >
           {done ? "✓" : ""}
         </span>
-        <span className={done ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+        <TaskLabel task={task} className={done ? "text-stone-400" : "text-stone-700"} />
         {isUber &&
           (isManual ? (
             <>
@@ -224,7 +244,7 @@ function LinkedChoiceRow({
         >
           {answered ? "✓" : ""}
         </span>
-        <span className={answered ? "text-stone-400" : "text-stone-700"}>{task.label}</span>
+        <TaskLabel task={task} className={answered ? "text-stone-400" : "text-stone-700"} />
       </div>
       <div className="mt-2 flex flex-wrap gap-2 pl-7">
         {choices.map((c) => (
@@ -333,9 +353,10 @@ function MilestoneCard({
                 return (
                   <div key={t.id} className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className={`text-sm ${skipped ? "text-stone-400 line-through" : "text-stone-700"}`}>
-                        {t.label}
-                      </span>
+                      <TaskLabel
+                        task={t}
+                        className={`text-sm ${skipped ? "text-stone-400 line-through" : "text-stone-700"}`}
+                      />
                       {skipped && <span className={badge("neutral")}>今回は作らない</span>}
                       <button
                         type="button"
@@ -405,9 +426,10 @@ function MilestoneCard({
                     checked={isChecked(t)}
                     onChange={() => onToggle(t)}
                   />
-                  <span className={isChecked(t) ? "text-stone-400 line-through" : "text-stone-700"}>
-                    {t.label}
-                  </span>
+                  <TaskLabel
+                    task={t}
+                    className={isChecked(t) ? "text-stone-400 line-through" : "text-stone-700"}
+                  />
                 </label>
                 {t.links && t.links.length > 0 && (
                   <span className="flex flex-wrap gap-1.5 pl-8 sm:shrink-0 sm:justify-end sm:pl-0">
