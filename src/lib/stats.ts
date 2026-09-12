@@ -97,9 +97,9 @@ export function taskCompletion(
   for (const g of TASK_GROUPS) {
     for (const m of g.milestones) {
       for (const t of m.tasks) {
+        /* 「今回は作らない」にしたものは、そもそも数えない（子のあるなしを問わず） */
+        if (isTaskSkipped(taskState, g.id, m.id, t)) continue;
         if (t.children && t.children.length > 0) {
-          /* 「今回は作らない」にしたものは、そもそも数えない */
-          if (isTaskSkipped(taskState, g.id, m.id, t)) continue;
           for (const c of t.children) {
             total++;
             if (taskState[leafKey(g.id, m.id, t.id, c.id)]) checked++;
@@ -120,8 +120,9 @@ function milestoneCheckState(group: TaskGroup, m: Milestone, taskState: TaskStat
   let checked = 0;
   let total = 0;
   for (const t of m.tasks) {
+    /* 「今回は作らない」にしたものは、締め切りの数にも入れない（子のあるなしを問わず） */
+    if (isTaskSkipped(taskState, group.id, m.id, t)) continue;
     if (t.children && t.children.length > 0) {
-      if (isTaskSkipped(taskState, group.id, m.id, t)) continue;
       for (const c of t.children) {
         total++;
         if (taskState[leafKey(group.id, m.id, t.id, c.id)]) checked++;
