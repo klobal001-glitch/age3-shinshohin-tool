@@ -95,7 +95,7 @@ export const TASK_GROUPS: TaskGroup[] = [
         rule: monthsBefore(2, 9),
         tasks: [
           { id: "yt_edit", label: "作り方YouTube 編集" },
-          { id: "yt_post", label: "作り方YouTube 投稿🔗自動入力欄へ →" },
+          { id: "yt_post", label: "作り方YouTube 投稿", note: "自動入力欄へ" },
           { id: "get_material_image", label: "材料画像・使用量（g数）をもらう" },
           { id: "material_sheet", label: "材料スプレッドシート作成(のちのち消します)" },
           { id: "yt_share_stores", label: "作り方YouTubeを各店の業務連絡に投稿" },
@@ -106,9 +106,9 @@ export const TASK_GROUPS: TaskGroup[] = [
         label: "前々月15日まで",
         rule: monthsBefore(2, 15),
         tasks: [
-          { id: "ig_feed", label: "Instagram フィード投稿画像🔗自動入力欄へ →" },
-          { id: "ig_caption", label: "Instagram 投稿文章🔗自動入力欄へ →" },
-          { id: "ig_story", label: "Instagram ストーリーズ投稿画像🔗自動入力欄へ →" },
+          { id: "ig_feed", label: "Instagram フィード投稿画像", note: "自動入力欄へ" },
+          { id: "ig_caption", label: "Instagram 投稿文章", note: "自動入力欄へ" },
+          { id: "ig_story", label: "Instagram ストーリーズ投稿画像", note: "自動入力欄へ" },
           {
             id: "poster_ginza",
             label: "銀座ポスター（外A3）",
@@ -119,7 +119,7 @@ export const TASK_GROUPS: TaskGroup[] = [
           },
           {
             id: "poster_asakusa_a1",
-            label: "ポスター A1（浅草）🔗自動入力欄へ →",
+            label: "ポスター A1（浅草）", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },
@@ -151,7 +151,7 @@ export const TASK_GROUPS: TaskGroup[] = [
           },
           {
             id: "panel_kama",
-            label: "嘉麻パネル🔗自動入力欄へ →",
+            label: "嘉麻パネル", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },
@@ -165,13 +165,13 @@ export const TASK_GROUPS: TaskGroup[] = [
               { id: "submit", label: "入稿" },
             ],
           },
-          { id: "laminate_kanto", label: "レジ用ラミネートA5 関東＋飛騨高山用🔗自動入力欄へ →" },
-          { id: "laminate_kama", label: "レジ用ラミネートA5 嘉麻用🔗自動入力欄へ →" },
-          { id: "airregi_image", label: "エアレジ 商品画像🔗自動入力欄へ →" },
-          { id: "x_caption", label: "X（旧Twitter）文章🔗自動入力欄へ →" },
-          { id: "threads_caption", label: "Threads 文章🔗自動入力欄へ →" },
-          { id: "ec_slider_pc", label: "ECスライダー PC🔗自動入力欄へ →" },
-          { id: "ec_slider_sp", label: "ECスライダー スマホ🔗自動入力欄へ →" },
+          { id: "laminate_kanto", label: "レジ用ラミネートA5 関東＋飛騨高山用", note: "自動入力欄へ" },
+          { id: "laminate_kama", label: "レジ用ラミネートA5 嘉麻用", note: "自動入力欄へ" },
+          { id: "airregi_image", label: "エアレジ 商品画像", note: "自動入力欄へ" },
+          { id: "x_caption", label: "X（旧Twitter）文章", note: "自動入力欄へ" },
+          { id: "threads_caption", label: "Threads 文章", note: "自動入力欄へ" },
+          { id: "ec_slider_pc", label: "ECスライダー PC", note: "自動入力欄へ" },
+          { id: "ec_slider_sp", label: "ECスライダー スマホ", note: "自動入力欄へ" },
           { id: "ginza_showcase", label: "銀座ショーケース 目隠し 制作" },
         ],
       },
@@ -180,8 +180,8 @@ export const TASK_GROUPS: TaskGroup[] = [
         label: "前月15日まで",
         rule: monthsBefore(1, 15),
         tasks: [
-          { id: "signage_v", label: "サイネージ 縦🔗自動入力欄へ →" },
-          { id: "signage_h", label: "サイネージ 横🔗自動入力欄へ →" },
+          { id: "signage_v", label: "サイネージ 縦", note: "自動入力欄へ" },
+          { id: "signage_h", label: "サイネージ 横", note: "自動入力欄へ" },
           { id: "signage_usb", label: "サイネージデータ USBに書き出し → 発送" },
         ],
       },
@@ -192,7 +192,7 @@ export const TASK_GROUPS: TaskGroup[] = [
         tasks: [
           {
             id: "menu_fold",
-            label: "二つ折り手元メニュー🔗自動入力欄へ →",
+            label: "二つ折り手元メニュー", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },
@@ -200,14 +200,14 @@ export const TASK_GROUPS: TaskGroup[] = [
           },
           {
             id: "flyer",
-            label: "各店チラシ🔗自動入力欄へ →",
+            label: "各店チラシ", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },
             ],
           },
           { id: "laminate_ship", label: "レジ用ラミネートA5 → 発送（5店舗）" },
-          { id: "uber_image", label: "Uber Eats 商品画像🔗自動入力欄へ →" },
+          { id: "uber_image", label: "Uber Eats 商品画像", note: "自動入力欄へ" },
           { id: "confirm_office", label: "ビジュアル（レジ・ウーバー・業者用）＋文章を全て事務に投げたか確認" },
           { id: "confirm_kama_staff", label: "ビジュアル（Instagram・X・スレッズ）＋文章を全て嘉麻スタッフに投げたか確認" },
         ],

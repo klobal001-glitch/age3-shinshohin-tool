@@ -102,6 +102,12 @@ export interface TaskLeaf {
 export interface TaskItem {
     id: string;
     label: string;
+    /**
+     * タスク名のうしろに小さく添える注記。
+     * タスク名と同じ大きさ・濃さで書くと、肝心のタスク名が読み取りにくくなるため、
+     * 注記は label に混ぜずにここへ入れる（表示は `TaskNote`）。
+     */
+    note?: string;
     children?: TaskLeaf[]; // 制作/入稿など、サブチェックがある場合
     /** 行の右に出す、別アプリ・別シートを開くボタン（複数可） */
     links?: { url: string; label: string }[];
