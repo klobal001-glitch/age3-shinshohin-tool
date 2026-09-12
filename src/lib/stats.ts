@@ -116,7 +116,12 @@ export function taskCompletion(
   return { checked, total };
 }
 
-function milestoneCheckState(group: TaskGroup, m: Milestone, taskState: TaskState) {
+function milestoneCheckState(
+  group: TaskGroup,
+  m: Milestone,
+  taskState: TaskState,
+  info: ProductInfo
+) {
   let checked = 0;
   let total = 0;
   for (const t of m.tasks) {
@@ -129,7 +134,12 @@ function milestoneCheckState(group: TaskGroup, m: Milestone, taskState: TaskStat
       }
     } else {
       total++;
-      if (taskState[leafKey(group.id, m.id, t.id)]) checked++;
+      /* 情報シートと連動するタスク（価格・レシピなど）は、シートの値を見る。
+         準備タスク画面と同じ数え方にしないと、商品ページでは「完了」なのに
+         ホームの期限超過には残り続ける（2026年9月に修正） */
+      if (t.linkedField ? isLinkedTaskDone(t, info) : taskState[leafKey(group.id, m.id, t.id)]) {
+        checked++;
+      }
     }
   }
   return { checked, total };
@@ -169,7 +179,7 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
       for (const m of g.milestones) {
         const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate, info.ongoing);
         if (!deadline) continue;
-        const { checked, total } = milestoneCheckState(g, m, taskState);
+        const { checked, total } = milestoneCheckState(g, m, taskState, info);
         /* 完了済みと、「今回は作らない」で中身が無くなった区切りは締め切りに出さない */
         if (total === 0 || checked === total) continue;
         const days = daysDiffFromToday(deadline) ?? 0;
