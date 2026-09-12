@@ -7,15 +7,16 @@ import { infoFillRate } from "@/lib/stats";
 import { SALE_STATUS_LABEL, SaleStatus, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
+import Icon, { IconName } from "@/components/Icon";
 import { GENRE_ORDER, genreLabel } from "./ProductSwitcher";
-import { btn, field, focusRing } from "@/lib/ui";
+import { btn, eyebrow, field, focusRing, rowSelect } from "@/lib/ui";
 
 /* ラベルはスマホ下端のタブと同じ言葉にして、どちらで使っても迷わないようにする */
-const NAV: { key: TabKey; icon: string; label: string }[] = [
-  { key: "menu", icon: "🏠", label: "メニュー" },
-  { key: "sheet", icon: "📝", label: "シート" },
-  { key: "tasks", icon: "✅", label: "タスク" },
-  { key: "gallery", icon: "🖼", label: "ビジュアル" },
+const NAV: { key: TabKey; icon: IconName; label: string }[] = [
+  { key: "menu", icon: "home", label: "ホーム" },
+  { key: "sheet", icon: "sheet", label: "シート" },
+  { key: "tasks", icon: "task", label: "タスク" },
+  { key: "gallery", icon: "gallery", label: "ビジュアル" },
 ];
 
 /** 並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる */
@@ -89,18 +90,44 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="hidden w-72 shrink-0 flex-col border-r border-amber-900/10 bg-[#f4ede4] md:flex">
-      <div className="bg-[#4a2f1f] px-4 py-4 text-amber-50">
-        <Age3Logo className="h-7 w-auto" />
-        <h1 className="mt-2.5 text-base font-bold leading-tight">新商品シート</h1>
-        <p className="truncate text-xs text-amber-200/80">揚げサンド 直営店で共有</p>
+    <aside className="hidden w-[17rem] shrink-0 flex-col border-r border-stone-200 bg-rail md:flex">
+      <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
+        <Age3Logo className="h-5 w-auto shrink-0 text-stone-900" />
+        <span aria-hidden className="h-3.5 w-px bg-stone-300" />
+        <h1 className="truncate text-sm font-semibold text-stone-700">商品データベース</h1>
       </div>
 
-      <div className="px-3 pt-3">
+      <nav className="space-y-0.5 px-2.5 pb-3">
+        {NAV.map((t) => {
+          const on = activeTab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => onChangeTab(t.key)}
+              aria-current={on ? "page" : undefined}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition ${focusRing} ${
+                on
+                  ? "bg-white font-semibold text-stone-900 shadow-xs"
+                  : "font-medium text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+              }`}
+            >
+              <Icon
+                name={t.icon}
+                className={`h-4 w-4 ${on ? "text-amber-600" : "text-stone-400"}`}
+                strokeWidth={on ? 1.9 : 1.7}
+              />
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-stone-200 px-2.5 pb-2 pt-3">
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-            🔍
-          </span>
+          <Icon
+            name="search"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+          />
           <input
             className={`${field} pl-9`}
             placeholder="商品を検索"
@@ -110,33 +137,14 @@ export default function Sidebar({
         </div>
       </div>
 
-      <nav className="grid grid-cols-4 gap-1 px-3 pb-3 pt-3">
-        {NAV.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => onChangeTab(t.key)}
-            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition ${focusRing} ${
-              activeTab === t.key
-                ? "bg-white text-amber-900 shadow-sm"
-                : "text-stone-500 hover:bg-white/60"
-            }`}
-          >
-            <span className="text-base leading-none">{t.icon}</span>
-            <span className="whitespace-nowrap text-[10px] font-medium leading-none">{t.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2">
         {grouped.length === 0 && (
           <p className="px-1 py-4 text-xs text-stone-400">該当する商品がありません。</p>
         )}
         {grouped.map(({ genre, items }) => (
           <div key={genre ?? "none"} className="mb-3">
-            <div className="mb-1 px-1 text-xs font-semibold tracking-wide text-stone-400">
-              {genreLabel(genre)}
-            </div>
-            <ul>
+            <div className={`mb-1 px-2.5 pt-1 ${eyebrow}`}>{genreLabel(genre)}</div>
+            <ul className="space-y-px">
               {items.map((p) => {
                 const info = getInfo(p.id);
                 const pct = infoFillRate(info, p.genre);
@@ -148,32 +156,20 @@ export default function Sidebar({
                   <li key={p.id}>
                     <button
                       onClick={() => setSelectedId(p.id)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${focusRing} ${
-                        active
-                          ? "bg-amber-700 text-white"
-                          : off
-                            ? "text-stone-400 hover:bg-white"
-                            : "text-stone-700 hover:bg-white"
-                      }`}
+                      className={rowSelect(active, off && !active ? "text-stone-400" : "")}
                     >
                       <span
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          active ? "bg-white" : off ? "bg-stone-300" : fillDotColor(pct)
+                          off ? "bg-stone-300" : fillDotColor(pct)
                         }`}
                       />
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
                       {off ? (
-                        <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs ${
-                            active ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-500"
-                          }`}
-                        >
+                        <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-500">
                           {SALE_STATUS_LABEL[status]}
                         </span>
                       ) : (
-                        <span className={`shrink-0 text-xs tabular-nums ${active ? "text-amber-100" : "text-stone-400"}`}>
-                          {pct}%
-                        </span>
+                        <span className="shrink-0 text-xs text-stone-400 tabular-nums">{pct}%</span>
                       )}
                     </button>
                   </li>
@@ -184,14 +180,20 @@ export default function Sidebar({
         ))}
       </div>
 
-      <div className="border-t border-amber-900/10 p-3">
+      <div className="border-t border-stone-200 p-2.5">
         <button
           onClick={() => onChangeTab("help")}
-          className={`${btn("quiet")} mb-2 w-full justify-start ${
-            activeTab === "help" ? "text-amber-800" : ""
+          className={`mb-1.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition ${focusRing} ${
+            activeTab === "help"
+              ? "bg-white text-stone-900 shadow-xs"
+              : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
           }`}
         >
-          ❓ 使い方
+          <Icon
+            name="help"
+            className={`h-4 w-4 ${activeTab === "help" ? "text-amber-600" : "text-stone-400"}`}
+          />
+          使い方
         </button>
         {adding ? (
           <div className="flex items-center gap-2">
@@ -212,7 +214,8 @@ export default function Sidebar({
           </div>
         ) : (
           <button className={`${btn("secondary")} w-full`} onClick={() => setAdding(true)}>
-            ＋ 商品を追加
+            <Icon name="plus" className="h-4 w-4" />
+            商品を追加
           </button>
         )}
       </div>

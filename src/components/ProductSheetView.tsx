@@ -50,12 +50,12 @@ function Section({
     <section
       id={id}
       className={`scroll-mt-4 overflow-hidden rounded-xl border bg-white transition-colors ${
-        active ? "border-amber-400" : "border-stone-200"
+        active ? "border-amber-300 shadow-sm" : "border-stone-200 shadow-xs"
       }`}
     >
       <div
-        className={`flex items-center gap-2.5 border-b px-4 py-3 transition-colors sm:px-5 ${
-          active ? "border-amber-300 bg-amber-100" : "border-stone-200 bg-stone-50"
+        className={`flex items-center gap-2.5 border-b px-4 py-3.5 transition-colors sm:px-5 ${
+          active ? "border-amber-200 bg-amber-50" : "border-stone-200"
         }`}
       >
         <span
@@ -197,7 +197,7 @@ function SectionTabs({
             }`}
           >
             <span
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums text-white ${
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums text-white ${
                 done ? "bg-emerald-600" : isActive ? "bg-amber-700" : "bg-stone-400"
               }`}
             >
@@ -396,19 +396,19 @@ function PriceBlock({
           </label>
           {isManual ? (
             <>
-              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] text-stone-600">
+              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-600">
                 手入力
               </span>
               <button
                 type="button"
-                className="text-[11px] text-amber-700 hover:underline"
+                className="text-xs text-amber-700 hover:underline"
                 onClick={() => onUber(null)}
               >
                 自動に戻す
               </button>
             </>
           ) : (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
               自動（× {UBER_RATE}）
             </span>
           )}
@@ -759,8 +759,8 @@ export default function ProductSheetView({
 
       <div
         id="sheet-progress"
-        className={`sticky top-0 z-20 rounded-xl border p-3 backdrop-blur print:static print:bg-white sm:p-4 ${
-          inactive ? "border-stone-300 bg-stone-100/95" : "border-amber-200 bg-amber-50/95"
+        className={`sticky top-0 z-20 rounded-xl border p-3 shadow-sm backdrop-blur print:static print:bg-white print:shadow-none sm:p-4 ${
+          inactive ? "border-stone-200 bg-stone-100/90" : "border-stone-200 bg-white/90"
         }`}
       >
         {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す */}
@@ -787,7 +787,7 @@ export default function ProductSheetView({
 
         <div
           className={`mt-3 h-1 overflow-hidden rounded-full ${
-            inactive ? "bg-stone-300/60" : "bg-amber-200/60"
+            inactive ? "bg-stone-300/60" : "bg-stone-200"
           }`}
         >
           <div
@@ -984,9 +984,9 @@ export default function ProductSheetView({
       >
         <p className="text-xs text-stone-400">
           品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。
-          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Tab</kbd>
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Tab</kbd>
           で右のセル、最後の行で
-          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Enter</kbd>
           を押すと行が増えます。
         </p>
 
@@ -994,7 +994,7 @@ export default function ProductSheetView({
         <div className="-mx-2 px-2 md:overflow-x-auto">
           <table className="ing-table w-full border-collapse text-sm md:min-w-[680px]">
             <thead>
-              <tr className="text-left text-[11px] font-medium text-stone-400">
+              <tr className="text-left text-xs font-medium text-stone-400">
                 <th className="w-8 pb-1" />
                 <th className="px-0.5 pb-1">品名（日本語）</th>
                 <th className="px-0.5 pb-1">品名（英語）</th>
@@ -1006,7 +1006,7 @@ export default function ProductSheetView({
             <tbody>
               {info.ingredients.map((row, idx) => (
                 <tr key={idx} className="group align-top">
-                  <td className="ing-no py-1 pr-1 text-center text-[11px] tabular-nums text-stone-400">
+                  <td className="ing-no py-1 pr-1 text-center text-xs tabular-nums text-stone-400">
                     <span className="inline-block py-1.5">
                       {idx + 1}
                       <span className="md:hidden">つ目</span>
@@ -1052,7 +1052,7 @@ export default function ProductSheetView({
                       <button
                         type="button"
                         title="スペックの行を足す"
-                        className="shrink-0 rounded px-1.5 py-1 text-xs text-stone-300 transition hover:bg-amber-50 hover:text-amber-700 group-hover:text-stone-400"
+                        className="shrink-0 rounded px-1.5 py-1 text-xs text-stone-300 transition hover:bg-stone-50hover:text-amber-700 group-hover:text-stone-400"
                         onClick={() => updateIngredient(idx, { specs: [...row.specs, ""] })}
                       >
                         ＋
@@ -1150,7 +1150,7 @@ export default function ProductSheetView({
       >
         <p className="text-xs text-stone-400">
           各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを、下の枠に貼って
-          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-[11px]">Enter</kbd>
+          <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Enter</kbd>
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
 

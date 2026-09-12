@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
+import Icon from "@/components/Icon";
 import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted } from "@/lib/ui";
 import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
@@ -71,7 +72,7 @@ function LinkedImageRow({
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
-          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
             done ? "bg-amber-600" : "border border-stone-300 bg-white"
           }`}
         >
@@ -155,7 +156,7 @@ function LinkedPriceRow({
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
-          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
             done ? "bg-amber-600" : "border border-stone-300 bg-white"
           }`}
         >
@@ -238,7 +239,7 @@ function LinkedChoiceRow({
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
-          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white ${
+          className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
             answered ? "bg-amber-600" : "border border-stone-300 bg-white"
           }`}
         >
@@ -311,13 +312,16 @@ function MilestoneCard({
   const dl = diffLabel(daysDiffFromToday(deadline));
 
   return (
-    <div className="overflow-hidden rounded-lg border border-stone-200">
+    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xs">
       <button
-        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 bg-stone-50 px-3 py-2.5 text-left hover:bg-stone-100"
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-3 text-left transition hover:bg-stone-50"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="w-4 shrink-0 text-xs text-stone-400">{open ? "▾" : "▸"}</span>
+        <Icon
+          name="chevronRight"
+          className={`h-4 w-4 text-stone-400 transition-transform ${open ? "rotate-90" : ""}`}
+        />
         {showGroupName && (
           <span className="text-xs text-stone-500">
             {group.icon} {group.title}
@@ -416,7 +420,7 @@ function MilestoneCard({
                 key={t.id}
                 /* 狭い画面では、右のボタンを下の行に落とす。
                    横に並べたままだとタスク名が1文字ずつ折り返されて読めなくなる */
-                className="flex flex-col gap-2 px-3 py-3 text-sm hover:bg-amber-50/60 sm:flex-row sm:items-start sm:gap-3 sm:py-2.5"
+                className="flex flex-col gap-2 px-3 py-3 text-sm hover:bg-stone-50 sm:flex-row sm:items-start sm:gap-3 sm:py-2.5"
               >
                 {/* チェックの当たり判定はラベルまで。右のボタンは別扱いにする */}
                 <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
@@ -597,16 +601,16 @@ export default function PrepTaskView({
         </div>
 
         <div className="space-y-4 p-4">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
             <div
-              className={`h-full rounded-full ${overallPct === 100 ? "bg-emerald-500" : "bg-amber-600"}`}
+              className={`h-full rounded-full transition-all ${overallPct === 100 ? "bg-emerald-500" : "bg-amber-600"}`}
               style={{ width: `${overallPct}%` }}
             />
           </div>
 
           {nextUp ? (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-              <div className="text-xs font-medium text-amber-800">次にやること</div>
+            <div className="rounded-lg border border-stone-200 border-l-2 border-l-amber-600 bg-white p-3 shadow-xs">
+              <div className="text-xs font-medium text-amber-700">次にやること</div>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-sm font-semibold text-stone-800">
                   {nextUp.group.icon} {nextUp.group.title}
@@ -629,13 +633,12 @@ export default function PrepTaskView({
                 </span>
               </div>
             </div>
-          ) : (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-              {info.releaseDate
-                ? "この商品の準備タスクはすべて完了しています。"
-                : "発売月を設定すると、締め切りが自動で計算されます。"}
+          ) : info.releaseDate ? (
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
+              <Icon name="check" className="h-4 w-4" />
+              この商品の準備タスクはすべて完了しています。
             </div>
-          )}
+          ) : null}
 
           <div className="flex flex-wrap items-end gap-4 border-t border-stone-200 pt-3">
             <label className="text-sm">
@@ -678,14 +681,16 @@ export default function PrepTaskView({
               className={`${ctrlCls(hideCompleted)} ml-auto`}
               onClick={() => setHideCompleted((v) => !v)}
             >
-              {hideCompleted ? "✓ 未完了だけ表示中" : "未完了だけ表示"}
+              {hideCompleted && <Icon name="check" className="h-3.5 w-3.5" />}
+              {hideCompleted ? "未完了だけ表示中" : "未完了だけ表示"}
             </button>
           </div>
         </div>
       </div>
 
       {!info.releaseDate && (
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <Icon name="alert" className="mt-0.5 h-4 w-4" />
           発売月を設定すると、各タスクの締め切りが自動計算されます。
         </p>
       )}
@@ -802,7 +807,7 @@ export default function PrepTaskView({
         </button>
       </div>
 
-      <p className={`rounded-lg bg-amber-50 p-3 ${muted}`}>
+      <p className={`rounded-lg border border-stone-200 bg-stone-50 p-3 ${muted}`}>
         ※これは新商品1つ分の準備業務（G-1〜G-5）です。締め切りは発売月から自動計算した目安（前々月＝2か月前／前月＝1か月前）。G-5「販売終了後」は「販売終了月」を選ぶと月末の日付が出ます。チェックは共有データベースに自動保存され、チーム全員が同じ状態を見ます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
     </div>

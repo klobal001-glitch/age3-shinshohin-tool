@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
+import Icon from "@/components/Icon";
 import { badge, btn, card, field, focusRing } from "@/lib/ui";
 
 const GENRE_OPTIONS: { value: Genre; label: string }[] = [
@@ -87,17 +88,20 @@ export default function ProductPicker({
   };
 
   return (
-    <div className={`${card} p-4`}>
+    <div className={`${card} p-3 sm:p-4`}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* PCは左のリストからも選べるが、押せば検索付きの一覧も開けるようにしておく。
            スマホの切り替えは上の帯（Header）にあるので、ここには出さない */}
         <button
           type="button"
           onClick={onOpenSwitcher}
-          className={`hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-lg font-bold text-stone-900 transition hover:bg-stone-100 md:flex ${focusRing}`}
+          className={`hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-lg font-semibold text-stone-900 transition hover:bg-stone-100 md:flex ${focusRing}`}
         >
           <span className="min-w-0 truncate">{selectedProduct.name}</span>
-          <span className="shrink-0 text-xs font-normal text-stone-500">商品を変える ▾</span>
+          <span className="flex shrink-0 items-center gap-1 text-xs font-normal text-stone-500">
+            商品を変える
+            <Icon name="chevronDown" className="h-3.5 w-3.5" />
+          </span>
         </button>
         {isInactive(status) && <span className={badge()}>{SALE_STATUS_LABEL[status]}</span>}
 
@@ -122,14 +126,19 @@ export default function ProductPicker({
           onClick={() => setShowManage((v) => !v)}
           aria-expanded={showManage}
         >
-          商品の管理 {showManage ? "▲" : "▼"}
+          商品の管理
+          <Icon
+            name="chevronDown"
+            className={`h-4 w-4 transition-transform ${showManage ? "rotate-180" : ""}`}
+          />
         </button>
 
         <div
           className={`${showManage ? "flex" : "hidden"} w-full flex-wrap items-center gap-2 md:ml-auto md:flex md:w-auto`}
         >
           <button className={btn("secondary")} onClick={() => setAdding((v) => !v)}>
-            ＋ 商品を追加
+            <Icon name="plus" className="h-4 w-4" />
+            商品を追加
           </button>
           <button
             className={btn("secondary")}

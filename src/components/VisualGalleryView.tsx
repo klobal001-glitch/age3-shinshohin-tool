@@ -271,7 +271,7 @@ export default function VisualGalleryView({
                     {product.name}
                   </span>
                   {isInactive(status) && (
-                    <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-500">
+                    <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-xs text-stone-500">
                       {SALE_STATUS_LABEL[status]}
                     </span>
                   )}

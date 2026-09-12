@@ -6,7 +6,8 @@ import { useLocalStorageState } from "@/lib/storage";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
-import { badge, field, focusRing } from "@/lib/ui";
+import Icon from "@/components/Icon";
+import { badge, eyebrow, field, focusRing, rowSelect } from "@/lib/ui";
 
 /** 商品リストの並び順。今いちばん動いているものから上に出す */
 export const GENRE_ORDER: Genre[] = [
@@ -136,39 +137,30 @@ export default function ProductSwitcher({
       <button
         type="button"
         onClick={() => choose(p.id)}
-        className={`flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${focusRing} ${
-          current ? "bg-amber-700 text-white" : off ? "text-stone-400" : "text-stone-700"
-        } ${current ? "" : "hover:bg-amber-50"}`}
+        className={rowSelect(current, `min-h-12 ${off && !current ? "text-stone-400" : ""}`)}
       >
         <span
-          className={`h-2 w-2 shrink-0 rounded-full ${
-            current ? "bg-white" : off ? "bg-stone-300" : fillDotColor(pct)
-          }`}
+          className={`h-2 w-2 shrink-0 rounded-full ${off ? "bg-stone-300" : fillDotColor(pct)}`}
         />
         <span className="min-w-0 flex-1 truncate">{p.name}</span>
         {off ? (
-          <span className={badge(current ? "accent" : "neutral", "shrink-0")}>
-            {SALE_STATUS_LABEL[status]}
-          </span>
+          <span className={badge("neutral", "shrink-0")}>{SALE_STATUS_LABEL[status]}</span>
         ) : (
-          <span
-            className={`shrink-0 text-xs tabular-nums ${current ? "text-amber-100" : "text-stone-400"}`}
-          >
-            {pct}%
-          </span>
+          <span className="shrink-0 text-xs tabular-nums text-stone-400">{pct}%</span>
         )}
       </button>
     );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-stone-900/40 p-0 sm:items-center sm:justify-center sm:p-6">
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#f4ede4] sm:h-[min(36rem,85vh)] sm:max-w-lg sm:flex-none sm:rounded-2xl sm:shadow-xl">
-        <div className="flex items-center gap-2 border-b border-amber-900/10 bg-[#4a2f1f] px-3 py-3 sm:rounded-t-2xl">
+    <div className="fixed inset-0 z-50 flex flex-col bg-stone-900/30 p-0 backdrop-blur-[2px] sm:items-center sm:justify-center sm:p-6">
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white sm:h-[min(36rem,85vh)] sm:max-w-lg sm:flex-none sm:rounded-2xl sm:shadow-lg">
+        <div className="flex items-center gap-2 border-b border-stone-200 bg-rail px-3 py-3 sm:rounded-t-2xl">
           <div className="relative min-w-0 flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-              🔍
-            </span>
+            <Icon
+              name="search"
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+            />
             <input
               ref={searchRef}
               className={`${field} pl-9`}
@@ -180,9 +172,10 @@ export default function ProductSwitcher({
           <button
             type="button"
             onClick={onClose}
-            className={`inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-medium text-amber-100 transition hover:bg-amber-800/60 hover:text-white ${focusRing}`}
+            aria-label="閉じる"
+            className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-stone-500 transition hover:bg-stone-100 hover:text-stone-800 ${focusRing}`}
           >
-            閉じる
+            <Icon name="close" className="h-5 w-5" />
           </button>
         </div>
 
@@ -190,9 +183,7 @@ export default function ProductSwitcher({
           <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-3 py-3 pr-10">
             {recentProducts.length > 0 && !q && (
               <div className="mb-4">
-                <div className="mb-1 px-1 text-xs font-semibold tracking-wide text-stone-400">
-                  最近開いた商品
-                </div>
+                <div className={`mb-1 px-2.5 ${eyebrow}`}>最近開いた商品</div>
                 {recentProducts.map((p) => (
                   <Row key={`recent-${p.id}`} p={p} />
                 ))}
@@ -207,7 +198,7 @@ export default function ProductSwitcher({
 
             {sections.map(({ genre, items }) => (
               <div key={genre ?? "none"} data-genre={genre ?? "none"} className="mb-4">
-                <div className="mb-1 px-1 text-xs font-semibold tracking-wide text-stone-400">
+                <div className={`mb-1 px-2.5 ${eyebrow}`}>
                   {genreLabel(genre)}
                   <span className="ml-1.5 font-normal tabular-nums">{items.length}</span>
                 </div>
@@ -222,14 +213,14 @@ export default function ProductSwitcher({
           {sections.length > 1 && (
             <nav
               aria-label="ジャンルで飛ぶ"
-              className="absolute right-1 top-3 flex w-8 flex-col items-center gap-0.5 rounded-full bg-white/80 py-2 shadow-sm backdrop-blur"
+              className="absolute right-1 top-3 flex w-8 flex-col items-center gap-0.5 rounded-full border border-stone-200 bg-white/90 py-2 shadow-sm backdrop-blur"
             >
               {sections.map(({ genre }) => (
                 <button
                   key={genre ?? "none"}
                   type="button"
                   onClick={() => jumpTo(genre ?? "none")}
-                  className={`w-full rounded-full px-0.5 py-1 text-[10px] leading-tight text-stone-500 transition hover:bg-amber-100 hover:text-amber-900 ${focusRing}`}
+                  className={`w-full rounded-full px-0.5 py-1 text-xs leading-tight text-stone-500 transition hover:bg-stone-100 hover:text-amber-700 ${focusRing}`}
                 >
                   {GENRE_SHORT[genre ?? "none"]}
                 </button>
