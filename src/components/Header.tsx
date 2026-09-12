@@ -1,6 +1,7 @@
 "use client";
 
 import Age3Logo from "@/components/Age3Logo";
+import { focusRing } from "@/lib/ui";
 
 export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "help";
 
@@ -8,8 +9,8 @@ export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "help";
  * このヘッダーはスマホ専用（PCでは左のサイドバーを使う）。
  *
  * 画面の切り替えは下端に固定したタブで行う。スマホは片手で持つと親指が
- * 届くのが画面の下半分なので、いちばん押す5つのタブを下に置いている。
- * 上の帯は「今どの商品を見ているか」を示すためだけのもの。
+ * 届くのが画面の下半分なので、いちばん押す5つを下に置いている。
+ * 上の帯は「今どの商品を見ているか」を示し、押すと商品を切り替えられる。
  */
 const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: "menu", icon: "🏠", label: "メニュー" },
@@ -31,11 +32,16 @@ export default function Header({
   activeTab,
   onChangeTab,
   productName,
+  onOpenSwitcher,
 }: {
   activeTab: TabKey;
   onChangeTab: (t: TabKey) => void;
   productName?: string;
+  onOpenSwitcher?: () => void;
 }) {
+  /* メニューと使い方は商品に紐づかないので、商品名は出さない */
+  const showProduct = Boolean(productName) && activeTab !== "menu" && activeTab !== "help";
+
   return (
     <>
       {/* シート側に sticky の見出しがあるので、この帯は固定しない（二重に貼り付くのを避ける） */}
@@ -47,10 +53,19 @@ export default function Header({
               新商品シート
             </h1>
           </div>
-          {productName ? (
-            <p className="mt-1 truncate text-sm text-amber-100">
-              商品：<span className="font-semibold">{productName}</span>
-            </p>
+          {showProduct ? (
+            <button
+              type="button"
+              onClick={onOpenSwitcher}
+              className={`mt-1.5 flex w-full min-h-11 items-center gap-2 rounded-lg bg-amber-50/10 px-3 py-2 text-left transition hover:bg-amber-50/20 ${focusRing}`}
+            >
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-amber-50">
+                {productName}
+              </span>
+              <span aria-hidden className="shrink-0 text-xs text-amber-200/90">
+                商品を変える ▾
+              </span>
+            </button>
           ) : (
             <p className="mt-1 truncate text-xs text-amber-200/80">{SUBTITLES[activeTab]}</p>
           )}
@@ -69,7 +84,7 @@ export default function Header({
               type="button"
               onClick={() => onChangeTab(t.key)}
               aria-current={activeTab === t.key ? "page" : undefined}
-              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 transition ${
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 transition ${focusRing} ${
                 activeTab === t.key
                   ? "bg-amber-50 text-amber-900"
                   : "text-amber-100 active:bg-amber-800/60"

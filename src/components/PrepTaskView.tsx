@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
+import { btn, card, cardHead, chip, field, h3, muted } from "@/lib/ui";
 import { TASK_GROUPS, countGroupLeaves, countLeaves } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
@@ -11,15 +12,8 @@ import { PriceInput } from "./PriceInput";
 import { VisualLinkRow } from "./VisualLinkRow";
 import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
 
-/** 並べ替え・絞り込みボタンの共通スタイル */
-function ctrlCls(active: boolean) {
-  /* スマホでも指で押しやすいよう、高さを44px以上に保つ */
-  return `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm transition md:min-h-0 ${
-    active
-      ? "border-stone-700 bg-stone-700 font-medium text-white"
-      : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
-  }`;
-}
+/** 並べ替え・絞り込みボタンの共通スタイル。実体は @/lib/ui の chip */
+const ctrlCls = chip;
 
 function leafKey(groupId: string, milestoneId: string, taskId: string, childId?: string) {
   return childId
@@ -151,19 +145,19 @@ function LinkedPriceRow({
         {isUber &&
           (isManual ? (
             <>
-              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] text-stone-600">
+              <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-600">
                 手入力
               </span>
               <button
                 type="button"
-                className="text-[11px] text-amber-700 hover:underline"
+                className="text-xs text-amber-700 hover:underline"
                 onClick={() => link.uberKey && onPatch({ [link.uberKey]: null })}
               >
                 自動に戻す
               </button>
             </>
           ) : (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
               自動（× {UBER_RATE}）
             </span>
           ))}
@@ -409,7 +403,13 @@ function MilestoneCard({
   );
 }
 
-export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppData> }) {
+export default function PrepTaskView({
+  app,
+  onOpenSwitcher,
+}: {
+  app: ReturnType<typeof useAppData>;
+  onOpenSwitcher?: () => void;
+}) {
   const { selectedProduct, getInfo, getTaskState, toggleTask, resetProductTasks, saveState } = app;
   const [sortMode, setSortMode] = useState<"group" | "deadline">("group");
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -501,18 +501,18 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
   const nextUp = first ? { ...first, label: diffLabel(daysDiffFromToday(first.deadline)) } : null;
 
   if (!selectedProduct || !info) {
-    return <ProductPicker app={app} />;
+    return <ProductPicker app={app} onOpenSwitcher={onOpenSwitcher} />;
   }
 
   return (
     <div className="space-y-6 print:space-y-2">
       <div className="print:hidden">
-        <ProductPicker app={app} />
+        <ProductPicker app={app} onOpenSwitcher={onOpenSwitcher} />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-stone-300 bg-white">
-        <div className="flex flex-wrap items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
-          <h2 className="text-base font-semibold text-stone-800">準備タスクの進み具合</h2>
+      <div className={`overflow-hidden ${card}`}>
+        <div className={`${cardHead} flex-wrap`}>
+          <h2 className={h3}>準備タスクの進み具合</h2>
           <span className="ml-auto text-sm tabular-nums text-stone-600">
             {overall.checked}/{overall.total}（{overallPct}%）
           </span>
@@ -577,7 +577,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
               <span className="mb-1 block text-stone-500">発売月</span>
               <input
                 type="month"
-                className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+                className={`${field} w-auto`}
                 value={info.releaseDate ? info.releaseDate.slice(0, 7) : ""}
                 onChange={(e) => patchDates(e.target.value ? `${e.target.value}-01` : "", info.endDate)}
               />
@@ -591,7 +591,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
               ) : (
                 <input
                   type="month"
-                  className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+                  className={`${field} w-auto`}
                   value={info.endDate ? info.endDate.slice(0, 7) : ""}
                   onChange={(e) => patchDates(info.releaseDate, e.target.value ? `${e.target.value}-01` : "")}
                 />
@@ -634,9 +634,9 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
               .filter(({ mp }) => !(hideCompleted && mp.total > 0 && mp.checked === mp.total));
             if (cards.length === 0) return null;
             return (
-              <section key={group.id} className="overflow-hidden rounded-xl border border-stone-300 bg-white">
-                <div className="flex items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
-                  <h3 className="flex items-center gap-2 text-base font-semibold text-stone-800">
+              <section key={group.id} className={`overflow-hidden ${card}`}>
+                <div className={cardHead}>
+                  <h3 className={`flex items-center gap-2 ${h3}`}>
                     <span aria-hidden>{group.icon}</span>
                     {group.title}
                   </h3>
@@ -676,9 +676,9 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
             );
           })
         : (
-          <section className="overflow-hidden rounded-xl border border-stone-300 bg-white">
-            <div className="flex items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
-              <h3 className="text-base font-semibold text-stone-800">締め切りが近い順</h3>
+          <section className={`overflow-hidden ${card}`}>
+            <div className={cardHead}>
+              <h3 className={h3}>締め切りが近い順</h3>
               <span className="ml-auto text-xs text-stone-500">グループをまたいで並べています</span>
             </div>
             <div className="space-y-3 p-4">
@@ -714,14 +714,11 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
         )}
 
       <div className="flex flex-wrap items-center gap-3 print:hidden">
-        <button
-          className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50"
-          onClick={() => window.print()}
-        >
+        <button className={btn("secondary")} onClick={() => window.print()}>
           🖨 印刷 / PDF保存
         </button>
         <button
-          className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          className={btn("danger")}
           onClick={() => {
             if (confirm("この商品の進捗をリセットします。よろしいですか？")) {
               resetProductTasks(selectedProduct.id);
@@ -732,7 +729,7 @@ export default function PrepTaskView({ app }: { app: ReturnType<typeof useAppDat
         </button>
       </div>
 
-      <p className="rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-stone-500">
+      <p className={`rounded-lg bg-amber-50 p-3 ${muted}`}>
         ※これは新商品1つ分の準備業務（G-1〜G-5）です。締め切りは発売月から自動計算した目安（前々月＝2か月前／前月＝1か月前）。G-5「販売終了後」は「販売終了月」を選ぶと月末の日付が出ます。チェックは共有データベースに自動保存され、チーム全員が同じ状態を見ます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
     </div>

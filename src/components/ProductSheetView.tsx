@@ -23,6 +23,7 @@ import { GENRE_LABELS } from "@/lib/types";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
+import { badge, btn, h3, muted } from "@/lib/ui";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -49,30 +50,30 @@ function Section({
     <section
       id={id}
       className={`scroll-mt-4 overflow-hidden rounded-xl border bg-white transition-colors ${
-        active ? "border-amber-400" : "border-stone-300"
+        active ? "border-amber-400" : "border-stone-200"
       }`}
     >
       <div
-        className={`flex items-center gap-3 border-b px-5 py-3 transition-colors ${
-          active ? "border-amber-300 bg-amber-100" : "border-stone-300 bg-stone-100"
+        className={`flex items-center gap-2.5 border-b px-4 py-3 transition-colors sm:px-5 ${
+          active ? "border-amber-300 bg-amber-100" : "border-stone-200 bg-stone-50"
         }`}
       >
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums text-white ${
-            done ? "bg-emerald-600" : active ? "bg-amber-600" : "bg-stone-700"
+            done ? "bg-emerald-600" : active ? "bg-amber-700" : "bg-stone-400"
           }`}
         >
           {step}
         </span>
-        <h3 className="flex items-center gap-2 text-base font-semibold text-stone-800">
-          <span aria-hidden>{icon}</span>
+        <h3 className={h3}>
+          <span aria-hidden className="mr-1.5">{icon}</span>
           {title}
         </h3>
         {progress && (
           <span className="ml-auto shrink-0 text-xs tabular-nums text-stone-500">{progress}</span>
         )}
       </div>
-      <div className="space-y-3 p-5">{children}</div>
+      <div className="space-y-3 p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -191,13 +192,13 @@ function SectionTabs({
             onClick={() => scrollToSection(t.id)}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1.5 text-xs transition sm:-mb-px sm:rounded-b-none sm:px-3 sm:py-2 ${
               isActive
-                ? "border-amber-300 bg-white font-medium text-stone-800 sm:border-b-white"
+                ? "border-amber-300 bg-white font-medium text-amber-900 sm:border-b-white"
                 : "border-transparent text-stone-500 hover:bg-white/60 hover:text-stone-800"
             }`}
           >
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums text-white ${
-                done ? "bg-emerald-600" : isActive ? "bg-amber-600" : "bg-stone-400"
+                done ? "bg-emerald-600" : isActive ? "bg-amber-700" : "bg-stone-400"
               }`}
             >
               {i + 1}
@@ -442,7 +443,13 @@ function focusInput(elementId: string) {
   }, 350);
 }
 
-export default function ProductSheetView({ app }: { app: ReturnType<typeof useAppData> }) {
+export default function ProductSheetView({
+  app,
+  onOpenSwitcher,
+}: {
+  app: ReturnType<typeof useAppData>;
+  onOpenSwitcher?: () => void;
+}) {
   const { selectedProduct, getInfo, updateInfo, resetProductInfo, saveState, retrySave } = app;
   const [copyMsg, setCopyMsg] = useState("");
   /** 入力済みの項目を隠して、残っている必須項目だけを出す */
@@ -456,7 +463,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   const activeSection = useActiveSection(SECTION_IDS);
 
   if (!selectedProduct) {
-    return <ProductPicker app={app} />;
+    return <ProductPicker app={app} onOpenSwitcher={onOpenSwitcher} />;
   }
 
   const info = getInfo(selectedProduct.id);
@@ -747,7 +754,7 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
   return (
     <div className="space-y-6 print:space-y-2">
       <div className="print:hidden">
-        <ProductPicker app={app} />
+        <ProductPicker app={app} onOpenSwitcher={onOpenSwitcher} />
       </div>
 
       <div
@@ -756,52 +763,26 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
           inactive ? "border-stone-300 bg-stone-100/95" : "border-amber-200 bg-amber-50/95"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          {inactive && (
-            <span className="rounded-full bg-stone-300 px-3 py-1 font-medium text-stone-700">
-              {SALE_STATUS_LABEL[status]}
-            </span>
-          )}
-          <span
-            className={`rounded-full px-3 py-1 font-medium ${
-              inactive ? "bg-stone-200 text-stone-600" : "bg-amber-200 text-amber-900"
-            }`}
-          >
-            必須 {req.filled}/{req.total}（{req.total ? Math.round((req.filled / req.total) * 100) : 0}%）
+        {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す */}
+        <div className="flex items-center gap-2 text-sm">
+          {inactive && <span className={badge("neutral", "shrink-0")}>{SALE_STATUS_LABEL[status]}</span>}
+          <span className={badge(inactive ? "neutral" : "accent", "shrink-0 tabular-nums")}>
+            必須 {req.filled}/{req.total}
           </span>
-          <span className="rounded-full bg-white px-3 py-1 text-stone-600">
-            任意 {opt.filled}/{opt.total}
-          </span>
-
-          <div className="ml-auto flex flex-wrap items-center gap-3 print:hidden">
-            <span className={`rounded-full px-3 py-1 text-xs ${saveCls}`}>{saveLabel}</span>
-            {saveState === "error" && (
-              <button
-                type="button"
-                className="rounded-full border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                onClick={retrySave}
-              >
-                再試行
-              </button>
-            )}
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-stone-600">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-amber-600"
-                checked={onlyEmpty}
-                onChange={(e) => setOnlyEmpty(e.target.checked)}
-              />
-              未入力だけ表示
-            </label>
-            <button
-              type="button"
-              disabled={!nextEmpty}
-              onClick={jumpToNextEmpty}
-              className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-default disabled:bg-stone-300"
-            >
-              {nextEmpty ? "次の未入力へ →" : "必須はすべて入力済み"}
+          <span className={`shrink-0 text-xs ${saveCls} rounded-full px-2.5 py-0.5`}>{saveLabel}</span>
+          {saveState === "error" && (
+            <button type="button" className={btn("secondary", "shrink-0 !min-h-0 !py-1 !text-xs")} onClick={retrySave}>
+              再試行
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            disabled={!nextEmpty}
+            onClick={jumpToNextEmpty}
+            className={`${btn("primary", "ml-auto shrink-0")} print:hidden`}
+          >
+            {nextEmpty ? "次の未入力へ →" : "すべて入力済み"}
+          </button>
         </div>
 
         <div
@@ -818,12 +799,27 @@ export default function ProductSheetView({ app }: { app: ReturnType<typeof useAp
         </div>
 
         <SectionTabs tabs={sectionTabs} active={activeSection} inactive={inactive} />
+      </div>
 
-        <details className="mt-2 print:hidden">
-          <summary className="cursor-pointer list-none text-xs text-stone-400 hover:text-stone-600">
+      {/* 貼り付く帯を1行に収めたぶん、こまかい話はこの行に置く */}
+      <div className="-mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-1 print:hidden">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-stone-600 md:min-h-0">
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-amber-700 md:h-4 md:w-4"
+            checked={onlyEmpty}
+            onChange={(e) => setOnlyEmpty(e.target.checked)}
+          />
+          未入力だけ表示
+        </label>
+        <span className="text-sm tabular-nums text-stone-500">
+          任意 {opt.filled}/{opt.total}
+        </span>
+        <details className="ml-auto">
+          <summary className={`cursor-pointer list-none ${muted} hover:text-stone-700`}>
             数え方について
           </summary>
-          <p className="mt-1 text-xs text-stone-400">
+          <p className={`mt-1 ${muted}`}>
             必須が揃うと100%です。各サイズのビジュアルは、リンクが1つでも入っていれば充足とみなします。詳細スペック・使用材料＋手順・SNS/PR文面などの「任意」は、空でもOKです。
           </p>
         </details>

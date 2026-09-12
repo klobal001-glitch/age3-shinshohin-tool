@@ -8,6 +8,7 @@ import { toThumbnailUrl } from "@/lib/imageUrl";
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
 import { requiredVisualFilled, requiredVisualTotal } from "@/lib/productInfo";
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
+import { card, cardHead, chip, field, h3 } from "@/lib/ui";
 import { requestImageSlot } from "@/lib/imageQueue";
 
 const GENRE_OPTIONS: { value: Genre | "all"; label: string }[] = [
@@ -134,14 +135,8 @@ function CardThumb({ card, alt }: { card: CardImage | null; alt: string }) {
 }
 
 /** 選択中のボタンかどうかで見た目を切り替える共通スタイル */
-function chipCls(active: boolean) {
-  /* スマホでも指で押しやすいよう、高さを44px以上に保つ */
-  return `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm transition md:min-h-0 ${
-    active
-      ? "border-stone-700 bg-stone-700 font-medium text-white"
-      : "border-stone-300 bg-white text-stone-600 hover:border-stone-400"
-  }`;
-}
+/** 選択肢の見た目は全画面で共通。実体は @/lib/ui の chip */
+const chipCls = chip;
 
 export default function VisualGalleryView({
   app,
@@ -194,9 +189,9 @@ export default function VisualGalleryView({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-stone-300 bg-white">
-        <div className="flex flex-wrap items-center gap-3 border-b border-stone-300 bg-stone-100 px-5 py-3">
-          <h2 className="text-base font-semibold text-stone-800">ビジュアル一覧</h2>
+      <div className={`overflow-hidden ${card}`}>
+        <div className={cardHead}>
+          <h2 className={h3}>ビジュアル一覧</h2>
           <span className="text-sm tabular-nums text-stone-500">
             {rows.length}件中 {withImage}件に画像あり
           </span>
@@ -229,7 +224,7 @@ export default function VisualGalleryView({
               画像ありだけ
             </button>
             <select
-              className="min-h-11 shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700 md:min-h-0"
+              className={`${field} w-auto shrink-0`}
               value={genre === "all" ? "" : genre ?? ""}
               onChange={(e) => setGenre((e.target.value || "all") as Genre | "all")}
             >

@@ -1,10 +1,13 @@
 "use client";
 
 import { parsePriceInput } from "@/lib/productInfo";
+import { field } from "@/lib/ui";
 
-/** 入力欄の共通スタイル。情報シートと準備タスクで同じ見た目にする */
-export const inputCls =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none";
+/**
+ * 入力欄の共通スタイル。
+ * 実体は `@/lib/ui` の field。過去の呼び出し名を残すためにここから再輸出している。
+ */
+export const inputCls = field;
 
 /** 「¥」を左に固定した数値専用の価格入力欄 */
 export function PriceInput({

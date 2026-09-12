@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
 import { inputCls } from "./PriceInput";
+import { focusRing } from "@/lib/ui";
 
 /** 登録済みリンクの右に並ぶ小さなボタン */
 export const linkBtnCls =
-  "shrink-0 rounded border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700";
+  `inline-flex min-h-10 shrink-0 items-center rounded-lg border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700 md:min-h-0 ${focusRing}`;
 
 /**
  * ビジュアルの登録済みリンク1行。

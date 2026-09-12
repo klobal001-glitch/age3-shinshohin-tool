@@ -13,14 +13,15 @@ import {
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { GENRE_LABELS } from "@/lib/types";
 import { formatJpDate } from "@/lib/deadline";
+import { badge, btn, card, chip, focusRing, h2, h3, muted } from "@/lib/ui";
 
 function StatCard({ label, value, tone }: { label: string; value: string; tone?: "danger" }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-white p-4">
-      <div className={`text-3xl font-bold ${tone === "danger" ? "text-red-600" : "text-stone-800"}`}>
+    <div className={`${card} p-4`}>
+      <div className={`text-3xl font-bold tabular-nums ${tone === "danger" ? "text-red-600" : "text-stone-800"}`}>
         {value}
       </div>
-      <div className="mt-1 text-sm text-stone-500">{label}</div>
+      <div className="mt-1 text-sm leading-snug text-stone-500">{label}</div>
     </div>
   );
 }
@@ -66,10 +67,19 @@ export default function MenuView({
     onNavigate("sheet");
   };
 
+  /* 締め切りはタスクの話なので、シートではなく準備タスクの画面へ送る */
+  const openTasks = (id: string) => {
+    setSelectedId(id);
+    onNavigate("tasks");
+  };
+
+  /* 「次にやること」は、いちばん遅れている1件だけを大きく出す */
+  const next = nearestDeadlines[0];
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-stone-800">こんにちは。今日の状況です</h2>
+        <h2 className={h2}>こんにちは。今日の状況です</h2>
         <p className="mt-1 text-sm text-stone-500">
           商品ごとの「商品情報シート」と「準備タスク（G-1〜G-5）」をまとめて管理します。
           {/* スマホには左のリストが無いので、案内の書き方を画面幅で変える */}
@@ -77,6 +87,42 @@ export default function MenuView({
           下の一覧から商品を直接開けます。
         </p>
       </div>
+
+      {/* いちばん急ぐ1件だけを大きく出す。数字の一覧を眺めても「次に何をするか」は分からないため */}
+      {next && (
+        <div className="overflow-hidden rounded-xl border border-amber-300 bg-amber-50">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pt-3">
+            <span aria-hidden>👉</span>
+            <h3 className={h3}>次にやること</h3>
+            <span className={badge(next.days <= 0 ? "danger" : "good", "ml-auto tabular-nums")}>
+              {next.days < 0
+                ? `${-next.days}日遅れ`
+                : next.days === 0
+                  ? "本日締切"
+                  : `あと${next.days}日`}
+            </span>
+          </div>
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-lg font-bold text-stone-900">{next.product.name}</div>
+              <div className="mt-0.5 text-sm text-stone-600">
+                {next.group.icon} {next.group.title}
+                <span className="mx-1.5 text-stone-400">/</span>
+                {next.milestone.label}（{formatJpDate(next.deadline)}）
+              </div>
+              <div className="mt-0.5 text-xs tabular-nums text-stone-500">
+                このまとまりの残り {next.total - next.checked}件
+              </div>
+            </div>
+            <button
+              className={`${btn("primary")} w-full sm:w-auto`}
+              onClick={() => openTasks(next.product.id)}
+            >
+              このタスクを開く →
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="登録商品数" value={String(stats.productCount)} />
@@ -89,12 +135,12 @@ export default function MenuView({
         />
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-white p-4">
+      <div className={`${card} p-4`}>
         <div className="mb-3 flex items-center gap-2">
-          <span>⏰</span>
-          <h3 className="font-semibold text-stone-800">直近の締め切り</h3>
+          <span aria-hidden>⏰</span>
+          <h3 className={h3}>直近の締め切り</h3>
         </div>
-        <p className="mb-3 text-xs text-stone-400">
+        <p className={`mb-3 ${muted}`}>
           継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
         </p>
         {nearestDeadlines.length === 0 ? (
@@ -106,22 +152,14 @@ export default function MenuView({
             {nearestDeadlines.slice(0, 8).map((e) => (
               <button
                 key={`${e.product.id}-${e.group.id}-${e.milestone.id}`}
-                onClick={() => openProduct(e.product.id)}
-                className="flex w-full flex-wrap items-center gap-2 py-2 text-left text-sm hover:bg-amber-50"
+                onClick={() => openTasks(e.product.id)}
+                className={`flex min-h-12 w-full flex-wrap items-center gap-2 rounded-lg px-1 py-2 text-left text-sm hover:bg-amber-50 ${focusRing}`}
               >
                 <span className="min-w-[9rem] font-medium text-stone-800">{e.product.name}</span>
                 <span className="text-stone-400">
                   {e.group.icon} {e.milestone.label}（{formatJpDate(e.deadline)}）
                 </span>
-                <span
-                  className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    e.days < 0
-                      ? "bg-red-100 text-red-700"
-                      : e.days === 0
-                        ? "bg-red-100 text-red-700"
-                        : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
+                <span className={badge(e.days <= 0 ? "danger" : "good", "ml-auto shrink-0 tabular-nums")}>
                   {e.days < 0 ? `${-e.days}日遅れ` : e.days === 0 ? "本日締切" : `あと${e.days}日`}
                 </span>
               </button>
@@ -130,26 +168,19 @@ export default function MenuView({
         )}
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-white p-4">
+      <div className={`${card} p-4`}>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span>📋</span>
-          <h3 className="font-semibold text-stone-800">商品一覧</h3>
-          <span className="text-xs text-stone-400">{productRows.length}件</span>
-          <div className="ml-auto flex gap-1">
+          <span aria-hidden>📋</span>
+          <h3 className={h3}>商品一覧</h3>
+          <span className="text-xs tabular-nums text-stone-400">{productRows.length}件</span>
+          <div className="ml-auto flex gap-2">
             <button
-              className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-medium md:min-h-0 ${
-                productSort === "progress" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
-              }`}
+              className={chip(productSort === "progress")}
               onClick={() => setProductSort("progress")}
             >
               進捗が低い順
             </button>
-            <button
-              className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-medium md:min-h-0 ${
-                productSort === "name" ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-600"
-              }`}
-              onClick={() => setProductSort("name")}
-            >
+            <button className={chip(productSort === "name")} onClick={() => setProductSort("name")}>
               名前順
             </button>
           </div>
@@ -162,16 +193,14 @@ export default function MenuView({
                   <td className="w-full py-2 pr-3">
                     <button
                       onClick={() => openProduct(product.id)}
-                      className={`text-left font-medium hover:text-amber-700 hover:underline ${
+                      className={`min-h-11 text-left font-medium hover:text-amber-700 hover:underline md:min-h-0 ${focusRing} ${
                         isInactive(status) ? "text-stone-400" : "text-stone-800"
                       }`}
                     >
                       {product.name}
                     </button>
                     {isInactive(status) && (
-                      <span className="ml-2 rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-500">
-                        {SALE_STATUS_LABEL[status]}
-                      </span>
+                      <span className={badge("neutral", "ml-2")}>{SALE_STATUS_LABEL[status]}</span>
                     )}
                   </td>
                   <td className="whitespace-nowrap py-2 pr-3 text-stone-500">情報 {info}%</td>
@@ -187,7 +216,7 @@ export default function MenuView({
         </div>
       </div>
 
-      <p className="rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-stone-500">
+      <p className={`rounded-lg bg-amber-50 p-3 ${muted}`}>
         ※各シートは情報を集める・進行を管理するための下書き／目安です。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。入力・チェックは共有データベースに自動保存されます。
       </p>
     </div>

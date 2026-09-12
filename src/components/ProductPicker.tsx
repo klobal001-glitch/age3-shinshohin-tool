@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
+import { badge, btn, card, field, focusRing } from "@/lib/ui";
 
 const GENRE_OPTIONS: { value: Genre; label: string }[] = [
   { value: null, label: "（指定なし）" },
@@ -16,11 +17,22 @@ const GENRE_OPTIONS: { value: Genre; label: string }[] = [
   { value: "season", label: GENRE_LABELS.season },
 ];
 
-export default function ProductPicker({ app }: { app: ReturnType<typeof useAppData> }) {
+/**
+ * 情報シート・準備タスクの先頭に置く、商品の見出し。
+ *
+ * 商品を切り替えるのは「商品を変える」から開く一覧（ProductSwitcher）に任せる。
+ * ここに常に出しておくのは、今どの商品を見ているかとジャンルだけ。
+ * 追加・改名・廃盤・削除は日々の入力では使わないので「商品の管理」に畳んである。
+ */
+export default function ProductPicker({
+  app,
+  onOpenSwitcher,
+}: {
+  app: ReturnType<typeof useAppData>;
+  onOpenSwitcher?: () => void;
+}) {
   const {
-    products,
     selectedProduct,
-    setSelectedId,
     addProduct,
     renameProduct,
     changeGenre,
@@ -32,13 +44,11 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
   const [newName, setNewName] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  /* スマホでは「追加・改名・廃盤・削除」をひとまとめに畳んでおく。
-     日々の入力では使わないうえ、指で押す画面だと事故のもとになるため。 */
   const [showManage, setShowManage] = useState(false);
 
   if (!selectedProduct) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-white p-4 text-sm text-stone-500">
+      <div className={`${card} p-4 text-sm text-stone-500`}>
         商品がありません。「＋ 商品を追加」から登録してください。
       </div>
     );
@@ -63,46 +73,52 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
     updateInfo(selectedProduct.id, { discontinued: !discontinued });
   };
 
-  return (
-    <div className="rounded-xl border border-stone-300 bg-white p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="hidden text-lg font-bold text-stone-900 md:block">
-          {selectedProduct.name}
-        </h2>
-        {isInactive(status) && (
-          <span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-600">
-            {SALE_STATUS_LABEL[status]}
-          </span>
-        )}
-        <select
-          aria-label="商品を選ぶ"
-          className="w-full min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm md:hidden"
-          value={selectedProduct.id}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+  const submitAdd = () => {
+    if (!newName.trim()) return;
+    addProduct(newName.trim(), null);
+    setNewName("");
+    setAdding(false);
+  };
 
-        <span className="text-sm text-stone-500">ジャンル：</span>
-        <select
-          className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
-          value={selectedProduct.genre ?? ""}
-          onChange={(e) => changeGenre(selectedProduct.id, (e.target.value || null) as Genre)}
+  const submitRename = () => {
+    if (!renameValue.trim()) return;
+    renameProduct(selectedProduct.id, renameValue.trim());
+    setRenaming(false);
+  };
+
+  return (
+    <div className={`${card} p-4`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* PCは左のリストからも選べるが、押せば検索付きの一覧も開けるようにしておく。
+           スマホの切り替えは上の帯（Header）にあるので、ここには出さない */}
+        <button
+          type="button"
+          onClick={onOpenSwitcher}
+          className={`hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-lg font-bold text-stone-900 transition hover:bg-stone-100 md:flex ${focusRing}`}
         >
-          {GENRE_OPTIONS.map((g) => (
-            <option key={g.label} value={g.value ?? ""}>
-              {g.label}
-            </option>
-          ))}
-        </select>
+          <span className="min-w-0 truncate">{selectedProduct.name}</span>
+          <span className="shrink-0 text-xs font-normal text-stone-500">商品を変える ▾</span>
+        </button>
+        {isInactive(status) && <span className={badge()}>{SALE_STATUS_LABEL[status]}</span>}
+
+        <label className="flex min-w-0 items-center gap-2 text-sm text-stone-500">
+          <span className="shrink-0">ジャンル</span>
+          <select
+            className={`${field} w-auto min-w-0`}
+            value={selectedProduct.genre ?? ""}
+            onChange={(e) => changeGenre(selectedProduct.id, (e.target.value || null) as Genre)}
+          >
+            {GENRE_OPTIONS.map((g) => (
+              <option key={g.label} value={g.value ?? ""}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <button
           type="button"
-          className="ml-auto min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600 md:hidden"
+          className={`${btn("quiet")} ml-auto md:hidden`}
           onClick={() => setShowManage((v) => !v)}
           aria-expanded={showManage}
         >
@@ -112,14 +128,11 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
         <div
           className={`${showManage ? "flex" : "hidden"} w-full flex-wrap items-center gap-2 md:ml-auto md:flex md:w-auto`}
         >
-          <button
-            className="min-h-11 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 md:min-h-0"
-            onClick={() => setAdding((v) => !v)}
-          >
+          <button className={btn("secondary")} onClick={() => setAdding((v) => !v)}>
             ＋ 商品を追加
           </button>
           <button
-            className="min-h-11 rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50 md:min-h-0"
+            className={btn("secondary")}
             onClick={() => {
               setRenameValue(selectedProduct.name);
               setRenaming((v) => !v);
@@ -128,11 +141,7 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
             名前を変える
           </button>
           <button
-            className={`min-h-11 rounded-lg border px-3 py-1.5 text-sm md:min-h-0 ${
-              discontinued
-                ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
-                : "border-stone-300 hover:bg-stone-50"
-            }`}
+            className={discontinued ? btn("primary") : btn("secondary")}
             onClick={toggleDiscontinued}
           >
             {discontinued ? "廃盤をやめる" : "廃盤にする"}
@@ -140,7 +149,7 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
           <span className="mx-1 hidden h-5 w-px bg-stone-200 sm:block" aria-hidden />
           {/* 押し間違いを避けるため、削除だけは枠のない控えめな表示にしている */}
           <button
-            className="min-h-11 rounded px-2 py-1.5 text-sm text-stone-400 underline-offset-4 hover:text-red-600 hover:underline md:min-h-0"
+            className={btn("danger")}
             onClick={() => {
               if (
                 confirm(
@@ -157,59 +166,31 @@ export default function ProductPicker({ app }: { app: ReturnType<typeof useAppDa
       </div>
 
       {adding && (
-        <div className="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3">
+        <div className="mt-3 flex items-center gap-2 border-t border-stone-200 pt-3">
           <input
             autoFocus
-            className="flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+            className={`${field} flex-1`}
             placeholder="新しい商品名"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newName.trim()) {
-                addProduct(newName.trim(), null);
-                setNewName("");
-                setAdding(false);
-              }
-            }}
+            onKeyDown={(e) => e.key === "Enter" && submitAdd()}
           />
-          <button
-            className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800"
-            onClick={() => {
-              if (newName.trim()) {
-                addProduct(newName.trim(), null);
-                setNewName("");
-                setAdding(false);
-              }
-            }}
-          >
+          <button className={btn("primary")} onClick={submitAdd}>
             追加する
           </button>
         </div>
       )}
 
       {renaming && (
-        <div className="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3">
+        <div className="mt-3 flex items-center gap-2 border-t border-stone-200 pt-3">
           <input
             autoFocus
-            className="flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+            className={`${field} flex-1 ${focusRing}`}
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && renameValue.trim()) {
-                renameProduct(selectedProduct.id, renameValue.trim());
-                setRenaming(false);
-              }
-            }}
+            onKeyDown={(e) => e.key === "Enter" && submitRename()}
           />
-          <button
-            className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800"
-            onClick={() => {
-              if (renameValue.trim()) {
-                renameProduct(selectedProduct.id, renameValue.trim());
-                setRenaming(false);
-              }
-            }}
-          >
+          <button className={btn("primary")} onClick={submitRename}>
             保存する
           </button>
         </div>

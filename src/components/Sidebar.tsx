@@ -2,34 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
-import { GENRE_LABELS, Genre } from "@/lib/types";
+import { Genre } from "@/lib/types";
 import { infoFillRate } from "@/lib/stats";
 import { SALE_STATUS_LABEL, SaleStatus, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
+import { GENRE_ORDER, genreLabel } from "./ProductSwitcher";
+import { btn, field, focusRing } from "@/lib/ui";
 
+/* ラベルはスマホ下端のタブと同じ言葉にして、どちらで使っても迷わないようにする */
 const NAV: { key: TabKey; icon: string; label: string }[] = [
   { key: "menu", icon: "🏠", label: "メニュー" },
-  { key: "sheet", icon: "📝", label: "情報シート" },
-  { key: "tasks", icon: "✅", label: "準備タスク" },
+  { key: "sheet", icon: "📝", label: "シート" },
+  { key: "tasks", icon: "✅", label: "タスク" },
   { key: "gallery", icon: "🖼", label: "ビジュアル" },
 ];
-
-/** 商品リストの並び順。今いちばん動いているものから上に出す */
-const GENRE_ORDER: Genre[] = [
-  "season",
-  "shop_limited",
-  "regular_sweet",
-  "regular_savory",
-  "sweets_sand",
-  "fruit_sand",
-  "single",
-  null,
-];
-
-function genreLabel(g: Genre) {
-  return g ? GENRE_LABELS[g] : "未分類";
-}
 
 /** 並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる */
 const SALE_RANK: Record<SaleStatus, number> = { active: 0, ended: 1, retired: 2 };
@@ -106,7 +93,7 @@ export default function Sidebar({
       <div className="bg-[#4a2f1f] px-4 py-4 text-amber-50">
         <Age3Logo className="h-7 w-auto" />
         <h1 className="mt-2.5 text-base font-bold leading-tight">新商品シート</h1>
-        <p className="truncate text-[11px] text-amber-200/80">揚げサンド 直営店で共有</p>
+        <p className="truncate text-xs text-amber-200/80">揚げサンド 直営店で共有</p>
       </div>
 
       <div className="px-3 pt-3">
@@ -115,7 +102,7 @@ export default function Sidebar({
             🔍
           </span>
           <input
-            className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-amber-500 focus:outline-none"
+            className={`${field} pl-9`}
             placeholder="商品を検索"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -128,14 +115,14 @@ export default function Sidebar({
           <button
             key={t.key}
             onClick={() => onChangeTab(t.key)}
-            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition ${
+            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition ${focusRing} ${
               activeTab === t.key
                 ? "bg-white text-amber-900 shadow-sm"
                 : "text-stone-500 hover:bg-white/60"
             }`}
           >
             <span className="text-base leading-none">{t.icon}</span>
-            <span className="text-[10px] font-medium leading-none">{t.label}</span>
+            <span className="whitespace-nowrap text-[10px] font-medium leading-none">{t.label}</span>
           </button>
         ))}
       </nav>
@@ -146,7 +133,7 @@ export default function Sidebar({
         )}
         {grouped.map(({ genre, items }) => (
           <div key={genre ?? "none"} className="mb-3">
-            <div className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
+            <div className="mb-1 px-1 text-xs font-semibold tracking-wide text-stone-400">
               {genreLabel(genre)}
             </div>
             <ul>
@@ -161,7 +148,7 @@ export default function Sidebar({
                   <li key={p.id}>
                     <button
                       onClick={() => setSelectedId(p.id)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${focusRing} ${
                         active
                           ? "bg-amber-700 text-white"
                           : off
@@ -177,14 +164,14 @@ export default function Sidebar({
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
                       {off ? (
                         <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs ${
                             active ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-500"
                           }`}
                         >
                           {SALE_STATUS_LABEL[status]}
                         </span>
                       ) : (
-                        <span className={`shrink-0 text-[11px] ${active ? "text-amber-100" : "text-stone-400"}`}>
+                        <span className={`shrink-0 text-xs tabular-nums ${active ? "text-amber-100" : "text-stone-400"}`}>
                           {pct}%
                         </span>
                       )}
@@ -200,8 +187,8 @@ export default function Sidebar({
       <div className="border-t border-amber-900/10 p-3">
         <button
           onClick={() => onChangeTab("help")}
-          className={`mb-2 w-full rounded-lg px-2 py-1 text-left text-xs font-medium transition ${
-            activeTab === "help" ? "text-amber-800" : "text-stone-500 hover:text-amber-800"
+          className={`${btn("quiet")} mb-2 w-full justify-start ${
+            activeTab === "help" ? "text-amber-800" : ""
           }`}
         >
           ❓ 使い方
@@ -210,7 +197,7 @@ export default function Sidebar({
           <div className="flex items-center gap-2">
             <input
               autoFocus
-              className="flex-1 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm"
+              className={`${field} flex-1`}
               placeholder="新しい商品名"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -219,18 +206,12 @@ export default function Sidebar({
                 if (e.key === "Escape") setAdding(false);
               }}
             />
-            <button
-              className="rounded-lg bg-amber-700 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-amber-800"
-              onClick={submitAdd}
-            >
+            <button className={btn("primary")} onClick={submitAdd}>
               追加
             </button>
           </div>
         ) : (
-          <button
-            className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
-            onClick={() => setAdding(true)}
-          >
+          <button className={`${btn("secondary")} w-full`} onClick={() => setAdding(true)}>
             ＋ 商品を追加
           </button>
         )}
