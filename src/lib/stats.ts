@@ -29,7 +29,12 @@ export function skipKey(groupId: string, milestoneId: string, taskId: string) {
 
 /** 制作・入稿がある項目だけ「今回は作らない」にできる */
 export function canSkipTask(task: TaskItem) {
-  return Boolean(task.children && task.children.length > 0);
+  /* 2026年9月、制作・入稿のある9件だけから全タスクに広げた。
+     レギュラー商品には新商品の準備タスクの大半が当てはまらず、
+     未完了のまま残って期限超過の数字が実態と合わなかったため。
+     情報シートと連動するタスク（価格・レシピ画像など）だけは、
+     シート側の入力がそのまま状態になるので対象外にする。 */
+  return !task.linkedField;
 }
 
 export function isTaskSkipped(
