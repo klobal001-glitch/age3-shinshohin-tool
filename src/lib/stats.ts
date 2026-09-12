@@ -13,6 +13,34 @@ function leafKey(groupId: string, milestoneId: string, taskId: string, childId?:
     : `${groupId}|${milestoneId}|${taskId}`;
 }
 
+/**
+ * 「今回は作らない」の印を置くキー。
+ *
+ * ポスターやパネルは、商品によっては作らない店舗がある。作らないものが
+ * 未完了として残り続けると、遅れの数字が実態と合わなくなるので、
+ * 対象外にできるようにしてある。対象外にしたタスクは分母から外す。
+ *
+ * チェックと同じ `task_state` に、ぶつからない接頭辞を付けて入れている
+ * （テーブルは増やしていない）。
+ */
+export function skipKey(groupId: string, milestoneId: string, taskId: string) {
+  return `skip|${groupId}|${milestoneId}|${taskId}`;
+}
+
+/** 制作・入稿がある項目だけ「今回は作らない」にできる */
+export function canSkipTask(task: TaskItem) {
+  return Boolean(task.children && task.children.length > 0);
+}
+
+export function isTaskSkipped(
+  taskState: TaskState,
+  groupId: string,
+  milestoneId: string,
+  task: TaskItem
+) {
+  return canSkipTask(task) && Boolean(taskState[skipKey(groupId, milestoneId, task.id)]);
+}
+
 /** 商品情報シートの入力率（必須＋任意項目を合算）。必須の数はジャンルで変わる */
 export function infoFillRate(info: ProductInfo, genre: Genre): number {
   const req = requiredProgress(info, genre);
@@ -65,6 +93,8 @@ export function taskCompletion(
     for (const m of g.milestones) {
       for (const t of m.tasks) {
         if (t.children && t.children.length > 0) {
+          /* 「今回は作らない」にしたものは、そもそも数えない */
+          if (isTaskSkipped(taskState, g.id, m.id, t)) continue;
           for (const c of t.children) {
             total++;
             if (taskState[leafKey(g.id, m.id, t.id, c.id)]) checked++;
@@ -86,6 +116,7 @@ function milestoneCheckState(group: TaskGroup, m: Milestone, taskState: TaskStat
   let total = 0;
   for (const t of m.tasks) {
     if (t.children && t.children.length > 0) {
+      if (isTaskSkipped(taskState, group.id, m.id, t)) continue;
       for (const c of t.children) {
         total++;
         if (taskState[leafKey(group.id, m.id, t.id, c.id)]) checked++;
@@ -133,7 +164,8 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
         const deadline = computeDeadline(m.rule, info.releaseDate, info.endDate, info.ongoing);
         if (!deadline) continue;
         const { checked, total } = milestoneCheckState(g, m, taskState);
-        if (total > 0 && checked === total) continue; // 完了済みは除外
+        /* 完了済みと、「今回は作らない」で中身が無くなった区切りは締め切りに出さない */
+        if (total === 0 || checked === total) continue;
         const days = daysDiffFromToday(deadline) ?? 0;
         entries.push({ product: p, group: g, milestone: m, deadline, days, checked, total });
       }
