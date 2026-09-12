@@ -45,6 +45,20 @@ export interface VisualLinkGroup {
     label: string;
     size: string;
     links: string[];
+    /**
+     * その商品に「このビジュアルは存在しない」ことを明示する印。
+     *
+     * true  … ありません（必須の数＝分母から外す）
+     * false … あります（ジャンルの既定に関係なく必須として数える）
+     * 未設定 … ジャンルの既定にしたがう（レギュラー商品は3件だけ必須）
+     *
+     * レギュラー商品はInstagram投稿やポスターを作らないので、そもそも
+     * データが存在しない。未入力として残り続けると進捗が実態と合わないため、
+     * 押して分母から外せるようにしている（`isRequiredVisualKey`）。
+     * バナナブリュレのようにシーズンからレギュラー化して全部そろっている商品は、
+     * false を入れて全件を必須に戻す。
+     */
+    na?: boolean;
 }
 
 export interface ProductInfo {

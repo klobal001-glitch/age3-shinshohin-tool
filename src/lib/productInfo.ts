@@ -32,23 +32,46 @@ export function isRegularGenre(genre: Genre): boolean {
   return genre === "regular_sweet" || genre === "regular_savory";
 }
 
-/** そのジャンルで、このビジュアルが必須かどうか */
-export function isRequiredVisualKey(genre: Genre, key: string): boolean {
+/**
+ * このビジュアルを必須として数えるか。
+ *
+ * 商品ごとの「ありません」（`group.na`）が入っていれば、そちらが優先。
+ * 入っていなければジャンルの既定にしたがう（レギュラー商品は3件だけ必須）。
+ * 「ありません」を押した枠は分母から外れるので、進捗が実態と合う。
+ */
+export function isRequiredVisualKey(
+  genre: Genre,
+  key: string,
+  group?: Pick<VisualLinkGroup, "na">
+): boolean {
+  if (group && typeof group.na === "boolean") return !group.na;
   return isRegularGenre(genre) ? REGULAR_REQUIRED_VISUAL_KEYS.includes(key) : true;
 }
 
-/** そのジャンルで必須になるビジュアルの数 */
-export function requiredVisualTotal(genre: Genre): number {
-  return isRegularGenre(genre)
-    ? REGULAR_REQUIRED_VISUAL_KEYS.length
-    : VISUAL_DOWNLOAD_DEFS.length;
+/**
+ * その商品で必須になるビジュアルの数。
+ * 「ありません」にした枠は数えない。
+ */
+export function requiredVisualTotal(genre: Genre, info?: ProductInfo): number {
+  if (!info) {
+    /* 商品が分からないときはジャンルの既定だけで数える（後方互換） */
+    return isRegularGenre(genre)
+      ? REGULAR_REQUIRED_VISUAL_KEYS.length
+      : VISUAL_DOWNLOAD_DEFS.length;
+  }
+  return info.visualDownloads.filter((v) => isRequiredVisualKey(genre, v.key, v)).length;
 }
 
 /** 必須のビジュアルのうち、リンクが入っている数 */
 export function requiredVisualFilled(info: ProductInfo, genre: Genre): number {
   return info.visualDownloads.filter(
-    (v) => isRequiredVisualKey(genre, v.key) && v.links.some((l) => l.trim())
+    (v) => isRequiredVisualKey(genre, v.key, v) && v.links.some((l) => l.trim())
   ).length;
+}
+
+/** 「ありません」にしてある枠の数（見出しに出す用） */
+export function naVisualCount(info: ProductInfo): number {
+  return info.visualDownloads.filter((v) => v.na === true).length;
 }
 
 /** 新しい商品を作ったときに最初から用意しておく材料の行数。 */
@@ -118,7 +141,7 @@ export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount
     // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）。
     // レギュラー商品は必須が3件だけなので、それ以外は数に入れない
     ...info.visualDownloads
-      .filter((v) => isRequiredVisualKey(genre, v.key))
+      .filter((v) => isRequiredVisualKey(genre, v.key, v))
       .map((v) => v.links.some((l) => l.trim())),
   ];
   return { filled: checks.filter(Boolean).length, total: checks.length };
@@ -237,12 +260,16 @@ function normalizeVisualGroups(groups: unknown): VisualLinkGroup[] {
   );
   return VISUAL_DOWNLOAD_DEFS.map((d) => {
     const cur = existing.get(d.key);
-    return {
+    const group: VisualLinkGroup = {
       key: d.key,
       label: d.label,
       size: d.size,
       links: Array.isArray(cur?.links) ? cur.links : [],
     };
+    /* 「ありません／あります」の印は保存された値を必ず残す。
+       ここで落とすと、読み込むたびに設定が消える */
+    if (typeof cur?.na === "boolean") group.na = cur.na;
+    return group;
   });
 }
 
