@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
-import { btn, card, cardHead, chip, field, h3, muted } from "@/lib/ui";
-import { TASK_GROUPS, countGroupLeaves, countLeaves } from "@/lib/prepTasks";
+import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted } from "@/lib/ui";
+import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
-import { isLinkedTaskDone } from "@/lib/stats";
+import { isLinkedTaskDone, skipKey } from "@/lib/stats";
 import { PriceInput } from "./PriceInput";
 import { VisualLinkRow } from "./VisualLinkRow";
 import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
@@ -263,6 +263,8 @@ function MilestoneCard({
   onLinkedChoose,
   info,
   onPatchInfo,
+  isSkipped,
+  onToggleSkip,
 }: {
   group: TaskGroup;
   milestone: Milestone;
@@ -279,6 +281,10 @@ function MilestoneCard({
   /** 価格の連動タスクで使う、情報シートの中身と書き込み口 */
   info: ProductInfo | null;
   onPatchInfo: (patch: Partial<ProductInfo>) => void;
+  /** その項目が「今回は作らない」になっているか */
+  isSkipped: (t: TaskItem) => boolean;
+  /** 「今回は作らない」を切り替える */
+  onToggleSkip: (t: TaskItem) => void;
 }) {
   const done = total > 0 && checked === total;
   const [open, setOpen] = useState(!done);
@@ -320,25 +326,50 @@ function MilestoneCard({
         <div className="divide-y divide-stone-100">
           {milestone.tasks.map((t) =>
             t.children && t.children.length > 0 ? (
-              <div key={t.id} className="px-3 py-2">
-                <div className="text-sm text-stone-700">{t.label}</div>
-                <div className="mt-1 flex flex-wrap gap-2 pl-1">
-                  {t.children.map((c) => (
-                    <label
-                      key={c.id}
-                      className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 sm:min-h-0"
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-5 w-5 accent-amber-600 sm:h-4 sm:w-4"
-                        checked={isChecked(t, c.id)}
-                        onChange={() => onToggle(t, c.id)}
-                      />
-                      {c.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              (() => {
+                /* ポスターやパネルは、商品によっては作らない店舗がある。
+                   「今回は作らない」にすると、この2つは分母から外れる */
+                const skipped = isSkipped(t);
+                return (
+                  <div key={t.id} className="px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className={`text-sm ${skipped ? "text-stone-400 line-through" : "text-stone-700"}`}>
+                        {t.label}
+                      </span>
+                      {skipped && <span className={badge("neutral")}>今回は作らない</span>}
+                      <button
+                        type="button"
+                        onClick={() => onToggleSkip(t)}
+                        className={`ml-auto inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition sm:min-h-0 ${focusRing} ${
+                          skipped
+                            ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
+                            : "border-stone-300 bg-white text-stone-500 hover:border-stone-400 hover:text-stone-700"
+                        }`}
+                      >
+                        {skipped ? "↩ 作る に戻す" : "今回は作らない"}
+                      </button>
+                    </div>
+                    {!skipped && (
+                      <div className="mt-1 flex flex-wrap gap-2 pl-1">
+                        {t.children!.map((c) => (
+                          <label
+                            key={c.id}
+                            className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 sm:min-h-0"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-5 w-5 accent-amber-700 sm:h-4 sm:w-4"
+                              checked={isChecked(t, c.id)}
+                              onChange={() => onToggle(t, c.id)}
+                            />
+                            {c.label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : t.linkedField === "recipeImages" ? (
               info && (
                 <LinkedImageRow
@@ -451,25 +482,37 @@ export default function PrepTaskView({
     }
   };
 
+  /** その項目が「今回は作らない」になっているか */
+  const isSkipped = (groupId: string, milestoneId: string, t: TaskItem) =>
+    Boolean(t.children && t.children.length > 0 && taskState[skipKey(groupId, milestoneId, t.id)]);
+
   const milestoneProgress = (group: TaskGroup, m: Milestone) => {
     let checked = 0;
-    const total = countLeaves(m);
+    let total = 0;
     for (const t of m.tasks) {
       if (t.children && t.children.length > 0) {
+        /* 「今回は作らない」にしたものは分母から外す */
+        if (isSkipped(group.id, m.id, t)) continue;
         for (const c of t.children) {
+          total++;
           if (isLeafChecked(group.id, m.id, t, c.id)) checked++;
         }
-      } else if (isLeafChecked(group.id, m.id, t)) {
-        checked++;
+      } else {
+        total++;
+        if (isLeafChecked(group.id, m.id, t)) checked++;
       }
     }
     return { checked, total };
   };
 
   const groupProgress = (group: TaskGroup) => {
-    const total = countGroupLeaves(group);
     let checked = 0;
-    for (const m of group.milestones) checked += milestoneProgress(group, m).checked;
+    let total = 0;
+    for (const m of group.milestones) {
+      const mp = milestoneProgress(group, m);
+      checked += mp.checked;
+      total += mp.total;
+    }
     return { checked, total };
   };
 
@@ -669,6 +712,10 @@ export default function PrepTaskView({
                       onLinkedChoose={chooseLinked}
                       info={info}
                       onPatchInfo={patchInfo}
+                      isSkipped={(t) => isSkipped(group.id, m.id, t)}
+                      onToggleSkip={(t) =>
+                        toggleTask(selectedProduct.id, skipKey(group.id, m.id, t.id))
+                      }
                     />
                   ))}
                 </div>
@@ -707,6 +754,10 @@ export default function PrepTaskView({
                     onLinkedChoose={chooseLinked}
                     info={info}
                     onPatchInfo={patchInfo}
+                    isSkipped={(t) => isSkipped(group.id, m.id, t)}
+                    onToggleSkip={(t) =>
+                      toggleTask(selectedProduct.id, skipKey(group.id, m.id, t.id))
+                    }
                   />
                 ))}
             </div>

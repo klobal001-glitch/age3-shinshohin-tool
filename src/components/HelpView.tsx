@@ -38,6 +38,22 @@ export default function HelpView() {
         </p>
       </div>
       <div className={`${card} p-5`}>
+        <h2 className={`mb-3 ${h3}`}>作らないものがあるとき</h2>
+        <p className="text-sm leading-relaxed text-stone-600">
+          ポスターやパネルは、商品によっては作らない店舗があります。準備タスクの
+          「制作・入稿」が並ぶ項目には
+          <strong className="font-semibold text-stone-800">「今回は作らない」</strong>
+          が付いていて、押すとその項目は<strong className="font-semibold text-stone-800">進捗の分母から外れます。</strong>
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          たとえば原宿ポスターを作らない回は、68件が66件になり、残りを全部チェックすれば100%になります。
+          作らないものが未完了として残り続けないので、遅れの数字が実態と合います。「作る に戻す」でいつでも元に戻せます。
+        </p>
+        <p className={`mt-2 ${muted}`}>
+          この設定は商品ごとです。別の商品の同じポスターには影響しません。
+        </p>
+      </div>
+      <div className={`${card} p-5`}>
         <h2 className={`mb-3 ${h3}`}>締め切りの計算方法</h2>
         <p className="text-sm leading-relaxed text-stone-600">
           「前々月」は発売月の2か月前、「前月」は発売月の1か月前を指します。各グループの締め切りは、
