@@ -416,6 +416,11 @@ function MilestoneCard({
                 onChoose={(v) => onLinkedChoose(t, v)}
               />
             ) : (
+              (() => {
+                /* レギュラー商品には当てはまらないタスクがある。
+                   「今回は作らない」で分母から外せる（2026年9月に全タスクへ拡大） */
+                const skipped = isSkipped(t);
+                return (
               <div
                 key={t.id}
                 /* 狭い画面では、右のボタンを下の行に落とす。
@@ -429,11 +434,19 @@ function MilestoneCard({
                     className="mt-0.5 h-5 w-5 shrink-0 accent-amber-600 sm:h-4 sm:w-4"
                     checked={isChecked(t)}
                     onChange={() => onToggle(t)}
+                    disabled={skipped}
                   />
                   <TaskLabel
                     task={t}
-                    className={isChecked(t) ? "text-stone-400 line-through" : "text-stone-700"}
+                    className={
+                      skipped
+                        ? "text-stone-400 line-through"
+                        : isChecked(t)
+                          ? "text-stone-400 line-through"
+                          : "text-stone-700"
+                    }
                   />
+                  {skipped && <span className={badge("neutral", "shrink-0")}>今回は作らない</span>}
                 </label>
                 {t.links && t.links.length > 0 && (
                   <span className="flex flex-wrap gap-1.5 pl-8 sm:shrink-0 sm:justify-end sm:pl-0">
@@ -451,7 +464,20 @@ function MilestoneCard({
                     ))}
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={() => onToggleSkip(t)}
+                  className={`inline-flex min-h-10 shrink-0 items-center gap-1 self-start rounded-lg border px-2.5 py-1 text-xs transition sm:min-h-0 ${focusRing} ${
+                    skipped
+                      ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
+                      : "border-stone-300 bg-white text-stone-500 hover:border-stone-400 hover:text-stone-700"
+                  }`}
+                >
+                  {skipped ? "↩ やる に戻す" : "今回は作らない"}
+                </button>
               </div>
+                );
+              })()
             )
           )}
         </div>
