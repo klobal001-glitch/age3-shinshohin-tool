@@ -62,10 +62,16 @@ export function btn(tone: BtnTone = "secondary", extra = "") {
 }
 
 /** 並べ替え・絞り込みの選択肢。選ばれているものはアクセントで塗る */
-export function chip(active: boolean, extra = "") {
+export function chip(active: boolean, extra = "", size: "md" | "sm" = "md") {
+  /* 大きさは引数で選ぶ。extra に text-xs と書いても効かない
+     （Tailwind は書いた順ではなく生成順で勝ち負けが決まるため） */
+  const dim =
+    size === "sm"
+      ? "min-h-10 px-2.5 py-1 text-xs md:min-h-8"
+      : "min-h-11 px-3 py-1.5 text-sm md:min-h-0";
   const base =
-    `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 ` +
-    `text-sm transition md:min-h-0 ${focusRing}`;
+    `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border ` +
+    `transition ${dim} ${focusRing}`;
   const state = active
     ? "border-amber-700 bg-amber-700 font-medium text-white shadow-xs"
     : "border-stone-300 bg-white text-stone-600 shadow-xs hover:border-stone-400 hover:bg-stone-50";
