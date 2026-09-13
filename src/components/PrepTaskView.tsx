@@ -620,49 +620,52 @@ export default function PrepTaskView({
 
       {/* 画面の上に貼り付く帯。
           下までスクロールしたときに「いま何の商品を見ているか」が分からなくなる、
-          という指摘で入れた（2026年9月13日・松尾さん）。商品名・残り・保存の状態だけを
-          1行に収めて、押せば商品を切り替えられる */}
-      <div className="sticky top-0 z-20 rounded-xl border border-stone-200 bg-white/90 p-3 shadow-sm backdrop-blur print:static print:bg-white print:shadow-none sm:p-4">
-        <div className="flex items-center gap-2 text-sm">
+          という指摘で入れた（2026年9月13日・松尾さん）。
+          スマホでは商品名だけで1行を使う。右に数字を詰めると名前が数文字に潰れて、
+          結局どの商品か分からなくなるため。数字と棒は下の行にまとめる */}
+      <div className="sticky top-0 z-20 rounded-xl border border-stone-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur print:static print:bg-white print:shadow-none sm:px-4 sm:py-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <button
             type="button"
             onClick={onOpenSwitcher}
-            className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 ${focusRing}`}
+            className={`flex min-w-0 basis-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
           >
-            <span className="min-w-0 truncate font-semibold text-stone-900">
+            <span className="min-w-0 truncate text-sm font-semibold text-stone-900">
               {selectedProduct.name}
             </span>
             <Icon name="chevronDown" className="h-3.5 w-3.5 shrink-0 text-stone-400" />
           </button>
-          {overall.total > overall.checked && (
-            <span className={badge("warn", "shrink-0 tabular-nums")}>
-              残り {overall.total - overall.checked}
-            </span>
-          )}
-          {/* 狭い画面では商品名を優先する。数はバッジと下の棒で足りる */}
-          <span className="hidden shrink-0 text-xs tabular-nums text-stone-500 sm:inline">
-            {overall.checked}/{overall.total}（{overallPct}%）
-          </span>
-          {saveState === "error" ? (
-            <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs text-red-700 print:hidden">
-              保存できませんでした
-            </span>
-          ) : saveState === "saving" ? (
-            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs text-amber-800 print:hidden">
-              保存中…
-            </span>
-          ) : saveState === "saved" ? (
-            <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs text-emerald-700 print:hidden">
-              保存しました
-            </span>
-          ) : null}
-        </div>
 
-        <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-stone-200">
-          <div
-            className={`h-full rounded-full transition-all ${overallPct === 100 ? "bg-emerald-500" : "bg-amber-600"}`}
-            style={{ width: `${overallPct}%` }}
-          />
+          {/* 数字と棒。スマホではこの1行、PCでは商品名の右に並ぶ */}
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            {overall.total > overall.checked && (
+              <span className={badge("warn", "shrink-0 tabular-nums")}>
+                残り {overall.total - overall.checked}
+              </span>
+            )}
+            <span className="shrink-0 text-xs tabular-nums text-stone-500">
+              {overall.checked}/{overall.total}（{overallPct}%）
+            </span>
+            {saveState === "error" ? (
+              <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs text-red-700 print:hidden">
+                保存できませんでした
+              </span>
+            ) : saveState === "saving" ? (
+              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs text-amber-800 print:hidden">
+                保存中…
+              </span>
+            ) : saveState === "saved" ? (
+              <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs text-emerald-700 print:hidden">
+                保存しました
+              </span>
+            ) : null}
+            <div className="ml-auto h-1 w-full min-w-[64px] max-w-[160px] overflow-hidden rounded-full bg-stone-200 sm:w-20">
+              <div
+                className={`h-full rounded-full transition-all ${overallPct === 100 ? "bg-emerald-500" : "bg-amber-600"}`}
+                style={{ width: `${overallPct}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
