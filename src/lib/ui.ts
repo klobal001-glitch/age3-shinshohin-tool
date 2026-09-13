@@ -133,3 +133,25 @@ export function meter(pct: number, extra = "") {
     bar: tone,
   };
 }
+
+export type TaskRowState = "todo" | "done" | "skip";
+
+/**
+ * 準備タスク1行の地の色。
+ *
+ * 「やってあるのか、やってないのか」を、文字ではなく色で分かるようにする
+ * （2026年9月・松尾さんの指示「やってないタスクの背景色を他と変更して」）。
+ * ホバーで色が変わるやり方にすると、スマホでは指を置くまで分からないので使わない。
+ *
+ * todo … まだやっていない。うすい橙＋左の橙の線。ここだけが「残り」
+ * done … 済んだもの。白にして沈める（文字は打ち消し線）
+ * skip … 今回は作らない。グレーにして、残りとも済みとも見分けられるようにする
+ */
+export function taskRow(state: TaskRowState, extra = "") {
+  const tones: Record<TaskRowState, string> = {
+    todo: "border-l-amber-400 bg-amber-50",
+    done: "border-l-transparent bg-white",
+    skip: "border-l-transparent bg-stone-100",
+  };
+  return `border-l-[3px] transition-colors ${tones[state]} ${extra}`.trim();
+}
