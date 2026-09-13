@@ -560,20 +560,41 @@ export default function PrepTaskView({
       label = prompt("いま入っているチェックは何年のものですか？（例: 2025）")?.trim() ?? "";
       if (!label) return;
     }
-    if (
-      !confirm(
-        `「${selectedProduct.name}」の準備タスクを ${next} 年ぶんとして始めます。\n\n` +
-          `いまのチェックは「${label}」として残ります（あとから見られます）。\n` +
-          `${next} のチェックは空から始まります。\n\n` +
-          "よろしいですか？"
-      )
-    )
-      return;
+    /* 再販には2つの入り方がある。
+       ① 前の年は売り終わっていて、今年はこれから … 前の年は「全部終わった」として残す
+       ② 今のチェックが前の年ぶん … それをそのまま残して、今年は空から始める
+       どちらかで残す中身が変わるので、ここで聞く */
+    const prevDone = confirm(
+      `${label} 年ぶんは、もう全部終わっていますか？\n\n` +
+        `［OK］  ${label} を「全部完了」として残します。\n` +
+        `　　　　いま付いているチェックは、そのまま ${next} 年ぶんになります。\n\n` +
+        `［キャンセル］いま付いているチェックを ${label} として残します。\n` +
+        `　　　　${next} のチェックは空から始まります。`
+    );
+    const allDone: Record<string, boolean> = { ...liveTaskState };
+    if (prevDone) {
+      for (const g of TASK_GROUPS) {
+        for (const m of g.milestones) {
+          for (const t of m.tasks) {
+            if (isSkipped(g.id, m.id, t)) continue;
+            if (t.linkedField) continue;
+            if (t.children && t.children.length > 0) {
+              for (const c of t.children) allDone[leafKey(g.id, m.id, t.id, c.id)] = true;
+            } else {
+              allDone[leafKey(g.id, m.id, t.id)] = true;
+            }
+          }
+        }
+      }
+    }
     app.updateInfo(selectedProduct.id, {
       taskYear: next,
-      taskArchives: [{ year: label, state: liveTaskState }, ...info.taskArchives],
+      taskArchives: [
+        { year: label, state: prevDone ? allDone : liveTaskState },
+        ...info.taskArchives,
+      ],
     });
-    setProductTasks(selectedProduct.id, {});
+    if (!prevDone) setProductTasks(selectedProduct.id, {});
     setTaskYearTab(null);
   };
 
