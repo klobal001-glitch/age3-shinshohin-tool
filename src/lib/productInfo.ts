@@ -1,4 +1,4 @@
-import { Genre, IngredientRow, ProductInfo, VisualLinkGroup, VisualYearArchive } from "./types";
+import { Genre, IngredientRow, ProductInfo, TaskYearArchive, VisualLinkGroup, VisualYearArchive } from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
   { key: "product_image", label: "商品画像", size: "背景なし画像" },
@@ -113,6 +113,8 @@ export function createDefaultProductInfo(): ProductInfo {
     recipeImages: [],
     recipeNotes: "",
     visualYear: "",
+    taskYear: "",
+    taskArchives: [],
     visualDownloads,
     visualArchives: [],
     igCaption: "",
@@ -341,6 +343,10 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
     ? merged.recipeImages.filter((l): l is string => typeof l === "string")
     : [];
   merged.visualYear = typeof r.visualYear === "string" ? r.visualYear : "";
+  merged.taskYear = typeof r.taskYear === "string" ? r.taskYear : "";
+  merged.taskArchives = (Array.isArray(merged.taskArchives) ? merged.taskArchives : [])
+    .filter((a): a is TaskYearArchive => !!a && typeof a.year === "string")
+    .map((a) => ({ year: a.year, state: a.state && typeof a.state === "object" ? a.state : {} }));
   merged.visualDownloads = normalizeVisualGroups(merged.visualDownloads);
   merged.visualArchives = (Array.isArray(merged.visualArchives) ? merged.visualArchives : [])
     .filter((a): a is VisualYearArchive => !!a && typeof a.year === "string")

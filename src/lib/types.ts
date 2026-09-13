@@ -40,6 +40,12 @@ export interface VisualYearArchive {
     groups: VisualLinkGroup[];
 }
 
+/** 再販したときの、前の年ぶんの準備タスク（参照用） */
+export interface TaskYearArchive {
+    year: string; // 例 "2025"
+    state: Record<string, boolean>; // task_state と同じ形
+}
+
 export interface VisualLinkGroup {
     key: string;
     label: string;
@@ -99,6 +105,12 @@ export interface ProductInfo {
   visualYear: string; // 一番新しい年のラベル。空なら年で分けていない
   visualDownloads: VisualLinkGroup[];
   visualArchives: VisualYearArchive[];
+
+  // 準備タスクも年ごとに持つ。再販したとき、前の年のチェックを残したまま
+  // 今年ぶんを空から始められるようにするため。
+  // 「今の年ぶん」は task_state テーブル側。進捗・締め切りの数え方はそちらだけを見る。
+  taskYear: string; // 今準備している年のラベル。空なら年で分けていない
+  taskArchives: TaskYearArchive[];
 
   // 紹介文各種（SNS・PR）
   igCaption: string;
