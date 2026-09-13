@@ -465,19 +465,64 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 
 ## 商品名の表記（勝手に直さないこと）
 
-「商品名マスタ（2026年10月1日適用・全店改変）」に合わせている。2026年9月に反映済み。
+正は **「商品名リネーム（2026年10月 全店改変）」PDF**（2026年9月 決裁済・4ページ）。
+2026年9月13日に松尾さんから現物をもらい、**全商品を突き合わせて反映済み**。
 
-- **産地名は品名の前に置く。** 「シナモンアップルパイ（青森県）」ではなく
-  「青森県 シナモンアップルパイ」。間は全角スペース1つ。
+### 考え方（PDFの「運用ルール4原則」）
+
+1. **和名を残すのは「日本固有の味」だけ** … あんバター・黒蜜きなこのように、英語にすると
+   味が別物になるものに限る。テリヤキ・焼きそば・焼肉など英語圏で通じる語はそのまま使う。
+2. **それ以外は説明文なしで伝わる英語名** … 「主材料＋味・調理法」で名付ける。
+   日本の料理名（Tsukimi・Namban・Yakiniku）は英語名に使わない。
+3. **説明文が必要なのは和名維持の3品だけ** … 和製英語は例外なく直す。
+4. **産地名を出す媒体には注記を日英併記で入れる**
+   （※一部の商品名では地域名を使用していますが、時期によっては産地が変更になる場合がございます。／
+   Certain products use regional names, but their origin may change depending on the season.）
+
+### 日本語名のルール
+
+- **産地名は品名の前に置く。** 「青森県 シナモンアップルパイ」（間は全角スペース1つ）。
   該当：青森県 シナモンアップルパイ／石川県 旨だれ牛カルビ焼肉／宮崎県 チキン南蛮／
   北海道 炙りチーズサーモン（スモークサーモン）
-- 産地ではない補足（原料の種類・店舗限定など）は、従来どおり品名のうしろに括弧で付ける。
-  例：（スモークサーモン）（茅ヶ崎限定）
+- 産地ではない補足（原料の種類・店舗限定など）は品名のうしろに括弧で付ける。
 - 商品名は `products.name`（リストの表示名）と `product_info.data.nameJa`（シートの品名）の
-  2か所にある。**片方だけ直すとリストとシートで食い違う。** 必ず両方を揃える。
-- 英語名も同じマスタが正。Brûlée／Crème／Crêpe はアクセント付き。
-  日本の料理名（Tsukimi／Namban／Yakiniku／Mentai）を含む英語名は使わない。
-- マスタの「再販時に修正」欄の商品は、10月1日の変更対象外。再販のタイミングまで現状のまま。
+  2か所にある。**片方だけ直すとリストとシートで食い違う。必ず両方を揃える。**
+
+### 和名を残す3品（説明文を必ず添える）
+
+| 日本語 | 英語名 | 説明文 |
+| --- | --- | --- |
+| 北海道あんバター | Hokkaido Anko & Butter | Sweet Japanese red bean paste & butter |
+| 黒蜜きなこ | Kuromitsu Kinako | Roasted soybean flour & brown sugar syrup |
+| 黒蜜たっぷりきなこ | Kuromitsu Extra Kinako | （黒蜜きなこと共通） |
+
+**説明文はメニュー・パネル側で使うもの。** ツールの「紹介文（英語）」は別物（長い紹介文）なので
+上書きしないこと。
+
+### 表記の統一
+
+- **Brûlée はアクセント付き**（Crème Brûlée／Banana Brûlée／Matcha Brûlée／
+  Purple Sweet Potato Brûlée）。Crêpe も同じ。
+  **パネル・ポスター・サイネージのフォントに û・é が入っているか事前に確認する。**
+- ジャンル帯 **Luxurious FRIED SANDWICH → Premium FRIED SANDWICH**（10月1日変更対象）。
+  ジャンル帯はメニュー側の区分で、ツールの「ジャンル」（シーズン／レギュラー）とは別物。
+
+### 「再販時に修正」のページ（PDF 4ページ目）
+
+PDF上は10月1日の対象外だが、**2026年9月13日に松尾さんの指示で、ツールには先に反映した。**
+SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream／
+シャインマスカット＝Green Grape / Muscat Grape／アイスジャムいちご＝Strawberry Jam Ice Cream／
+アイスチョコいちご＝Chocolate Strawberry Ice Cream／アイスチョコバナナ＝Chocolate Banana Ice Cream／
+旨辛焼肉＝Spicy Japanese BBQ Beef／旨辛チーズカレー＝Spicy Grilled Cheese Curry／
+旨辛ナポリタン＝Spicy Ketchup Spaghetti／抹茶ブリュレ＝Matcha Brûlée／
+明太カルボナーラ＝Spicy Cod Roe Carbonara／白身フライ＝Fried Fish & Tartar／
+ミックスベリーオペラ＝Mixed Berries Chocolate。
+
+**ツールに無い商品**：香港マンゴー杏仁豆腐（Mango & Almond Jelly）／
+ドレスクレープ（Crêpe-Wrapped Fried Sandwich）／ラミントン（Lamington・海外店のみ）。
+
+⚠️ **旨辛チーズカレーの英語名は、PDFに「定番と同名になるため差別化が必要（例：Extra Spicy）」と
+注記がある。** いまは表の値どおり Spicy Grilled Cheese Curry にしてあるが、確定ではない。
 
 ## スマホでの見え方（2026年9月に調整）
 
