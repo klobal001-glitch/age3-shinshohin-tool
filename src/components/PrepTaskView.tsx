@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import Icon from "@/components/Icon";
-import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted } from "@/lib/ui";
+import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted, taskRow } from "@/lib/ui";
 import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
@@ -68,7 +68,7 @@ function LinkedImageRow({
   };
 
   return (
-    <div className="px-3 py-2.5">
+    <div className={taskRow(done ? "done" : "todo", "px-3 py-2.5")}>
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
@@ -78,7 +78,7 @@ function LinkedImageRow({
         >
           {done ? "✓" : ""}
         </span>
-        <TaskLabel task={task} className={done ? "text-stone-400" : "text-stone-700"} />
+        <TaskLabel task={task} className={done ? "text-stone-400 line-through" : "text-stone-700"} />
         <span className="text-xs text-stone-400">画像を貼ると完了になります</span>
       </div>
       <div className="mt-2 pl-7">
@@ -152,7 +152,7 @@ function LinkedPriceRow({
   const isManual = isUber && uberExplicit !== null;
 
   return (
-    <div className="px-3 py-2.5">
+    <div className={taskRow(done ? "done" : "todo", "px-3 py-2.5")}>
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
@@ -162,7 +162,7 @@ function LinkedPriceRow({
         >
           {done ? "✓" : ""}
         </span>
-        <TaskLabel task={task} className={done ? "text-stone-400" : "text-stone-700"} />
+        <TaskLabel task={task} className={done ? "text-stone-400 line-through" : "text-stone-700"} />
         {isUber &&
           (isManual ? (
             <>
@@ -235,7 +235,7 @@ function LinkedChoiceRow({
   const answered = value !== null;
 
   return (
-    <div className="px-3 py-2.5">
+    <div className={taskRow(answered ? "done" : "todo", "px-3 py-2.5")}>
       <div className="flex items-start gap-3 text-sm">
         <span
           aria-hidden
@@ -245,7 +245,7 @@ function LinkedChoiceRow({
         >
           {answered ? "✓" : ""}
         </span>
-        <TaskLabel task={task} className={answered ? "text-stone-400" : "text-stone-700"} />
+        <TaskLabel task={task} className={answered ? "text-stone-400 line-through" : "text-stone-700"} />
       </div>
       <div className="mt-2 flex flex-wrap gap-2 pl-7">
         {choices.map((c) => (
@@ -339,7 +339,12 @@ function MilestoneCard({
           </span>
         )}
         <span className="ml-auto flex shrink-0 items-center gap-2">
-          {done && <span className="text-xs font-medium text-emerald-600">完了</span>}
+          {done ? (
+            <span className="text-xs font-medium text-emerald-600">完了</span>
+          ) : (
+            /* 開かなくても、あと何件残っているかが分かるようにする */
+            <span className={badge("warn", "tabular-nums")}>残り {total - checked}</span>
+          )}
           <span className="text-xs tabular-nums text-stone-500">
             {checked}/{total}
           </span>
@@ -354,8 +359,13 @@ function MilestoneCard({
                 /* ポスターやパネルは、商品によっては作らない店舗がある。
                    「今回は作らない」にすると、この2つは分母から外れる */
                 const skipped = isSkipped(t);
+                /* 子が全部ついていれば「済み」。1つでも残っていれば「残り」 */
+                const allDone = t.children!.every((c) => isChecked(t, c.id));
                 return (
-                  <div key={t.id} className="px-3 py-2">
+                  <div
+                    key={t.id}
+                    className={taskRow(skipped ? "skip" : allDone ? "done" : "todo", "px-3 py-2")}
+                  >
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <TaskLabel
                         task={t}
@@ -425,7 +435,10 @@ function MilestoneCard({
                 key={t.id}
                 /* 狭い画面では、右のボタンを下の行に落とす。
                    横に並べたままだとタスク名が1文字ずつ折り返されて読めなくなる */
-                className="flex flex-col gap-2 px-3 py-3 text-sm hover:bg-stone-50 sm:flex-row sm:items-start sm:gap-3 sm:py-2.5"
+                className={taskRow(
+                  skipped ? "skip" : isChecked(t) ? "done" : "todo",
+                  "flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-start sm:gap-3 sm:py-2.5"
+                )}
               >
                 {/* チェックの当たり判定はラベルまで。右のボタンは別扱いにする */}
                 <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
@@ -710,6 +723,22 @@ export default function PrepTaskView({
               {hideCompleted && <Icon name="check" className="h-3.5 w-3.5" />}
               {hideCompleted ? "未完了だけ表示中" : "未完了だけ表示"}
             </button>
+          </div>
+
+          {/* 色の意味。説明を読まなくても分かるよう、実物と同じ色を並べて出す */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-stone-500 print:hidden">
+            <span className="flex items-center gap-1.5">
+              <span className="h-4 w-6 shrink-0 rounded border-l-[3px] border-l-amber-400 bg-amber-50" />
+              まだ
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-4 w-6 shrink-0 rounded border border-stone-200 bg-white" />
+              済み
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-4 w-6 shrink-0 rounded bg-stone-100" />
+              今回は作らない
+            </span>
           </div>
         </div>
       </div>
