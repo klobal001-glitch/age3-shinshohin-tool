@@ -40,6 +40,9 @@ export function useAppData() {
   );
   const [infoMap, setInfoMap] = useState<Record<string, ProductInfo>>(buildInitialInfoMap());
   const [taskStateAll, setTaskStateAll] = useState<Record<string, TaskStateMap>>({});
+  /* いま見ている「販売の回」。null なら今の回。商品を変えたら今の回に戻す。
+     シートとタスクで同じものを見せたいので、ここで持つ */
+  const [runTab, setRunTabState] = useState<{ productId: string; label: string } | null>(null);
   const [loading, setLoading] = useState(true);
   /**
    * 画面右上の保存表示。"saving" = 保存待ち／保存中、"saved" = 直前の保存が完了、
@@ -430,6 +433,8 @@ export function useAppData() {
     toggleTask,
     resetProductTasks,
     setProductTasks,
+    runTab,
+    setRunTab: setRunTabState,
     resetProductInfo,
     addProduct,
     renameProduct,
