@@ -40,10 +40,26 @@ export interface VisualYearArchive {
     groups: VisualLinkGroup[];
 }
 
-/** 再販したときの、前の年ぶんの準備タスク（参照用） */
+/** 再販したときの、前の年ぶんの準備タスク（参照用・runs へ移行済みの古い形） */
 export interface TaskYearArchive {
     year: string; // 例 "2025"
     state: Record<string, boolean>; // task_state と同じ形
+}
+
+/**
+ * 「販売の回」1回ぶん。
+ *
+ * 同じ商品でも、年やバージョン（ハロウィン仕様など）で出し直すことがある。
+ * 1回ごとに変わるのは 発売月・販売終了月・ビジュアル・準備タスク の4つだけ。
+ * 品名・材料・価格・レシピ・紹介文は商品で1つ（ものは同じなので）。
+ */
+export interface ProductRun {
+    label: string; // 「2025 通常」「2026 ハロウィン」など。自由に付けられる
+    releaseDate: string;
+    endDate: string;
+    ongoing: boolean;
+    visuals: VisualLinkGroup[];
+    taskState: Record<string, boolean>;
 }
 
 export interface VisualLinkGroup {
@@ -109,8 +125,14 @@ export interface ProductInfo {
   // 準備タスクも年ごとに持つ。再販したとき、前の年のチェックを残したまま
   // 今年ぶんを空から始められるようにするため。
   // 「今の年ぶん」は task_state テーブル側。進捗・締め切りの数え方はそちらだけを見る。
-  taskYear: string; // 今準備している年のラベル。空なら年で分けていない
-  taskArchives: TaskYearArchive[];
+  taskYear: string; // 古い形。runs へ移行済み
+  taskArchives: TaskYearArchive[]; // 古い形。runs へ移行済み
+
+  // 販売の回。「今の回」は releaseDate / endDate / ongoing / visualDownloads と
+  // task_state テーブルに入っている（数え方はすべてそちらだけを見る）。
+  // runs は終わった回の控え。新しい順に並べる。
+  runLabel: string; // 今の回の名前（例「2026 ハロウィン」）。空なら回で分けていない
+  runs: ProductRun[];
 
   // 紹介文各種（SNS・PR）
   igCaption: string;

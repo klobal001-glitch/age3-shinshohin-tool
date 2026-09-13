@@ -1,4 +1,12 @@
-import { Genre, IngredientRow, ProductInfo, TaskYearArchive, VisualLinkGroup, VisualYearArchive } from "./types";
+import {
+  Genre,
+  IngredientRow,
+  ProductInfo,
+  ProductRun,
+  TaskYearArchive,
+  VisualLinkGroup,
+  VisualYearArchive,
+} from "./types";
 
 export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[] = [
   { key: "product_image", label: "商品画像", size: "背景なし画像" },
@@ -115,6 +123,8 @@ export function createDefaultProductInfo(): ProductInfo {
     visualYear: "",
     taskYear: "",
     taskArchives: [],
+    runLabel: "",
+    runs: [],
     visualDownloads,
     visualArchives: [],
     igCaption: "",
@@ -347,6 +357,37 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   merged.taskArchives = (Array.isArray(merged.taskArchives) ? merged.taskArchives : [])
     .filter((a): a is TaskYearArchive => !!a && typeof a.year === "string")
     .map((a) => ({ year: a.year, state: a.state && typeof a.state === "object" ? a.state : {} }));
+
+  /* 販売の回。年だけで分ける形（taskYear / visualYear）から移ってきたデータは、
+     ここで1度だけ runs に入れ替える。名前は年をそのまま使う。 */
+  merged.runLabel = typeof r.runLabel === "string" ? r.runLabel : "";
+  merged.runs = (Array.isArray(merged.runs) ? merged.runs : [])
+    .filter((x): x is ProductRun => !!x && typeof x.label === "string")
+    .map((x) => ({
+      label: x.label,
+      releaseDate: typeof x.releaseDate === "string" ? x.releaseDate : "",
+      endDate: typeof x.endDate === "string" ? x.endDate : "",
+      ongoing: !!x.ongoing,
+      visuals: normalizeVisualGroups(x.visuals),
+      taskState: x.taskState && typeof x.taskState === "object" ? x.taskState : {},
+    }));
+  if (merged.runs.length === 0) {
+    const labels: string[] = [];
+    for (const a of merged.taskArchives) if (!labels.includes(a.year)) labels.push(a.year);
+    for (const a of merged.visualArchives) if (!labels.includes(a.year)) labels.push(a.year);
+    if (labels.length > 0) {
+      merged.runs = labels.map((label) => ({
+        label,
+        releaseDate: "",
+        endDate: "",
+        ongoing: false,
+        visuals: merged.visualArchives.find((a) => a.year === label)?.groups ?? [],
+        taskState: merged.taskArchives.find((a) => a.year === label)?.state ?? {},
+      }));
+      if (!merged.runLabel) merged.runLabel = merged.taskYear || merged.visualYear || "";
+    }
+  }
+  if (!merged.runLabel && merged.runs.length > 0) merged.runLabel = "今の回";
   merged.visualDownloads = normalizeVisualGroups(merged.visualDownloads);
   merged.visualArchives = (Array.isArray(merged.visualArchives) ? merged.visualArchives : [])
     .filter((a): a is VisualYearArchive => !!a && typeof a.year === "string")
