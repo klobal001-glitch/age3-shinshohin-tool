@@ -97,7 +97,26 @@ export const TASK_GROUPS: TaskGroup[] = [
           { id: "yt_edit", label: "作り方YouTube 編集" },
           { id: "yt_post", label: "作り方YouTube 投稿", note: "自動入力欄へ" },
           { id: "get_material_image", label: "材料画像・使用量（g数）をもらう" },
-          { id: "material_sheet", label: "材料スプレッドシート作成(のちのち消します)" },
+          {
+            id: "material_sheet",
+            label: "材料スプレッドシート作成(のちのち消します)",
+            /* 書き込む先の共有スプレッドシート。商品のジャンルで使い分ける
+               （2026年9月13日・松尾さんから3つのリンクをもらった） */
+            links: [
+              {
+                url: "https://docs.google.com/spreadsheets/d/10zq0KppX6hLUhobz8YCKClcTRQdTjDwETEpV6AjjQWw/edit?gid=1748418060#gid=1748418060",
+                label: "シーズン",
+              },
+              {
+                url: "https://docs.google.com/spreadsheets/d/1z_nzHM0bPqspVjAxV3bPNIiSJpDIDVeo6QlSYI44eS0/edit?gid=823576328#gid=823576328",
+                label: "レギュラー スイーツ",
+              },
+              {
+                url: "https://docs.google.com/spreadsheets/d/1rKUAmbB4z6lqfQjKl5XG76TkyoH__NdCcfSwFLQyQAA/edit?gid=1069791787#gid=1069791787",
+                label: "レギュラー 惣菜",
+              },
+            ],
+          },
           { id: "yt_share_stores", label: "作り方YouTubeを各店の業務連絡に投稿" },
         ],
       },
