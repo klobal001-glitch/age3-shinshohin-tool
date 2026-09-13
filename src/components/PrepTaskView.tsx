@@ -69,7 +69,7 @@ function LinkedImageRow({
 
   return (
     <div className={taskRow(done ? "done" : "todo", "px-3 py-2.5")}>
-      <div className="flex items-start gap-3 text-sm">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
         <span
           aria-hidden
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
@@ -78,8 +78,14 @@ function LinkedImageRow({
         >
           {done ? "✓" : ""}
         </span>
-        <TaskLabel task={task} className={done ? "text-stone-400 line-through" : "text-stone-700"} />
-        <span className="text-xs text-stone-400">画像を貼ると完了になります</span>
+        <TaskLabel
+          task={task}
+          className={`flex-1 ${done ? "text-stone-400 line-through" : "text-stone-700"}`}
+        />
+        {/* スマホでは注記を下の行に落とす。横に並べたままだとタスク名が1文字ずつ折り返される */}
+        <span className="basis-full pl-7 text-xs text-stone-400 sm:basis-auto sm:pl-0">
+          画像を貼ると完了になります
+        </span>
       </div>
       <div className="mt-2 pl-7">
         {links.map((l, i) => (
@@ -153,7 +159,7 @@ function LinkedPriceRow({
 
   return (
     <div className={taskRow(done ? "done" : "todo", "px-3 py-2.5")}>
-      <div className="flex items-start gap-3 text-sm">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
         <span
           aria-hidden
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
