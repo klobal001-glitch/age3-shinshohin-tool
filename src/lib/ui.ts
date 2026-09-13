@@ -139,19 +139,29 @@ export type TaskRowState = "todo" | "done" | "skip";
 /**
  * 準備タスク1行の地の色。
  *
- * 「やってあるのか、やってないのか」を、文字ではなく色で分かるようにする
- * （2026年9月・松尾さんの指示「やってないタスクの背景色を他と変更して」）。
- * ホバーで色が変わるやり方にすると、スマホでは指を置くまで分からないので使わない。
+ * 「やってあるのか、やってないのか」を、文字ではなく色で分かるようにする。
+ * 2026年9月に一度うすい橙／白／うすい灰にしたが、**3つとも明るさが近すぎて
+ * スマホでは見分けがつかなかった**（松尾さんの指摘）。
+ * 明るさではなく**色そのもの**を変える：やること＝橙／済み＝緑／やらない＝灰。
+ * 信号と同じ並びなので、説明を読まなくても分かる。
+ * ホバーで色を変えるやり方は、スマホで指を置くまで分からないので使わない。
  *
- * todo … まだやっていない。うすい橙＋左の橙の線。ここだけが「残り」
- * done … 済んだもの。白にして沈める（文字は打ち消し線）
- * skip … 今回は作らない。グレーにして、残りとも済みとも見分けられるようにする
+ * todo … まだやっていない。橙。左の太い線でさらに目立たせる
+ * done … 済んだもの。緑。文字は打ち消し線
+ * skip … 今回は作らない。灰
  */
 export function taskRow(state: TaskRowState, extra = "") {
   const tones: Record<TaskRowState, string> = {
-    todo: "border-l-amber-400 bg-amber-50",
-    done: "border-l-transparent bg-white",
-    skip: "border-l-transparent bg-stone-100",
+    todo: "border-l-amber-500 bg-amber-50",
+    done: "border-l-emerald-400 bg-emerald-50/70",
+    skip: "border-l-stone-300 bg-stone-200/50",
   };
-  return `border-l-[3px] transition-colors ${tones[state]} ${extra}`.trim();
+  return `border-l-4 transition-colors ${tones[state]} ${extra}`.trim();
 }
+
+/** 上の3色と同じ見本。凡例やヘルプで使う */
+export const TASK_ROW_LEGEND: { state: TaskRowState; label: string; swatch: string }[] = [
+  { state: "todo", label: "まだ", swatch: "border-l-amber-500 bg-amber-50" },
+  { state: "done", label: "済み", swatch: "border-l-emerald-400 bg-emerald-50/70" },
+  { state: "skip", label: "今回は作らない", swatch: "border-l-stone-300 bg-stone-200/50" },
+];
