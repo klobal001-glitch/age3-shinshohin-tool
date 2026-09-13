@@ -516,12 +516,66 @@ export default function PrepTaskView({
     app;
   const [sortMode, setSortMode] = useState<"group" | "deadline">("group");
   const [hideCompleted, setHideCompleted] = useState(false);
+  /* 過去の年を見ているとき。商品を変えたら今の年に戻す */
+  const [taskYearTab, setTaskYearTab] = useState<{ id: string; year: string } | null>(null);
 
   const info = selectedProduct ? getInfo(selectedProduct.id) : null;
-  const taskState = selectedProduct ? getTaskState(selectedProduct.id) : {};
+  const liveTaskState = selectedProduct ? getTaskState(selectedProduct.id) : {};
+
+  /* 準備タスクも年ごとに持てる（再販のため）。
+     「今の年ぶん」は task_state 側。締め切り・進捗の数え方はそちらだけを見る。
+     過去の年は情報シートの taskArchives に参照用として置いてある。 */
+  const taskYear = info?.taskYear ?? "";
+  const viewingTaskYear =
+    taskYearTab && selectedProduct && taskYearTab.id === selectedProduct.id
+      ? taskYearTab.year
+      : taskYear;
+  const taskArchive = info?.taskArchives.find((a) => a.year === viewingTaskYear) ?? null;
+  const viewingPastYear = !!taskArchive;
+  const taskState = taskArchive ? taskArchive.state : liveTaskState;
   const releaseDate = info?.releaseDate ?? "";
   const endDate = info?.endDate ?? "";
   const ongoing = info?.ongoing ?? false;
+
+  /** 過去の年を見ているときは触らせない（数に入らないため） */
+  const toggle = (key: string) => {
+    if (viewingPastYear || !selectedProduct) return;
+    toggleTask(selectedProduct.id, key);
+  };
+
+  /**
+   * 再販のとき、今年ぶんを空から始める。
+   * 前の年のチェックは「◯◯年」として残しておく（やった記録は消さない）。
+   */
+  const addTaskYear = () => {
+    if (!selectedProduct || !info) return;
+    const next = prompt("新しく始める年を入れてください（例: 2026）")?.trim();
+    if (!next) return;
+    if (next === taskYear || info.taskArchives.some((a) => a.year === next)) {
+      alert(`「${next}」はすでにあります。`);
+      return;
+    }
+    let label = taskYear;
+    if (!label) {
+      label = prompt("いま入っているチェックは何年のものですか？（例: 2025）")?.trim() ?? "";
+      if (!label) return;
+    }
+    if (
+      !confirm(
+        `「${selectedProduct.name}」の準備タスクを ${next} 年ぶんとして始めます。\n\n` +
+          `いまのチェックは「${label}」として残ります（あとから見られます）。\n` +
+          `${next} のチェックは空から始まります。\n\n` +
+          "よろしいですか？"
+      )
+    )
+      return;
+    app.updateInfo(selectedProduct.id, {
+      taskYear: next,
+      taskArchives: [{ year: label, state: liveTaskState }, ...info.taskArchives],
+    });
+    setProductTasks(selectedProduct.id, {});
+    setTaskYearTab(null);
+  };
 
   const patchDates = (release: string, end: string) => {
     if (!selectedProduct) return;
@@ -540,13 +594,13 @@ export default function PrepTaskView({
 
   /** 価格の連動タスクから、情報シートへ書き込む */
   const patchInfo = (patch: Partial<ProductInfo>) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || viewingPastYear) return;
     app.updateInfo(selectedProduct.id, patch);
   };
 
   /** 連動タスクで選び直したとき。情報シート側に書き込む */
   const chooseLinked = (task: TaskItem, value: string) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || viewingPastYear) return;
     if (task.linkedField === "noAlcoholPork") {
       app.updateInfo(selectedProduct.id, {
         noAlcoholPork: value as ProductInfo["noAlcoholPork"],
@@ -775,6 +829,58 @@ export default function PrepTaskView({
               今回は作らない
             </span>
           </div>
+
+          {/* 再販のための年の切り替え。年を分けていない商品では「＋」だけ出す。
+              ビジュアル欄の年タブと同じ考え方（2026年9月13日・松尾さんの指示） */}
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-stone-200 pt-3 print:hidden">
+            <span className="mr-1 text-xs text-stone-500">年</span>
+            {taskYear && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setTaskYearTab(null)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                    !viewingPastYear
+                      ? "border-amber-600 bg-amber-600 font-medium text-white"
+                      : "border-stone-300 text-stone-600 hover:bg-stone-50"
+                  }`}
+                >
+                  {taskYear}
+                  <span className={`ml-1.5 ${!viewingPastYear ? "text-amber-100" : "text-stone-400"}`}>
+                    今準備中
+                  </span>
+                </button>
+                {info.taskArchives.map((a) => (
+                  <button
+                    key={a.year}
+                    type="button"
+                    onClick={() => setTaskYearTab({ id: selectedProduct.id, year: a.year })}
+                    className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                      viewingTaskYear === a.year
+                        ? "border-stone-600 bg-stone-600 font-medium text-white"
+                        : "border-stone-300 text-stone-500 hover:bg-stone-50"
+                    }`}
+                  >
+                    {a.year}
+                  </button>
+                ))}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={addTaskYear}
+              className="rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-amber-500 hover:text-amber-700"
+            >
+              ＋ 再販：今年ぶんを始める
+            </button>
+          </div>
+
+          {viewingPastYear && (
+            <p className="rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-600">
+              {viewingTaskYear} は過去のぶんです。見るだけで、チェックは変えられません。
+              締め切りの数や進捗は「{taskYear}」を見ています。
+            </p>
+          )}
         </div>
       </div>
 
@@ -822,17 +928,13 @@ export default function PrepTaskView({
                       checked={mp.checked}
                       total={mp.total}
                       isChecked={(t, childId) => isLeafChecked(group.id, m.id, t, childId)}
-                      onToggle={(t, childId) =>
-                        toggleTask(selectedProduct.id, leafKey(group.id, m.id, t.id, childId))
-                      }
+                      onToggle={(t, childId) => toggle(leafKey(group.id, m.id, t.id, childId))}
                       linkedValue={linkedValue}
                       onLinkedChoose={chooseLinked}
                       info={info}
                       onPatchInfo={patchInfo}
                       isSkipped={(t) => isSkipped(group.id, m.id, t)}
-                      onToggleSkip={(t) =>
-                        toggleTask(selectedProduct.id, skipKey(group.id, m.id, t.id))
-                      }
+                      onToggleSkip={(t) => toggle(skipKey(group.id, m.id, t.id))}
                     />
                   ))}
                 </div>
@@ -864,17 +966,13 @@ export default function PrepTaskView({
                     total={mp.total}
                     showGroupName
                     isChecked={(t, childId) => isLeafChecked(group.id, m.id, t, childId)}
-                    onToggle={(t, childId) =>
-                      toggleTask(selectedProduct.id, leafKey(group.id, m.id, t.id, childId))
-                    }
+                    onToggle={(t, childId) => toggle(leafKey(group.id, m.id, t.id, childId))}
                     linkedValue={linkedValue}
                     onLinkedChoose={chooseLinked}
                     info={info}
                     onPatchInfo={patchInfo}
                     isSkipped={(t) => isSkipped(group.id, m.id, t)}
-                    onToggleSkip={(t) =>
-                      toggleTask(selectedProduct.id, skipKey(group.id, m.id, t.id))
-                    }
+                    onToggleSkip={(t) => toggle(skipKey(group.id, m.id, t.id))}
                   />
                 ))}
             </div>
@@ -890,6 +988,7 @@ export default function PrepTaskView({
             「今回は作らない」の印と、情報シートと連動するタスクは触らない */}
         <button
           className={btn("secondary")}
+          disabled={viewingPastYear}
           onClick={() => {
             if (
               !confirm(
@@ -923,6 +1022,7 @@ export default function PrepTaskView({
         </button>
         <button
           className={btn("danger")}
+          disabled={viewingPastYear}
           onClick={() => {
             if (confirm("この商品の進捗をリセットします。よろしいですか？")) {
               resetProductTasks(selectedProduct.id);
