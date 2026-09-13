@@ -41,6 +41,14 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
+  /* 商品を切り替えたら、見ている「販売の回」は今の回に戻す。
+     前の商品の回を見たまま次の商品を開くと、何を見ているか分からなくなるため */
+  const setRunTab = app.setRunTab;
+  useEffect(() => {
+    setRunTab(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const openSwitcher = () => setSwitcherOpen(true);
 
   return (
