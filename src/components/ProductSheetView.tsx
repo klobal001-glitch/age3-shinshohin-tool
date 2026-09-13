@@ -794,11 +794,12 @@ export default function ProductSheetView({
         {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す。
             下までスクロールすると何の商品か分からなくなるので、商品名もここに出す
             （2026年9月13日・松尾さん）。押せば商品を切り替えられる */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <button
             type="button"
             onClick={onOpenSwitcher}
-            className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 ${focusRing}`}
+            /* 狭い画面では商品名だけで1行を使う。右に詰めると名前が1〜2文字に潰れる */
+            className={`flex min-w-0 basis-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
           >
             <span className="min-w-0 truncate font-semibold text-stone-900">
               {selectedProduct.name}

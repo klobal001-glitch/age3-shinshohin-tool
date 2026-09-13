@@ -639,7 +639,8 @@ export default function PrepTaskView({
               残り {overall.total - overall.checked}
             </span>
           )}
-          <span className="shrink-0 text-xs tabular-nums text-stone-500">
+          {/* 狭い画面では商品名を優先する。数はバッジと下の棒で足りる */}
+          <span className="hidden shrink-0 text-xs tabular-nums text-stone-500 sm:inline">
             {overall.checked}/{overall.total}（{overallPct}%）
           </span>
           {saveState === "error" ? (
