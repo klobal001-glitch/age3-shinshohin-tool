@@ -512,7 +512,8 @@ export default function PrepTaskView({
   app: ReturnType<typeof useAppData>;
   onOpenSwitcher?: () => void;
 }) {
-  const { selectedProduct, getInfo, getTaskState, toggleTask, resetProductTasks, saveState } = app;
+  const { selectedProduct, getInfo, getTaskState, toggleTask, resetProductTasks, setProductTasks, saveState } =
+    app;
   const [sortMode, setSortMode] = useState<"group" | "deadline">("group");
   const [hideCompleted, setHideCompleted] = useState(false);
 
@@ -883,6 +884,42 @@ export default function PrepTaskView({
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <button className={btn("secondary")} onClick={() => window.print()}>
           🖨 印刷 / PDF保存
+        </button>
+        {/* 再販・過去に売った商品は、もう全部終わっている。1つずつ押すと数十回保存が走るので
+            まとめて完了にする（2026年9月13日・松尾さんの指示）。
+            「今回は作らない」の印と、情報シートと連動するタスクは触らない */}
+        <button
+          className={btn("secondary")}
+          onClick={() => {
+            if (
+              !confirm(
+                `「${selectedProduct.name}」の準備タスクを、すべて完了にします。\n\n` +
+                  "過去に売り終わった商品や、再販で前回ぶんが済んでいる商品に使ってください。\n" +
+                  "「今回は作らない」にしたものはそのまま残ります。\n" +
+                  "価格・レシピなど情報シートと連動する項目は、シート側の入力で決まります。\n\n" +
+                  "よろしいですか？"
+              )
+            )
+              return;
+            const next: Record<string, boolean> = { ...taskState };
+            for (const g of TASK_GROUPS) {
+              for (const m of g.milestones) {
+                for (const t of m.tasks) {
+                  if (isSkipped(g.id, m.id, t)) continue;
+                  if (t.linkedField) continue;
+                  if (t.children && t.children.length > 0) {
+                    for (const c of t.children) next[leafKey(g.id, m.id, t.id, c.id)] = true;
+                  } else {
+                    next[leafKey(g.id, m.id, t.id)] = true;
+                  }
+                }
+              }
+            }
+            setProductTasks(selectedProduct.id, next);
+          }}
+        >
+          <Icon name="check" className="h-4 w-4" />
+          すべて完了にする
         </button>
         <button
           className={btn("danger")}
