@@ -23,7 +23,8 @@ import { GENRE_LABELS } from "@/lib/types";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
-import { badge, btn, h3, muted } from "@/lib/ui";
+import Icon from "@/components/Icon";
+import { badge, btn, focusRing, h3, muted } from "@/lib/ui";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -790,8 +791,20 @@ export default function ProductSheetView({
           inactive ? "border-stone-200 bg-stone-100/90" : "border-stone-200 bg-white/90"
         }`}
       >
-        {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す */}
+        {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す。
+            下までスクロールすると何の商品か分からなくなるので、商品名もここに出す
+            （2026年9月13日・松尾さん）。押せば商品を切り替えられる */}
         <div className="flex items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={onOpenSwitcher}
+            className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 ${focusRing}`}
+          >
+            <span className="min-w-0 truncate font-semibold text-stone-900">
+              {selectedProduct.name}
+            </span>
+            <Icon name="chevronDown" className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+          </button>
           {inactive && <span className={badge("neutral", "shrink-0")}>{SALE_STATUS_LABEL[status]}</span>}
           <span className={badge(inactive ? "neutral" : "accent", "shrink-0 tabular-nums")}>
             必須 {req.filled}/{req.total}
@@ -806,7 +819,7 @@ export default function ProductSheetView({
             type="button"
             disabled={!nextEmpty}
             onClick={jumpToNextEmpty}
-            className={`${btn("primary", "ml-auto shrink-0")} print:hidden`}
+            className={`${btn("primary", "shrink-0")} print:hidden`}
           >
             {nextEmpty ? "次の未入力へ →" : "すべて入力済み"}
           </button>
