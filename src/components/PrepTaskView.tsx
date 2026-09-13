@@ -4,7 +4,19 @@ import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import Icon from "@/components/Icon";
-import { badge, btn, card, cardHead, chip, field, focusRing, h3, muted, taskRow } from "@/lib/ui";
+import {
+  badge,
+  btn,
+  card,
+  cardHead,
+  chip,
+  field,
+  focusRing,
+  h3,
+  muted,
+  TASK_ROW_LEGEND,
+  taskRow,
+} from "@/lib/ui";
 import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
 import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
@@ -73,7 +85,7 @@ function LinkedImageRow({
         <span
           aria-hidden
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
-            done ? "bg-amber-600" : "border border-stone-300 bg-white"
+            done ? "bg-emerald-600" : "border border-stone-300 bg-white"
           }`}
         >
           {done ? "✓" : ""}
@@ -163,7 +175,7 @@ function LinkedPriceRow({
         <span
           aria-hidden
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
-            done ? "bg-amber-600" : "border border-stone-300 bg-white"
+            done ? "bg-emerald-600" : "border border-stone-300 bg-white"
           }`}
         >
           {done ? "✓" : ""}
@@ -246,7 +258,7 @@ function LinkedChoiceRow({
         <span
           aria-hidden
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs font-semibold text-white ${
-            answered ? "bg-amber-600" : "border border-stone-300 bg-white"
+            answered ? "bg-emerald-600" : "border border-stone-300 bg-white"
           }`}
         >
           {answered ? "✓" : ""}
@@ -399,7 +411,9 @@ function MilestoneCard({
                           >
                             <input
                               type="checkbox"
-                              className="h-5 w-5 accent-amber-700 sm:h-4 sm:w-4"
+                              className={`h-5 w-5 sm:h-4 sm:w-4 ${
+                                isChecked(t, c.id) ? "accent-emerald-600" : "accent-amber-700"
+                              }`}
                               checked={isChecked(t, c.id)}
                               onChange={() => onToggle(t, c.id)}
                             />
@@ -450,7 +464,9 @@ function MilestoneCard({
                 <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
                   <input
                     type="checkbox"
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-amber-600 sm:h-4 sm:w-4"
+                    className={`mt-0.5 h-5 w-5 shrink-0 sm:h-4 sm:w-4 ${
+                      isChecked(t) ? "accent-emerald-600" : "accent-amber-600"
+                    }`}
                     checked={isChecked(t)}
                     onChange={() => onToggle(t)}
                     disabled={skipped}
@@ -835,20 +851,14 @@ export default function PrepTaskView({
             </button>
           </div>
 
-          {/* 色の意味。説明を読まなくても分かるよう、実物と同じ色を並べて出す */}
+          {/* 色の意味。説明を読まなくても分かるよう、実物とまったく同じ色を並べる */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-stone-500 print:hidden">
-            <span className="flex items-center gap-1.5">
-              <span className="h-4 w-6 shrink-0 rounded border-l-[3px] border-l-amber-400 bg-amber-50" />
-              まだ
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-4 w-6 shrink-0 rounded border border-stone-200 bg-white" />
-              済み
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-4 w-6 shrink-0 rounded bg-stone-100" />
-              今回は作らない
-            </span>
+            {TASK_ROW_LEGEND.map((l) => (
+              <span key={l.state} className="flex items-center gap-1.5">
+                <span className={`h-4 w-6 shrink-0 rounded border-l-4 ${l.swatch}`} />
+                {l.label}
+              </span>
+            ))}
           </div>
 
           {/* 再販のための年の切り替え。年を分けていない商品では「＋」だけ出す。
