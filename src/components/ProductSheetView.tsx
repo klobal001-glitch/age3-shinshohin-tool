@@ -675,6 +675,24 @@ export default function ProductSheetView({
    * 新しい年を作る。今の内容は過去の年として残し、新しい年は空から始める。
    * 前の年のリンクが残っていて古い画像を使ってしまう事故を避けるため。
    */
+  /** 回の名前を変える。移行してきた「2025」のような名前を「2025 通常」に直すため */
+  const renameRun = (label: string) => {
+    const next = prompt("この回の新しい名前", label)?.trim();
+    if (!next || next === label) return;
+    if (next === info.runLabel || info.runs.some((r) => r.label === next)) {
+      alert(`「${next}」はすでにあります。`);
+      return;
+    }
+    if (label === info.runLabel) {
+      app.updateInfo(selectedProduct.id, { runLabel: next });
+    } else {
+      app.updateInfo(selectedProduct.id, {
+        runs: info.runs.map((r) => (r.label === label ? { ...r, label: next } : r)),
+      });
+      app.setRunTab({ productId: selectedProduct.id, label: next });
+    }
+  };
+
   /**
    * 新しい「販売の回」を始める。
    * いまの 発売月・販売終了月・ビジュアル・チェック を丸ごと「終わった回」として残し、
@@ -1240,7 +1258,7 @@ export default function ProductSheetView({
         {/* 販売の回の切り替え。タスク画面と同じ場所・同じ見た目にそろえている */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
-          <RunTabs app={app} info={info} onAddRun={addRun} />
+          <RunTabs app={app} info={info} onAddRun={addRun} onRenameRun={renameRun} />
         </div>
 
         {viewingPast && <PastRunNotice label={run.viewingLabel} current={run.currentLabel} />}

@@ -560,6 +560,25 @@ export default function PrepTaskView({
     toggleTask(selectedProduct.id, key);
   };
 
+  /** 回の名前を変える。移行してきた「2025」のような名前を「2025 通常」に直すため */
+  const renameRun = (label: string) => {
+    if (!selectedProduct || !info) return;
+    const next = prompt("この回の新しい名前", label)?.trim();
+    if (!next || next === label) return;
+    if (next === info.runLabel || info.runs.some((r) => r.label === next)) {
+      alert(`「${next}」はすでにあります。`);
+      return;
+    }
+    if (label === info.runLabel) {
+      app.updateInfo(selectedProduct.id, { runLabel: next });
+    } else {
+      app.updateInfo(selectedProduct.id, {
+        runs: info.runs.map((r) => (r.label === label ? { ...r, label: next } : r)),
+      });
+      app.setRunTab({ productId: selectedProduct.id, label: next });
+    }
+  };
+
   /**
    * 新しい「回」を始める。
    *
@@ -768,7 +787,7 @@ export default function PrepTaskView({
             （2026年9月13日・松尾さんの指示） */}
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-stone-200 pt-2">
           <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
-          <RunTabs app={app} info={info} onAddRun={addRun} />
+          <RunTabs app={app} info={info} onAddRun={addRun} onRenameRun={renameRun} />
         </div>
       </div>
 

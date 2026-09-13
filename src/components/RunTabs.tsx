@@ -34,10 +34,13 @@ export default function RunTabs({
   app,
   info,
   onAddRun,
+  onRenameRun,
 }: {
   app: ReturnType<typeof useAppData>;
   info: ProductInfo;
   onAddRun: () => void;
+  /** いま選んでいる回の名前を変える */
+  onRenameRun: (label: string) => void;
 }) {
   const id = app.selectedProduct?.id ?? "";
   const { currentLabel, viewingLabel } = runView(app, info);
@@ -80,6 +83,16 @@ export default function RunTabs({
             </button>
           ))}
         </>
+      )}
+      {hasRuns && (
+        <button
+          type="button"
+          title="いま選んでいる回の名前を変える"
+          onClick={() => onRenameRun(viewingLabel)}
+          className={`rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-500 transition hover:border-amber-500 hover:text-amber-700 ${focusRing}`}
+        >
+          ✎ 名前
+        </button>
       )}
       <button
         type="button"
