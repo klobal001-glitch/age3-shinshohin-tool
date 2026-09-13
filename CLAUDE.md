@@ -553,7 +553,7 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 
 PDF上は10月1日の対象外だが、**2026年9月13日に松尾さんの指示で、ツールには先に反映した。**
 SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream／
-シャインマスカット＝Green Grape / Muscat Grape／アイスジャムいちご＝Strawberry Jam Ice Cream／
+シャインマスカット＝**Muscat Grape**／アイスジャムいちご＝Strawberry Jam Ice Cream／
 アイスチョコいちご＝Chocolate Strawberry Ice Cream／アイスチョコバナナ＝Chocolate Banana Ice Cream／
 旨辛焼肉＝Spicy Japanese BBQ Beef／旨辛チーズカレー＝Spicy Grilled Cheese Curry／
 旨辛ナポリタン＝Spicy Ketchup Spaghetti／抹茶ブリュレ＝Matcha Brûlée／
@@ -565,6 +565,12 @@ SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream�
 
 ⚠️ **旨辛チーズカレーの英語名は、PDFに「定番と同名になるため差別化が必要（例：Extra Spicy）」と
 注記がある。** いまは表の値どおり Spicy Grilled Cheese Curry にしてあるが、確定ではない。
+
+### PDFから変えた決定（PDFより新しい）
+
+- **シャインマスカット＝`Muscat Grape`**（2026年9月13日・松尾さんの決定）。
+  PDFは「Green Grape / Muscat Grape」の併記だったが、**併記はやめて Muscat Grape だけにする。**
+  これはPDFのルール変更なので、次にマスタを刷新するときはこちらが正。
 
 ## 伝票記載名のつけ方（2026年9月13日）
 
