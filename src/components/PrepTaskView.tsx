@@ -23,7 +23,14 @@ import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
 import { canSkipTask, isLinkedTaskDone, skipKey } from "@/lib/stats";
 import { PriceInput } from "./PriceInput";
 import { VisualLinkRow } from "./VisualLinkRow";
-import { UBER_RATE, autoUberPrice, effectiveUberPrice, formatYen } from "@/lib/productInfo";
+import {
+  UBER_RATE,
+  autoUberPrice,
+  createDefaultProductInfo,
+  effectiveUberPrice,
+  formatYen,
+} from "@/lib/productInfo";
+import RunTabs, { PastRunNotice, runView } from "./RunTabs";
 
 /** 並べ替え・絞り込みボタンの共通スタイル。実体は @/lib/ui の chip */
 const ctrlCls = chip;
@@ -532,26 +539,20 @@ export default function PrepTaskView({
     app;
   const [sortMode, setSortMode] = useState<"group" | "deadline">("group");
   const [hideCompleted, setHideCompleted] = useState(false);
-  /* 過去の年を見ているとき。商品を変えたら今の年に戻す */
-  const [taskYearTab, setTaskYearTab] = useState<{ id: string; year: string } | null>(null);
+
 
   const info = selectedProduct ? getInfo(selectedProduct.id) : null;
   const liveTaskState = selectedProduct ? getTaskState(selectedProduct.id) : {};
 
-  /* 準備タスクも年ごとに持てる（再販のため）。
-     「今の年ぶん」は task_state 側。締め切り・進捗の数え方はそちらだけを見る。
-     過去の年は情報シートの taskArchives に参照用として置いてある。 */
-  const taskYear = info?.taskYear ?? "";
-  const viewingTaskYear =
-    taskYearTab && selectedProduct && taskYearTab.id === selectedProduct.id
-      ? taskYearTab.year
-      : taskYear;
-  const taskArchive = info?.taskArchives.find((a) => a.year === viewingTaskYear) ?? null;
-  const viewingPastYear = !!taskArchive;
-  const taskState = taskArchive ? taskArchive.state : liveTaskState;
-  const releaseDate = info?.releaseDate ?? "";
-  const endDate = info?.endDate ?? "";
-  const ongoing = info?.ongoing ?? false;
+  /* 販売の回。「今の回」は task_state 側で、締め切り・進捗の数え方はそちらだけを見る。
+     終わった回は情報シートの runs に控えとして置いてある（見るだけ） */
+  const run = runView(app, info);
+  const viewingPastYear = run.viewingPast;
+  const taskState = run.past ? run.past.taskState : liveTaskState;
+  /* 発売月・販売終了月は「回」ごとに変わる。過去の回を見ているときはその回の日付を使う */
+  const releaseDate = run.past ? run.past.releaseDate : info?.releaseDate ?? "";
+  const endDate = run.past ? run.past.endDate : info?.endDate ?? "";
+  const ongoing = run.past ? run.past.ongoing : info?.ongoing ?? false;
 
   /** 過去の年を見ているときは触らせない（数に入らないため） */
   const toggle = (key: string) => {
@@ -560,62 +561,59 @@ export default function PrepTaskView({
   };
 
   /**
-   * 再販のとき、今年ぶんを空から始める。
-   * 前の年のチェックは「◯◯年」として残しておく（やった記録は消さない）。
+   * 新しい「回」を始める。
+   *
+   * 同じ商品を出し直すとき（来年ぶん・ハロウィン仕様など）に押す。
+   * いまの 発売月・販売終了月・ビジュアル・チェック を丸ごと「終わった回」として残し、
+   * 新しい回を空から始める。やった記録は消さない。
    */
-  const addTaskYear = () => {
+  const addRun = () => {
     if (!selectedProduct || !info) return;
-    const next = prompt("新しく始める年を入れてください（例: 2026）")?.trim();
+    const next = prompt("新しく始める回の名前（例: 2026 ハロウィン）")?.trim();
     if (!next) return;
-    if (next === taskYear || info.taskArchives.some((a) => a.year === next)) {
+    if (next === info.runLabel || info.runs.some((r) => r.label === next)) {
       alert(`「${next}」はすでにあります。`);
       return;
     }
-    let label = taskYear;
+    let label = info.runLabel;
     if (!label) {
-      label = prompt("いま入っているチェックは何年のものですか？（例: 2025）")?.trim() ?? "";
+      label =
+        prompt("いま入っている内容は、どの回のものですか？（例: 2026 通常）")?.trim() ?? "";
       if (!label) return;
     }
-    /* 再販には2つの入り方がある。
-       ① 前の年は売り終わっていて、今年はこれから … 前の年は「全部終わった」として残す
-       ② 今のチェックが前の年ぶん … それをそのまま残して、今年は空から始める
-       どちらかで残す中身が変わるので、ここで聞く */
-    const prevDone = confirm(
-      `${label} 年ぶんは、もう全部終わっていますか？\n\n` +
-        `［OK］  ${label} を「全部完了」として残します。\n` +
-        `　　　　いま付いているチェックは、そのまま ${next} 年ぶんになります。\n\n` +
-        `［キャンセル］いま付いているチェックを ${label} として残します。\n` +
-        `　　　　${next} のチェックは空から始まります。`
-    );
-    const allDone: Record<string, boolean> = { ...liveTaskState };
-    if (prevDone) {
-      for (const g of TASK_GROUPS) {
-        for (const m of g.milestones) {
-          for (const t of m.tasks) {
-            if (isSkipped(g.id, m.id, t)) continue;
-            if (t.linkedField) continue;
-            if (t.children && t.children.length > 0) {
-              for (const c of t.children) allDone[leafKey(g.id, m.id, t.id, c.id)] = true;
-            } else {
-              allDone[leafKey(g.id, m.id, t.id)] = true;
-            }
-          }
-        }
-      }
-    }
+    if (
+      !confirm(
+        `「${selectedProduct.name}」に ${next} を追加します。\n\n` +
+          `いまの 発売月・販売終了月・ビジュアル・チェック は「${label}」として残ります。\n` +
+          `${next} は空から始まります（品名・材料・価格・レシピ・紹介文はそのままです）。\n\n` +
+          "よろしいですか？"
+      )
+    )
+      return;
     app.updateInfo(selectedProduct.id, {
-      taskYear: next,
-      taskArchives: [
-        { year: label, state: prevDone ? allDone : liveTaskState },
-        ...info.taskArchives,
+      runLabel: next,
+      runs: [
+        {
+          label,
+          releaseDate: info.releaseDate,
+          endDate: info.endDate,
+          ongoing: info.ongoing,
+          visuals: info.visualDownloads,
+          taskState: liveTaskState,
+        },
+        ...info.runs,
       ],
+      releaseDate: "",
+      endDate: "",
+      ongoing: false,
+      visualDownloads: createDefaultProductInfo().visualDownloads,
     });
-    if (!prevDone) setProductTasks(selectedProduct.id, {});
-    setTaskYearTab(null);
+    setProductTasks(selectedProduct.id, {});
+    app.setRunTab(null);
   };
 
   const patchDates = (release: string, end: string) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || run.viewingPast) return;
     app.updateInfo(selectedProduct.id, { releaseDate: release, endDate: end });
   };
 
@@ -765,7 +763,18 @@ export default function PrepTaskView({
             </div>
           </div>
         </div>
+
+        {/* 販売の回。商品名のすぐ下に置いて、どの回を見ているかが常に分かるようにする
+            （2026年9月13日・松尾さんの指示） */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-stone-200 pt-2">
+          <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
+          <RunTabs app={app} info={info} onAddRun={addRun} />
+        </div>
       </div>
+
+      {run.viewingPast && (
+        <PastRunNotice label={run.viewingLabel} current={run.currentLabel} />
+      )}
 
       <div className={`overflow-hidden ${card}`}>
         <div className={`${cardHead} flex-wrap`}>
@@ -798,7 +807,7 @@ export default function PrepTaskView({
                 </span>
               </div>
             </div>
-          ) : info.releaseDate ? (
+          ) : releaseDate ? (
             <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
               <Icon name="check" className="h-4 w-4" />
               この商品の準備タスクはすべて完了しています。
@@ -811,13 +820,14 @@ export default function PrepTaskView({
               <input
                 type="month"
                 className={`${field} w-auto`}
-                value={info.releaseDate ? info.releaseDate.slice(0, 7) : ""}
-                onChange={(e) => patchDates(e.target.value ? `${e.target.value}-01` : "", info.endDate)}
+                disabled={run.viewingPast}
+                value={releaseDate ? releaseDate.slice(0, 7) : ""}
+                onChange={(e) => patchDates(e.target.value ? `${e.target.value}-01` : "", endDate)}
               />
             </label>
             <label className="text-sm">
               <span className="mb-1 block text-stone-500">販売終了月（G-5用）</span>
-              {info.ongoing ? (
+              {ongoing ? (
                 <span className="inline-block rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-700">
                   継続販売中
                 </span>
@@ -825,8 +835,9 @@ export default function PrepTaskView({
                 <input
                   type="month"
                   className={`${field} w-auto`}
-                  value={info.endDate ? info.endDate.slice(0, 7) : ""}
-                  onChange={(e) => patchDates(info.releaseDate, e.target.value ? `${e.target.value}-01` : "")}
+                  disabled={run.viewingPast}
+                  value={endDate ? endDate.slice(0, 7) : ""}
+                  onChange={(e) => patchDates(releaseDate, e.target.value ? `${e.target.value}-01` : "")}
                 />
               )}
             </label>
@@ -860,62 +871,10 @@ export default function PrepTaskView({
               </span>
             ))}
           </div>
-
-          {/* 再販のための年の切り替え。年を分けていない商品では「＋」だけ出す。
-              ビジュアル欄の年タブと同じ考え方（2026年9月13日・松尾さんの指示） */}
-          <div className="flex flex-wrap items-center gap-1.5 border-t border-stone-200 pt-3 print:hidden">
-            <span className="mr-1 text-xs text-stone-500">年</span>
-            {taskYear && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setTaskYearTab(null)}
-                  className={`rounded-lg border px-3 py-1.5 text-xs transition ${
-                    !viewingPastYear
-                      ? "border-amber-600 bg-amber-600 font-medium text-white"
-                      : "border-stone-300 text-stone-600 hover:bg-stone-50"
-                  }`}
-                >
-                  {taskYear}
-                  <span className={`ml-1.5 ${!viewingPastYear ? "text-amber-100" : "text-stone-400"}`}>
-                    今準備中
-                  </span>
-                </button>
-                {info.taskArchives.map((a) => (
-                  <button
-                    key={a.year}
-                    type="button"
-                    onClick={() => setTaskYearTab({ id: selectedProduct.id, year: a.year })}
-                    className={`rounded-lg border px-3 py-1.5 text-xs transition ${
-                      viewingTaskYear === a.year
-                        ? "border-stone-600 bg-stone-600 font-medium text-white"
-                        : "border-stone-300 text-stone-500 hover:bg-stone-50"
-                    }`}
-                  >
-                    {a.year}
-                  </button>
-                ))}
-              </>
-            )}
-            <button
-              type="button"
-              onClick={addTaskYear}
-              className="rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-amber-500 hover:text-amber-700"
-            >
-              ＋ 再販：今年ぶんを始める
-            </button>
-          </div>
-
-          {viewingPastYear && (
-            <p className="rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-600">
-              {viewingTaskYear} は過去のぶんです。見るだけで、チェックは変えられません。
-              締め切りの数や進捗は「{taskYear}」を見ています。
-            </p>
-          )}
         </div>
       </div>
 
-      {!info.releaseDate && (
+      {!releaseDate && (
         <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           <Icon name="alert" className="mt-0.5 h-4 w-4" />
           発売月を設定すると、各タスクの締め切りが自動計算されます。
@@ -955,7 +914,7 @@ export default function PrepTaskView({
                       key={m.id}
                       group={group}
                       milestone={m}
-                      deadline={computeDeadline(m.rule, info.releaseDate, info.endDate, info.ongoing)}
+                      deadline={computeDeadline(m.rule, releaseDate, endDate, ongoing)}
                       checked={mp.checked}
                       total={mp.total}
                       isChecked={(t, childId) => isLeafChecked(group.id, m.id, t, childId)}

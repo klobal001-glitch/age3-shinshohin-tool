@@ -24,6 +24,7 @@ import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
+import RunTabs, { PastRunNotice, runView } from "./RunTabs";
 import { badge, btn, focusRing, h3, muted } from "@/lib/ui";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
@@ -468,7 +469,6 @@ export default function ProductSheetView({
    * ビジュアルで見ている過去の年。null なら一番新しい年。
    * 商品を切り替えたときに前の商品の年が残らないよう、商品IDも一緒に持つ。
    */
-  const [visualYearTab, setVisualYearTab] = useState<{ id: string; year: string } | null>(null);
   /** 今どのセクションを見ているか。タブと見出しの両方を同じ色にするのに使う */
   const activeSection = useActiveSection(SECTION_IDS);
 
@@ -485,7 +485,21 @@ export default function ProductSheetView({
   const opt = optionalProgress(info, genre);
   const ing = ingredientsProgress(info);
 
-  const patch = (p: Partial<typeof info>) => updateInfo(selectedProduct.id, p);
+  const viewingPastRun =
+    !!app.runTab &&
+    app.runTab.productId === selectedProduct.id &&
+    app.runTab.label !== (info.runLabel || "");
+
+  const patch = (p: Partial<typeof info>) => {
+    /* 終わった回を見ているときは、回ごとに変わるもの（発売日・終了日・ビジュアル）は直せない。
+       品名・材料・価格・レシピ・紹介文は商品で1つなので、そのまま直せる */
+    if (
+      viewingPastRun &&
+      ("releaseDate" in p || "endDate" in p || "ongoing" in p || "visualDownloads" in p)
+    )
+      return;
+    updateInfo(selectedProduct.id, p);
+  };
 
   /* ---------------- 必須項目の一覧（点の表示と「次の未入力へ」で使う） --------------- */
 
@@ -624,25 +638,16 @@ export default function ProductSheetView({
    * visualDownloads が「一番新しい年（今準備している年）」で、必須の数え方・
    * カード画像・入力率はすべてそちらだけを見る。過去の年は参照用。
    */
-  const currentYear = info.visualYear;
-  const viewingYear =
-    visualYearTab && visualYearTab.id === selectedProduct.id ? visualYearTab.year : currentYear;
-  const archive = info.visualArchives.find((a) => a.year === viewingYear);
-  /* 過去の年を見ているときは、その年のリンクを出す */
-  const shownVisuals = archive ? archive.groups : info.visualDownloads;
-  const viewingPast = !!archive;
+  const run = runView(app, info);
+
+  /* 「販売の回」で切り替える。回ごとに変わるのは 発売月・販売終了月・ビジュアル・タスク。
+     品名・材料・価格・レシピ・紹介文は商品で1つ（ものは同じなので） */
+  const shownVisuals = run.past ? run.past.visuals : info.visualDownloads;
+  const viewingPast = run.viewingPast;
 
   const updateVisual = (key: string, links: string[]) => {
-    if (archive) {
-      patch({
-        visualArchives: info.visualArchives.map((a) =>
-          a.year === archive.year
-            ? { ...a, groups: a.groups.map((v) => (v.key === key ? { ...v, links } : v)) }
-            : a
-        ),
-      });
-      return;
-    }
+    /* 終わった回は見るだけ */
+    if (viewingPast) return;
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
     });
@@ -658,7 +663,7 @@ export default function ProductSheetView({
    * 過去の年を見ているときは触らせない（数に入らないため）。
    */
   const toggleVisualNa = (key: string, required: boolean) => {
-    if (archive) return;
+    if (viewingPast) return;
     patch({
       visualDownloads: info.visualDownloads.map((v) =>
         v.key === key ? { ...v, na: required } : v
@@ -670,25 +675,53 @@ export default function ProductSheetView({
    * 新しい年を作る。今の内容は過去の年として残し、新しい年は空から始める。
    * 前の年のリンクが残っていて古い画像を使ってしまう事故を避けるため。
    */
-  const addVisualYear = () => {
-    const next = prompt("新しく作る年を入れてください（例: 2026）")?.trim();
+  /**
+   * 新しい「販売の回」を始める。
+   * いまの 発売月・販売終了月・ビジュアル・チェック を丸ごと「終わった回」として残し、
+   * 新しい回を空から始める。品名・材料・価格・レシピ・紹介文はそのまま。
+   */
+  const addRun = () => {
+    const next = prompt("新しく始める回の名前（例: 2026 ハロウィン）")?.trim();
     if (!next) return;
-    if (next === currentYear || info.visualArchives.some((a) => a.year === next)) {
+    if (next === info.runLabel || info.runs.some((r) => r.label === next)) {
       alert(`「${next}」はすでにあります。`);
       return;
     }
-    let label = currentYear;
+    let label = info.runLabel;
     if (!label) {
       label =
-        prompt("いま入っているビジュアルは何年のものですか？（例: 2025）")?.trim() ?? "";
+        prompt("いま入っている内容は、どの回のものですか？（例: 2026 通常）")?.trim() ?? "";
       if (!label) return;
     }
-    patch({
-      visualYear: next,
+    if (
+      !confirm(
+        `「${selectedProduct.name}」に ${next} を追加します。\n\n` +
+          `いまの 発売月・販売終了月・ビジュアル・チェック は「${label}」として残ります。\n` +
+          `${next} は空から始まります（品名・材料・価格・レシピ・紹介文はそのままです）。\n\n` +
+          "よろしいですか？"
+      )
+    )
+      return;
+    app.updateInfo(selectedProduct.id, {
+      runLabel: next,
+      runs: [
+        {
+          label,
+          releaseDate: info.releaseDate,
+          endDate: info.endDate,
+          ongoing: info.ongoing,
+          visuals: info.visualDownloads,
+          taskState: app.getTaskState(selectedProduct.id),
+        },
+        ...info.runs,
+      ],
+      releaseDate: "",
+      endDate: "",
+      ongoing: false,
       visualDownloads: createDefaultProductInfo().visualDownloads,
-      visualArchives: [{ year: label, groups: info.visualDownloads }, ...info.visualArchives],
     });
-    setVisualYearTab(null);
+    app.setProductTasks(selectedProduct.id, {});
+    app.setRunTab(null);
   };
 
   /**
@@ -939,7 +972,8 @@ export default function ProductSheetView({
                 id="f-releaseDate"
                 type="date"
                 className={inputCls}
-                value={info.releaseDate}
+                disabled={viewingPast}
+                value={run.past ? run.past.releaseDate : info.releaseDate}
                 onChange={(e) => patch({ releaseDate: e.target.value })}
               />
             </Field>
@@ -947,7 +981,7 @@ export default function ProductSheetView({
           {showOptional() && (
             <Field label="販売終了日">
               {/* 日付の欄を先に置いて、左の「発売日」と高さを揃える */}
-              {info.ongoing ? (
+              {(run.past ? run.past.ongoing : info.ongoing) ? (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   継続販売中 — 販売終了日は設定しません
                 </div>
@@ -955,7 +989,8 @@ export default function ProductSheetView({
                 <input
                   type="date"
                   className={inputCls}
-                  value={info.endDate}
+                  disabled={viewingPast}
+                  value={run.past ? run.past.endDate : info.endDate}
                   onChange={(e) => patch({ endDate: e.target.value })}
                 />
               )}
@@ -963,7 +998,8 @@ export default function ProductSheetView({
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-amber-600"
-                  checked={info.ongoing}
+                  disabled={viewingPast}
+                  checked={run.past ? run.past.ongoing : info.ongoing}
                   onChange={(e) =>
                     patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })
                   }
@@ -1201,55 +1237,13 @@ export default function ProductSheetView({
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
 
-        {/* 年ごとに作り直す商品のための切り替え。年を分けていない商品では出さない */}
-        <div className="flex flex-wrap items-center gap-1.5 print:hidden">
-          {currentYear && (
-            <>
-              <button
-                type="button"
-                onClick={() => setVisualYearTab(null)}
-                className={`rounded-lg border px-3 py-1.5 text-xs transition ${
-                  !viewingPast
-                    ? "border-amber-600 bg-amber-600 font-medium text-white"
-                    : "border-stone-300 text-stone-600 hover:bg-stone-50"
-                }`}
-              >
-                {currentYear}
-                <span className={`ml-1.5 ${!viewingPast ? "text-amber-100" : "text-stone-400"}`}>
-                  今準備中
-                </span>
-              </button>
-              {info.visualArchives.map((a) => (
-                <button
-                  key={a.year}
-                  type="button"
-                  onClick={() => setVisualYearTab({ id: selectedProduct.id, year: a.year })}
-                  className={`rounded-lg border px-3 py-1.5 text-xs transition ${
-                    viewingYear === a.year
-                      ? "border-stone-600 bg-stone-600 font-medium text-white"
-                      : "border-stone-300 text-stone-500 hover:bg-stone-50"
-                  }`}
-                >
-                  {a.year}
-                </button>
-              ))}
-            </>
-          )}
-          <button
-            type="button"
-            onClick={addVisualYear}
-            className="rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-500 hover:border-amber-500 hover:text-amber-700"
-          >
-            ＋ 年を追加
-          </button>
+        {/* 販売の回の切り替え。タスク画面と同じ場所・同じ見た目にそろえている */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
+          <RunTabs app={app} info={info} onAddRun={addRun} />
         </div>
 
-        {viewingPast && (
-          <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">
-            {viewingYear} は過去のぶんです。直せますが、必須の数・入力率・ビジュアル一覧の画像には入りません
-            （それらは「{currentYear}」を見ています）。
-          </p>
-        )}
+        {viewingPast && <PastRunNotice label={run.viewingLabel} current={run.currentLabel} />}
 
         {shownVisuals
           .filter((v) =>
