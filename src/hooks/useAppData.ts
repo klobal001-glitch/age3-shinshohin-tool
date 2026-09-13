@@ -274,6 +274,34 @@ export function useAppData() {
     });
   }, []);
 
+  /**
+   * この商品の準備タスクをまとめて書き換える（1回の保存で終わらせる）。
+   *
+   * 1つずつチェックすると保存が商品1件につき数十回走って重いので、
+   * 「すべて完了にする」はここで作った表を丸ごと入れ替える。
+   * 「今回は作らない」の印（skip| で始まるキー）は消さずに引き継ぐこと。
+   */
+  const setProductTasks = useCallback((productId: string, data: TaskStateMap) => {
+    setTaskStateAll((prev) => ({ ...prev, [productId]: data }));
+    taskStateAllRef.current = { ...taskStateAllRef.current, [productId]: data };
+    hadErrorRef.current = false;
+    setSaveState("saving");
+    supabase
+      .from("task_state")
+      .upsert({ product_id: productId, data, updated_at: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) {
+          console.error("task_state の保存に失敗しました", error);
+          hadErrorRef.current = true;
+          setSaveState("error");
+          return;
+        }
+        setSaveState("saved");
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSaveState("idle"), 2500);
+      });
+  }, []);
+
   const resetProductInfo = useCallback(
     (productId: string) => {
       const product = products.find((p) => p.id === productId);
@@ -401,6 +429,7 @@ export function useAppData() {
     getTaskState,
     toggleTask,
     resetProductTasks,
+    setProductTasks,
     resetProductInfo,
     addProduct,
     renameProduct,
