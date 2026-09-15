@@ -51,6 +51,7 @@ WHITE  = (1, 1, 1)
 RED    = (0.784314, 0.211765, 0.168627)   # #C8362B 変更するもの
 GOLD   = (0.788235, 0.635294, 0.152941)   # #C9A227 印・罫
 NAVY   = (0.184314, 0.282353, 0.345098)   # #2F4858 和名維持
+RED_BG = (0.980392, 0.929412, 0.921569)   # #FAEDEB 注意の枠の地
 
 BADGE = {                                  # 変更区分 → （ラベル, 色）
     '和名維持':     ('和名維持',   NAVY),
@@ -85,9 +86,11 @@ DY_OLD, DY_NOTE, DY_FOOT = 44.34, 57.14, 77.00
 DY_BOX, DY_BOX_NO_OLD = 49.14, 36.84
 DY_BOX_LABEL, DY_BOX_BODY = 11.36, 23.60
 
+NOTICE_PAD, NOTICE_LH = 16.5, 11.6         # 注意の枠：ラベルぶんの高さと行送り
 TBL_PAD_X = 5.6693                         # 表の左右の内側余白
 CALLOUT_X = M + 14.1732                    # 囲みの中の文字の左
 WRAP_W = 490.0                             # 囲みの中の折り返し幅
+PAGE_LIMIT = 795.0                         # ここより下にはカードを置かない
 
 ASCENT = 0.8795                            # 字上端 → ベースライン（IPAゴシック）
 
@@ -316,23 +319,49 @@ class Words:
 
 
 # ── 1〜2ページ目・4ページ目のカード ────────────────────────────
-def draw_card(s, top, it, t=None):
+def card_parts(it, t=None):
+    """カードの中身と高さを先に決める（ページ割りにも使う）。"""
     # 海外版だけ名前が変わる商品がある（北海道あんバター → Anko & Butter）
     ov = it.get('overseas') if (t and t.lang != 'ja') else None
+    lang = t.lang if t else 'ja'
     has_desc = bool(it.get('desc_en'))
     en_name = ov['en'] if ov else it['en']
     old = it.get('old_en')
     show_old = bool(old and old != en_name)
-    foot = (ov.get('note_%s' % t.lang) or ov.get('note')) if ov else (
+    foot = (ov.get('note_%s' % lang) or ov.get('note')) if ov else (
         t.item(it, 'footnote') if t else it.get('footnote'))
+    notice = ov.get('notice') if ov else None
+    n_lines = notice['lines'].get(lang, notice['lines']['ja']) if notice else []
     # 「現行」の行と脚注が両方あると説明文の枠と重なるので、その分だけカードを伸ばす
     extra = 12.3 if (has_desc and show_old and foot) else 0
     h = (CARD_H_DESC + extra) if has_desc else CARD_H_PLAIN
+    if notice:
+        h += NOTICE_PAD + len(n_lines) * NOTICE_LH + 8.5
+    return dict(ov=ov, lang=lang, has_desc=has_desc, en_name=en_name, old=old,
+                show_old=show_old, foot=foot, notice=notice, n_lines=n_lines,
+                extra=extra, h=h)
+
+
+def card_height(it, t=None):
+    p = card_parts(it, t)
+    return p['h'] + (CARD_GAP_DESC if p['has_desc'] else CARD_GAP_PLAIN)
+
+
+def draw_card(s, top, it, t=None):
+    p = card_parts(it, t)
+    ov, has_desc, en_name = p['ov'], p['has_desc'], p['en_name']
+    old, show_old, foot, extra, h = p['old'], p['show_old'], p['foot'], p['extra'], p['h']
     s.rect(CARD_X, top, CARD_W, h, BEIGE, radius=8.5039)
 
     img_h = IMG_H_DESC if has_desc else IMG_H_PLAIN
+    img_bottom = top + (CARD_H_DESC + extra if has_desc else CARD_H_PLAIN) - IMG_BOTTOM_PAD
     if it.get('image'):
-        s.image(it['image'], IMG_CX, top + h - IMG_BOTTOM_PAD, img_h)
+        s.image(it['image'], IMG_CX, img_bottom, img_h)
+    if ov and ov.get('photo_changed'):   # 写真が変わったことを、写真の上に赤い印で出す
+        tag = ov['photo_tag'].get(p['lang'], ov['photo_tag']['ja'])
+        tw = w(tag, 6.5) + 11
+        s.rect(IMG_CX - tw / 2, img_bottom + 3.5, tw, 12.5, RED, radius=6.25)
+        s.text(IMG_CX, img_bottom + 12.2, tag, 6.5, WHITE, bold=True, align='center')
 
     genre_label = t('genre_label', 'ジャンル帯：') if t else 'ジャンル帯：'
     s.text(R, top + DY_GENRE, genre_label + it['genre'], 7, MUTED, align='right')
@@ -367,6 +396,16 @@ def draw_card(s, top, it, t=None):
         s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_BODY, it['desc_en'], 10, DARK, bold=True)
         if foot:
             s.text(BADGE_X, top + DY_FOOT + extra, foot, 7.5, MUTED)
+        if p['notice']:
+            n_top = box_top + BOX_H + 8.5
+            n_h = NOTICE_PAD + len(p['n_lines']) * NOTICE_LH
+            s.rect(BOX_X, n_top, BOX_W, n_h, RED_BG, radius=4.2520)
+            s.rect(BOX_X, n_top, BAR_W, n_h, RED, radius=2)
+            s.text(BOX_X + BOX_PAD_X, n_top + 11.4,
+                   p['notice']['label'].get(p['lang'], p['notice']['label']['ja']),
+                   7, RED, bold=True)
+            for i, line in enumerate(p['n_lines']):
+                s.text(BOX_X + BOX_PAD_X, n_top + 22.6 + i * NOTICE_LH, line, 8, DARK)
     else:
         note = t.item(it, 'note') if t else it.get('note')
         if ov:
@@ -427,10 +466,24 @@ def build_pdf(m, path, only_changes=False, lang='ja'):
     keep = [i for i in items if i['kind'] == '変更不要']
     reprint = [i for i in items if i['kind'] == '再販時に修正']
 
-    # 英語名変更のカードを2ページに割る（1ページ目は和名維持の下に入るだけ）
-    first_page = 5
-    pages_of_rename = [rename[:first_page], rename[first_page:]]
-    pages_of_rename = [p for p in pages_of_rename if p]
+    # 英語名変更のカードは、1ページ目に入るところまで入れて、残りを次のページへ送る。
+    # （カードが高くなる言語・商品があるので、高さを測って割る）
+    y = LEAD_Y
+    for line in [l for x in t('wamei_lead') for l in wrap(x, 9.5, CW)]:
+        y += LEAD_LH
+    y = LEAD_Y + (len(t('wamei_lead')) - 1) * LEAD_LH + 12.73
+    for it in wamei:
+        y += card_height(it, t)
+    y += 17.87 + LEAD_LH + 12.73                 # 2つめのリード文（2行）
+    pages_of_rename, cur = [], []
+    for it in rename:
+        if cur and y + card_parts(it, t)['h'] > PAGE_LIMIT:
+            pages_of_rename.append(cur)
+            cur, y = [], LEAD_Y + 10.33          # 次のページはリード文1行のあとから
+        cur.append(it)
+        y += card_height(it, t)
+    if cur:
+        pages_of_rename.append(cur)
     total = len(pages_of_rename) if only_changes else 2 + len(pages_of_rename)
 
     s = Sheet(path, t('pdf_title'))
