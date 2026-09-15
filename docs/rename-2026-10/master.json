@@ -463,6 +463,242 @@
             "en": "Scan with your phone",
             "th": "สแกนด้วยโทรศัพท์ของท่าน",
             "zh": "请用手机扫码"
+          },
+          "sheet": {
+            "_readme": "レシピ1枚の文言。海外版（en/th/zh）では、元のPDFの日本語を隠してこの言語で書き直す。英語の行はそのまま残すので「その言語＋英語」になる。英語版は英語だけ。",
+            "serve": {
+              "ja": "SWEETS 提供 / SERVE",
+              "en": "SWEETS / SERVE",
+              "th": "SWEETS เสิร์ฟ / SERVE",
+              "zh": "SWEETS 供应 / SERVE"
+            },
+            "title": "Anko & Butter",
+            "title_sub": "あんバター",
+            "sec1": {
+              "ja": "材料",
+              "en": "INGREDIENTS",
+              "th": "ส่วนผสม",
+              "zh": "材料"
+            },
+            "sec1_label": "INGREDIENTS",
+            "sec2": {
+              "ja": "作り方",
+              "en": "METHOD",
+              "th": "วิธีทำ",
+              "zh": "做法"
+            },
+            "sec2_label": "METHOD",
+            "per": {
+              "ja": "∕ 1個分 / per piece",
+              "en": "per piece",
+              "th": "ต่อ 1 ชิ้น / per piece",
+              "zh": "1个份 / per piece"
+            },
+            "ingredients": [
+              {
+                "name": {
+                  "ja": "揚げパン（半分）",
+                  "en": "Fried bread (half)",
+                  "th": "ขนมปังทอด (ครึ่งชิ้น)",
+                  "zh": "炸面包（半个）"
+                },
+                "qty": "1/2",
+                "unit": {
+                  "ja": "個",
+                  "en": "pc",
+                  "th": "ชิ้น",
+                  "zh": "个"
+                }
+              },
+              {
+                "name": {
+                  "ja": "ホイップ",
+                  "en": "Whipped cream",
+                  "th": "วิปครีม",
+                  "zh": "淡奶油"
+                },
+                "qty": "80",
+                "unit": {
+                  "ja": "g",
+                  "en": "g",
+                  "th": "g",
+                  "zh": "g"
+                }
+              },
+              {
+                "name": {
+                  "ja": "あんこ",
+                  "en": "Red bean paste",
+                  "th": "ถั่วแดงกวน",
+                  "zh": "红豆馅"
+                },
+                "qty": "50",
+                "unit": {
+                  "ja": "g",
+                  "en": "g",
+                  "th": "g",
+                  "zh": "g"
+                }
+              },
+              {
+                "name": {
+                  "ja": "バター（1/2カット）",
+                  "en": "Butter (half-cut pieces)",
+                  "th": "เนย (ตัดครึ่ง)",
+                  "zh": "黄油（切半）"
+                },
+                "qty": "3",
+                "unit": {
+                  "ja": "個",
+                  "en": "pc",
+                  "th": "ชิ้น",
+                  "zh": "个"
+                }
+              },
+              {
+                "name": {
+                  "ja": "塩",
+                  "en": "Salt",
+                  "th": "เกลือ",
+                  "zh": "盐"
+                },
+                "qty": "0.2",
+                "unit": {
+                  "ja": "g",
+                  "en": "g",
+                  "th": "g",
+                  "zh": "g"
+                }
+              }
+            ],
+            "steps": [
+              {
+                "text": {
+                  "ja": "揚げパンにホイップ（80g）を詰め、表面を平らにならす。",
+                  "en": "Fill the fried bread with whipped cream (80g) and level the surface.",
+                  "th": "ใส่วิปครีม (80 ก.) ลงในขนมปังทอด แล้วปาดหน้าให้เรียบ",
+                  "zh": "在炸面包中填入淡奶油（80g），把表面抹平。"
+                },
+                "point": {
+                  "ja": "側面にクリームをつけない。表面は平らにならす。",
+                  "en": "Keep cream off the sides and smooth the surface flat.",
+                  "th": "อย่าให้ครีมเลอะด้านข้าง และปาดหน้าให้เรียบ",
+                  "zh": "侧面不要沾到奶油。表面要抹平。"
+                }
+              },
+              {
+                "text": {
+                  "ja": "あんこ（50g）を平らに広げて乗せる。",
+                  "en": "Spread red bean paste (50g) flat on top.",
+                  "th": "วางถั่วแดงกวน (50 ก.) เกลี่ยให้เรียบด้านบน",
+                  "zh": "把红豆馅（50g）平铺在上面。"
+                },
+                "point": {
+                  "ja": "縁に白いホイップが見える幅を必ず残す。全面を覆わない。",
+                  "en": "Always leave white cream showing around the edge; do not cover the whole surface.",
+                  "th": "ต้องเหลือขอบให้เห็นวิปครีมสีขาวเสมอ อย่าปิดจนเต็มหน้า",
+                  "zh": "边缘务必留出能看见白色奶油的宽度。不要盖满整面。"
+                }
+              },
+              {
+                "text": {
+                  "ja": "1/2カットのバター3個を、菱形の向きで縦一列に並べる。",
+                  "en": "Set 3 half-cut butter pieces in a vertical line, turned diamond-wise.",
+                  "th": "วางเนยตัดครึ่ง 3 ชิ้น เรียงเป็นแถวแนวตั้ง หันด้านเป็นรูปข้าวหลามตัด",
+                  "zh": "把切半的黄油3块按菱形方向纵向排成一列。"
+                },
+                "point": {
+                  "ja": "必ずあんこの上に置く。ホイップの上に直接置くと、炙った時にクリームが溶ける。",
+                  "en": "Always place on the bean paste ― butter set on cream will melt the cream when torched.",
+                  "th": "ต้องวางบนถั่วแดงเท่านั้น ถ้าวางบนวิปครีมโดยตรง ครีมจะละลายตอนพ่นไฟ",
+                  "zh": "务必放在红豆馅上。直接放在奶油上，炙烤时奶油会融化。"
+                }
+              },
+              {
+                "text": {
+                  "ja": "バター部分だけをバーナーで炙り、少し溶かす。",
+                  "en": "Torch only the butter until it just starts to melt.",
+                  "th": "พ่นไฟเฉพาะส่วนเนย ให้ละลายเล็กน้อย",
+                  "zh": "只用喷枪炙烤黄油部分，使其略微融化。"
+                },
+                "point": {
+                  "ja": "遠火で角が丸くなる程度まで。溶かし切らない。",
+                  "en": "Torch from a distance until the corners round off; do not melt it fully.",
+                  "th": "พ่นจากระยะห่างจนมุมเนยมนเล็กน้อย อย่าให้ละลายจนหมด",
+                  "zh": "用远火烤到棱角变圆即可。不要完全融化。"
+                }
+              },
+              {
+                "text": {
+                  "ja": "塩（0.2g）を全体にふりかけて完成。",
+                  "en": "Sprinkle salt (0.2g) over the whole surface to finish.",
+                  "th": "โรยเกลือ (0.2 ก.) ให้ทั่วทั้งชิ้น เป็นอันเสร็จ",
+                  "zh": "在整体上撒盐（0.2g）即完成。"
+                },
+                "point": {
+                  "ja": "全体に薄く散らす。1か所に固めない。",
+                  "en": "Scatter thinly over the whole piece; do not concentrate it in one spot.",
+                  "th": "โรยบาง ๆ ให้ทั่ว อย่ากองไว้จุดเดียว",
+                  "zh": "薄薄地撒满整体。不要集中在一处。"
+                }
+              }
+            ],
+            "steps_label": {
+              "ja": "工程 / STEPS",
+              "en": "STEPS",
+              "th": "ขั้นตอน / STEPS",
+              "zh": "步骤 / STEPS"
+            },
+            "captions": [
+              {
+                "text": {
+                  "ja": "ホイップを詰める",
+                  "en": "Fill",
+                  "th": "ใส่วิปครีม",
+                  "zh": "填入奶油"
+                },
+                "en": "Fill"
+              },
+              {
+                "text": {
+                  "ja": "あんこを平らに乗せる",
+                  "en": "Anko",
+                  "th": "วางถั่วแดงให้เรียบ",
+                  "zh": "平铺红豆馅"
+                },
+                "en": "Anko"
+              },
+              {
+                "text": {
+                  "ja": "バター3個を並べる",
+                  "en": "Butter",
+                  "th": "เรียงเนย 3 ชิ้น",
+                  "zh": "排列3块黄油"
+                },
+                "en": "Butter"
+              },
+              {
+                "text": {
+                  "ja": "バターを炙る",
+                  "en": "Torch",
+                  "th": "พ่นไฟเนย",
+                  "zh": "炙烤黄油"
+                },
+                "en": "Torch"
+              }
+            ],
+            "finish_label": {
+              "ja": "完成基準 / FINISH STANDARD",
+              "en": "FINISH STANDARD",
+              "th": "เกณฑ์ความสำเร็จ / FINISH STANDARD",
+              "zh": "完成标准 / FINISH STANDARD"
+            },
+            "finish": {
+              "ja": "あんこの縁に白いホイップが見え、菱形のバター3個が縦に並んで表面が少し溶けている",
+              "en": "White cream visible around the bean paste; 3 diamond-set butter pieces in a line, lightly melted",
+              "th": "เห็นวิปครีมสีขาวรอบขอบถั่วแดง เนยรูปข้าวหลามตัด 3 ชิ้นเรียงแนวตั้ง และผิวหน้าละลายเล็กน้อย",
+              "zh": "红豆馅边缘可见白色奶油，3块菱形黄油纵向排列，表面略微融化"
+            }
           }
         }
       }

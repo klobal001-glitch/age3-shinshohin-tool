@@ -225,20 +225,25 @@ class Sheet:
         self.c.setSubject('商品名リネーム')
 
     # --- 描くもの -------------------------------------------------
-    def text(self, x, y, s, size, color=DARK, bold=False, align='left'):
+    def text(self, x, y, s, size, color=DARK, bold=False, align='left', track=0):
         if not s:
             return
+        width = w(s, size) + track * len(s)
         if align == 'right':
-            x -= w(s, size)
+            x -= width
         elif align == 'center':
-            x -= w(s, size) / 2
+            x -= width / 2
         self.c.setFillColorRGB(*color)
         for font, part in runs(s):     # 言語ごとにフォントが変わるので、かたまりごとに書く
             self.c.setFont(font, size)
-            self.c.drawString(x, self.ph - y, part)
+            self.c.drawString(x, self.ph - y, part, charSpace=track)
             if bold:                   # 太字を持たないフォントなので0.25ptずらして二度打ち
-                self.c.drawString(x + 0.25, self.ph - y, part)
-            x += pdfmetrics.stringWidth(part, font, size)
+                self.c.drawString(x + 0.25, self.ph - y, part, charSpace=track)
+            x += pdfmetrics.stringWidth(part, font, size) + track * len(part)
+
+    def circle(self, cx, cy, r, color):
+        self.c.setFillColorRGB(*color)
+        self.c.circle(cx, self.ph - cy, r, stroke=0, fill=1)
 
     def rect(self, x, y, width, height, color, radius=0):
         self.c.setFillColorRGB(*color)
@@ -289,6 +294,23 @@ class Sheet:
         self.c.save()
 
 
+# タイ語は母音記号・声調記号が前後の字に付くので、その境目では割らない
+TH_MARK = set(range(0x0E31, 0x0E32)) | set(range(0x0E34, 0x0E3B)) | set(range(0x0E47, 0x0E4F))
+TH_LEAD = set(range(0x0E40, 0x0E45))
+
+
+CJK_CLOSE = '。、，．）」』】・？！'     # これが行の頭に来ると読みにくい
+
+
+def _break_at(word, n):
+    """word を n 文字目で割ってよいか見て、だめなら前に戻す。"""
+    while n > 1 and (ord(word[n]) in TH_MARK or ord(word[n - 1]) in TH_LEAD):
+        n -= 1
+    if n < len(word) and word[n] in CJK_CLOSE:   # 句点は前の行にぶら下げる
+        n += 1
+    return n
+
+
 def wrap(s, size, width):
     """空白で区切って折り返し、空白のない和文のかたまりは幅のところで割る。"""
     lines, cur = [], ''
@@ -304,6 +326,7 @@ def wrap(s, size, width):
             n = 1
             while n < len(word) and w(word[:n + 1], size) <= width:
                 n += 1
+            n = _break_at(word, n)
             lines.append(word[:n])
             word = word[n:]
         cur = word
@@ -319,6 +342,157 @@ def find_recipe(m):
         if rec:
             return rec
     return None
+
+
+# ── レシピ1枚を、その言語＋英語にする ──────────────────────────
+# 元のPDF（日本語＋英語）の日本語のところを地の色で隠して、上から書き直す。
+# 位置・大きさ・色はすべて元のPDFから実測した値。写真と英語の行はそのまま残る。
+RC_DARK = (0.298, 0.2863, 0.2824)      # 本文
+RC_G47  = (0.4667, 0.4667, 0.4667)     # 小見出し・単位
+RC_G53  = (0.5333, 0.5333, 0.5333)     # 完成基準の帯
+RC_G60  = (0.6, 0.6, 0.6)              # 英語の添え書き
+RC_G66  = (0.6667, 0.6667, 0.6667)     # いちばん薄い補足
+RC_GOLD_TX   = (0.5412, 0.4784, 0.0)   # POINT の文字
+RC_GOLD_CHIP = (0.749, 0.6824, 0.0)    # POINT の印
+RC_BAND = (0.949, 0.949, 0.949)        # 01 / 02 の帯
+RC_DIV  = (0.9216, 0.9216, 0.9216)     # 材料の区切り線
+RC_FIN  = (0.9255, 0.9255, 0.9255)     # 完成基準の帯
+
+RC_L, RC_R = 39.0, 264.0               # 左の列
+RC_STEP_X, RC_PT_X = 61.51, 94.03      # 手順の文字・POINT の文字の左
+RC_ROW0, RC_PITCH = 231.75, 27.375     # 材料1行目と行の間隔
+RC_STEP_TOP, RC_STEP_END = 400.5, 728.0  # 手順の開始位置と、ここより下には置かない
+RC_CAP_CX = (353.4, 484.2)             # 工程の写真の中心（左・右）
+
+
+def localize_recipe(o, sheet, lang):
+    """レシピのページに重ねる紙へ、その言語の文字を書く。"""
+    en_only = (lang == 'en')
+    thick = 1.12 if lang == 'th' else 1.0       # タイ語は記号が上下に付くので行間を広げる
+
+    def t(d):
+        return d.get(lang, d.get('en')) if isinstance(d, dict) else d
+
+    # ── 日本語のところを地の色で隠す ──
+    o.rect(36, 96, 236, 636, WHITE)             # 左の列ぜんぶ
+    o.rect(288, 413, 97, 15, WHITE)             # 工程 / STEPS
+    o.rect(295, 517, 253, 15, WHITE)            # 工程の写真の見出し（上段）
+    o.rect(295, 619, 253, 15, WHITE)            # 〃（下段）
+    o.rect(39, 741, 517.5, 73.2, WHITE)         # 完成基準の帯（下の1行は残す）
+    o.rect(RC_L, 180.0, RC_R - RC_L + 8, 0.75, RC_DARK)   # 消した分の罫を引き直す
+
+    # ── 品名 ──
+    o.text(RC_L, 112.5, t(sheet['serve']), 9.0, RC_G47, track=1.5)
+    o.text(RC_L, 144.75, sheet['title'], 22.5, RC_DARK)
+    o.text(RC_L, 164.25, sheet['title_sub'], 10.5, RC_G60)
+
+    def band(top, num, name_d, label, right=None):
+        o.rect(RC_L, top, RC_R - RC_L, 24.75, RC_BAND)
+        y = top + 15.0
+        o.text(47.18, y, num, 12.25, RC_DARK, bold=True)
+        name = t(name_d)
+        o.text(65.75, y, name, 10.21, RC_DARK, bold=True)
+        if label.lower() != name.lower():       # 英語版は見出しと英語ラベルが重なるので出さない
+            o.text(65.75 + w(name, 10.21) + 4.12, y, label, 6.13, RC_G66)
+        if right:
+            o.text(258.1, y, right, 5.44, RC_G66, align='right')
+
+    # ── 01 材料 ──
+    band(191.25, '01', sheet['sec1'], sheet['sec1_label'], t(sheet['per']))
+    for i, ing in enumerate(sheet['ingredients']):
+        y = RC_ROW0 + i * RC_PITCH
+        o.text(RC_L, y, t(ing['name']), 8.51, RC_DARK)
+        if not en_only:
+            o.text(RC_L, y + 10.5, ing['name']['en'], 6.13, RC_G60)
+        unit, qty = t(ing['unit']), ing['qty']
+        gap = 0 if unit == 'g' else 1.5      # 「80g」は詰める。言葉の単位は少し空ける
+        x = RC_R - w(unit, 6.81) - w(qty, 9.53) - gap
+        o.text(x, y + 1.5, qty, 9.53, RC_DARK, bold=True)
+        o.text(x + w(qty, 9.53) + gap, y + 1.5, unit, 6.81, RC_G47)
+        if i < len(sheet['ingredients']) - 1:
+            o.rect(RC_L, y + 15.0, RC_R - RC_L, 0.75, RC_DIV)
+
+    # ── 02 作り方 ──
+    band(363.75, '02', sheet['sec2'], sheet['sec2_label'])
+
+    def steps(k, draw):
+        """手順を上から順に置く。入りきらないときは k を小さくしてやり直す。"""
+        main, main_lh = 8.17 * k, 12.0 * k * thick
+        en_s, en_lh = 6.13 * k, 7.5 * k
+        gold, gold_lh = 7.15 * k, 9.75 * k * thick
+        gen, gen_lh = 5.44 * k, 7.5 * k
+        top = RC_STEP_TOP
+        for i, st in enumerate(sheet['steps']):
+            if draw:
+                o.circle(46.5, top + 7.5, 7.5, RC_DARK)
+                o.text(46.5, top + 10.5, str(i + 1), 7.48, WHITE, align='center')
+            b = top + 9.75
+            for n, ln in enumerate(wrap(t(st['text']), main, RC_R - RC_STEP_X)):
+                if draw:
+                    o.text(RC_STEP_X, b + n * main_lh, ln, main, RC_DARK)
+                last = n
+            b += last * main_lh
+            if not en_only:
+                b += 9.75
+                for n, ln in enumerate(wrap(st['text']['en'], en_s, RC_R - RC_STEP_X)):
+                    if draw:
+                        o.text(RC_STEP_X, b + n * en_lh, ln, en_s, RC_G60)
+                    last = n
+                b += last * en_lh
+            chip = b + 3.72
+            if draw:
+                o.rect(61.5, chip, 27.7, 10.5, RC_GOLD_CHIP)
+                o.text(65.24, chip + 6.78, 'POINT', 5.44, WHITE, track=0.93)
+            b = chip + 5.28
+            for n, ln in enumerate(wrap(t(st['point']), gold, RC_R - RC_PT_X)):
+                if draw:
+                    o.text(RC_PT_X, b + n * gold_lh, ln, gold, RC_GOLD_TX)
+                last = n
+            b += last * gold_lh
+            if not en_only:
+                b += 9.0
+                for n, ln in enumerate(wrap(st['point']['en'], gen, RC_R - RC_PT_X)):
+                    if draw:
+                        o.text(RC_PT_X, b + n * gen_lh, ln, gen, RC_G66)
+                    last = n
+                b += last * gen_lh
+            top = b + 9.75
+        return top
+
+    k = 1.0
+    while k > 0.72 and steps(k, False) > RC_STEP_END:
+        k -= 0.02
+    steps(k, True)
+
+    # ── 工程の写真の見出しと説明 ──
+    o.text(293.75, 424.75, t(sheet['steps_label']), 8.25, RC_G53, track=1.5)
+    for i, cap in enumerate(sheet['captions']):
+        txt, en = t(cap['text']), cap['en']
+        parts = [('%d. %s' % (i + 1, txt), RC_DARK, True)]
+        if not en_only and txt != en:
+            parts.append((' ' + en, RC_G53, False))
+        size = 7.0
+        while size > 5.0 and sum(w(p_, size) for p_, _, _ in parts) > 126:
+            size -= 0.25
+        x = RC_CAP_CX[i % 2] - sum(w(p_, size) for p_, _, _ in parts) / 2
+        for p_, col, bold in parts:
+            o.text(x, 528.0 if i < 2 else 630.0, p_, size, col, bold=bold)
+            x += w(p_, size)
+
+    # ── 完成基準 ──
+    o.rect(RC_L, 742.5, 517.5, 68.25, RC_FIN)
+    o.text(55.49, 761.25, t(sheet['finish_label']), 8.25, RC_G53, track=1.2)
+    size, lines = 13.5, None
+    while True:
+        lines = wrap(t(sheet['finish']), size, 490.0)
+        if len(lines) <= 2 or size <= 9.5:
+            break
+        size -= 1.0
+    for n, ln in enumerate(lines):
+        o.text(55.49, 783.0 + n * 16.5, ln, size, RC_DARK)
+    if not en_only:
+        o.text(55.49, 783.0 + (len(lines) - 1) * 16.5 + 12.75,
+               sheet['finish']['en'], 8.25, RC_G53)
 
 
 def attach_recipe(path, rec, lang):
@@ -347,6 +521,8 @@ def attach_recipe(path, rec, lang):
     # 重ねる紙（レシピの右下の空きに置く）
     tmp = os.path.join(OUT, '_overlay.tmp.pdf')
     o = Sheet(tmp, 'overlay', size=(pw, ph))
+    if rec.get('sheet') and lang != 'ja':   # 日本語のところを、その言語で書き直す
+        localize_recipe(o, rec['sheet'], lang)
     bx, by, bw, bh = 292.0, 641.0, 264.0, 94.0
     o.rect(bx, by, bw, bh, BEIGE, radius=6)
     o.rect(bx, by, 4.2520, bh, GOLD, radius=2)
