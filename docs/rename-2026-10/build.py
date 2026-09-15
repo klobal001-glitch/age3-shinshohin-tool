@@ -141,14 +141,15 @@ class Sheet:
         self.c.drawImage(img, cx - width / 2, PH - bottom, width, height, mask='auto')
 
     # --- ページ ---------------------------------------------------
-    def page(self, meta, subtitle, num, total):
+    def page(self, meta, subtitle, num, total, show_page_num=True):
         self.rect(0, 0, PW, BAR_H, DARK)
         self.rect(0, BAR_H, PW, GOLD_H, GOLD)
         self.text(M, TITLE_Y, meta['title'], 14, WHITE, bold=True)
         self.text(M, SUB_Y, subtitle, 8.5, FAINT)
         self.text(R, SUB_Y, meta['header_right'], 8, FAINT, align='right')
         self.text(M, FOOT_Y, meta['footer'], 7.5, MUTED)
-        self.text(R, FOOT_Y, '%d / %d' % (num, total), 7.5, MUTED, align='right')
+        if show_page_num:
+            self.text(R, FOOT_Y, '%d / %d' % (num, total), 7.5, MUTED, align='right')
 
     def done(self):
         self.c.showPage()
