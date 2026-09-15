@@ -72,7 +72,7 @@ const seeds: Seed[] = [
   { id: "beniimo", name: "紅蜜芋ブリュレ", genre: "season", releaseDate: "2026-09-01" },
   { id: "fig", name: "いちじく", genre: "season", releaseDate: "2026-09-01" },
   { id: "halloween", name: "紅蜜芋ブリュレ（ハロウィン）", genre: "season" },
-  { id: "yangnyeom", name: "ヤンニョムチキン" },
+  { id: "yangnyeom", name: "ヤンニョムチキン（トッポッキ）" },
   { id: "currycheese", name: "旨辛チーズカレー", genre: "season", releaseDate: "2026-08-01" },
   { id: "napolitan", name: "旨辛ナポリタン", genre: "season", releaseDate: "2026-08-01" },
   { id: "yakiniku", name: "旨辛焼肉", genre: "season", releaseDate: "2026-08-01" },
