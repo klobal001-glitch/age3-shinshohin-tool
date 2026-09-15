@@ -682,6 +682,8 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 **⚠️ レシピの中の「北海道 / Hokkaido」も外す**（品名・材料名・手順の日英6か所）。
 `strip_hokkaido.py` が原本から `anko-butter_recipe_overseas.pdf` を作る。
 レシピを差し替えたら、このスクリプトを流し直してから build すること。
+レシピ右下の **「CONFIDENTIAL — DO NOT COPY」（＝機密・複製禁止）はそのまま残す**
+（2026年9月15日・松尾さんの確認済み）。海外に渡すときも外さない。
 
 資料側は `docs/rename-2026-10/master.json` の No.8 に `overseas` を持たせてあり、
 英語版・タイ語版・中国語版のPDFだけ自動で差し替わる。
