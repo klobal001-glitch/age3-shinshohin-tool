@@ -366,12 +366,20 @@
       "old_en": "Red bean Butter",
       "kind": "和名維持",
       "desc_en": "Sweet Japanese red bean paste & butter",
-      "remark": "日本固有の味のため和名維持。説明文必須",
+      "remark": "日本固有の味のため和名維持。説明文必須。海外は Anko & Butter（北海道産に限定できないため Hokkaido を外す）",
       "card_seq": 1,
       "image": "hokkaido-anko-and-butter.png",
       "hp": {
         "web_filename": "08_hokkaido-anko-and-butter.png",
         "dropbox_filename": "Hokkaido Anko & Butter3s.png"
+      },
+      "overseas": {
+        "en": "Anko & Butter",
+        "ja": "あんバター",
+        "note": "海外は北海道産に限定できないため Hokkaido を外す。写真はこの資料のものに差し替える。",
+        "note_en": "Overseas: Hokkaido is dropped, as Hokkaido azuki cannot be guaranteed. Use the photo shown here.",
+        "note_th": "ต่างประเทศ: ตัดคำว่า Hokkaido ออก เพราะระบุถั่วแดงฮอกไกโดไม่ได้ ใช้รูปตามที่แสดงไว้นี้",
+        "note_zh": "海外：无法保证使用北海道红豆，故去掉 Hokkaido。图片请改用本资料中的这张。"
       }
     },
     {

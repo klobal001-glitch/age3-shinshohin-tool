@@ -317,8 +317,17 @@ class Words:
 
 # ── 1〜2ページ目・4ページ目のカード ────────────────────────────
 def draw_card(s, top, it, t=None):
+    # 海外版だけ名前が変わる商品がある（北海道あんバター → Anko & Butter）
+    ov = it.get('overseas') if (t and t.lang != 'ja') else None
     has_desc = bool(it.get('desc_en'))
-    h = CARD_H_DESC if has_desc else CARD_H_PLAIN
+    en_name = ov['en'] if ov else it['en']
+    old = it.get('old_en')
+    show_old = bool(old and old != en_name)
+    foot = (ov.get('note_%s' % t.lang) or ov.get('note')) if ov else (
+        t.item(it, 'footnote') if t else it.get('footnote'))
+    # 「現行」の行と脚注が両方あると説明文の枠と重なるので、その分だけカードを伸ばす
+    extra = 12.3 if (has_desc and show_old and foot) else 0
+    h = (CARD_H_DESC + extra) if has_desc else CARD_H_PLAIN
     s.rect(CARD_X, top, CARD_W, h, BEIGE, radius=8.5039)
 
     img_h = IMG_H_DESC if has_desc else IMG_H_PLAIN
@@ -335,32 +344,33 @@ def draw_card(s, top, it, t=None):
     s.text(BADGE_X + BADGE_W / 2, top + DY_BADGE + 10.46, label, 7, WHITE,
            bold=True, align='center')
 
-    ja = '／ ' + it['ja'] if it['ja'] else ''
+    ja_name = ov.get('ja', it['ja']) if ov else it['ja']
+    ja = '／ ' + ja_name if ja_name else ''
     size = 12
     for cand in (12, 10, 9):             # 名前が長いときだけ落とす
         size = cand
-        if NAME_X + w(it['en'], cand) + JA_GAP + w(ja, 9) <= R:
+        if NAME_X + w(en_name, cand) + JA_GAP + w(ja, 9) <= R:
             break
-    s.text(NAME_X, top + DY_NAME, it['en'], size, DARK, bold=True)
-    s.text(NAME_X + w(it['en'], size) + JA_GAP, top + DY_JA, ja, 9, MUTED)
+    s.text(NAME_X, top + DY_NAME, en_name, size, DARK, bold=True)
+    s.text(NAME_X + w(en_name, size) + JA_GAP, top + DY_JA, ja, 9, MUTED)
 
-    old = it.get('old_en')
-    if old and old != it['en']:
+    if show_old:
         cur = t('current_label', '現行：') if t else '現行：'
         s.text(BADGE_X, top + DY_OLD, cur + old, 7.5, RED)
 
     if has_desc:
-        box_top = top + (DY_BOX if old and old != it['en'] else DY_BOX_NO_OLD)
+        box_top = top + (DY_BOX if show_old else DY_BOX_NO_OLD)
         s.rect(BOX_X, box_top, BOX_W, BOX_H, WHITE, radius=4.2520)
         s.rect(BOX_X, box_top, BAR_W, BOX_H, GOLD, radius=2)
         s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_LABEL,
                t('desc_label', '説明文') if t else '説明文', 7, GOLD, bold=True)
         s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_BODY, it['desc_en'], 10, DARK, bold=True)
-        foot = t.item(it, 'footnote') if t else it.get('footnote')
         if foot:
-            s.text(BADGE_X, top + DY_FOOT, foot, 7.5, MUTED)
+            s.text(BADGE_X, top + DY_FOOT + extra, foot, 7.5, MUTED)
     else:
         note = t.item(it, 'note') if t else it.get('note')
+        if ov:
+            note = ov.get('note_%s' % t.lang) or ov.get('note')
         if note:
             s.text(BADGE_X, top + DY_NOTE, note, 8, MUTED)
 

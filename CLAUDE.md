@@ -657,6 +657,14 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 | 黒蜜きなこ | Kuromitsu Kinako | Roasted soybean flour & brown sugar syrup |
 | 黒蜜たっぷりきなこ | Kuromitsu Extra Kinako | （黒蜜きなこと共通） |
 
+**⚠️ 海外店だけ「Hokkaido」を外す**（2026年9月15日・松尾さんの指示）。
+日本では北海道小豆を使えるが、**海外では産地を北海道に限定できない**ため、
+海外の媒体は **`Anko & Butter ／ あんバター`** と表記する。
+日本国内・公式HP・Excelのマスタは `Hokkaido Anko & Butter ／ 北海道あんバター` のまま。
+**写真（ビジュアル）は日本と同じものを使う。**
+資料側は `docs/rename-2026-10/master.json` の No.8 に `overseas` を持たせてあり、
+英語版・タイ語版・中国語版のPDFだけ自動で差し替わる。
+
 **説明文はメニュー・パネル側で使うもの。** ツールの「紹介文（英語）」は別物（長い紹介文）なので
 上書きしないこと。
 
