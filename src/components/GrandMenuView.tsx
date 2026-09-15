@@ -124,7 +124,7 @@ function FlyerViewer({
       <button
         type="button"
         onClick={onClose}
-        className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 ${focusRing}`}
+        className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-stone-900/75 text-white shadow-lg ring-1 ring-white/40 transition hover:bg-stone-900 ${focusRing}`}
         aria-label="閉じる"
       >
         <Icon name="close" className="h-5 w-5" />
@@ -137,7 +137,7 @@ function FlyerViewer({
               e.stopPropagation();
               onMove((index - 1 + list.length) % list.length);
             }}
-            className={`absolute left-3 flex h-12 w-12 rotate-180 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 ${focusRing}`}
+            className={`absolute left-3 flex h-12 w-12 rotate-180 items-center justify-center rounded-full bg-stone-900/70 text-white shadow-lg ring-1 ring-white/30 transition hover:bg-stone-900 ${focusRing}`}
             aria-label="前の面"
           >
             <Icon name="arrowRight" className="h-5 w-5" />
@@ -148,12 +148,12 @@ function FlyerViewer({
               e.stopPropagation();
               onMove((index + 1) % list.length);
             }}
-            className={`absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 ${focusRing}`}
+            className={`absolute right-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-900/70 text-white shadow-lg ring-1 ring-white/30 transition hover:bg-stone-900 ${focusRing}`}
             aria-label="次の面"
           >
             <Icon name="arrowRight" className="h-5 w-5" />
           </button>
-          <span className="absolute bottom-5 rounded-full bg-white/15 px-3 py-1 text-xs tabular-nums text-white">
+          <span className="absolute bottom-5 rounded-full bg-stone-900/70 px-3 py-1 text-xs tabular-nums text-white ring-1 ring-white/25">
             {index + 1} / {list.length}
           </span>
         </>
@@ -343,9 +343,10 @@ export default function GrandMenuView() {
                     <FlyerImages
                       links={d.links}
                       onOpen={(i) => setViewer({ id: row.id, index: i })}
-                      onRemove={(i) =>
-                        update(row.id, { links: d.links.filter((_, k) => k !== i) })
-                      }
+                      onRemove={(i) => {
+                        if (!confirm("この1枚を外します。よろしいですか？")) return;
+                        update(row.id, { links: d.links.filter((_, k) => k !== i) });
+                      }}
                     />
                     <input
                       className={field}
