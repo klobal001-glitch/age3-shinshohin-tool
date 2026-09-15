@@ -6,6 +6,7 @@
 | 作るもの | 中身 |
 | --- | --- |
 | `out/商品名リネーム（2026年10月 全店改変）.pdf` | 決裁用の4ページ（写真つきカード・変更不要の表・運用ルール・再販時の修正） |
+| `out/商品名リネーム 変更する商品（2026年10月 全店改変）.pdf` | 上の1〜2ページ目だけ＝名前が変わる13品（`python3 build.py --changes`）。海外に配る用 |
 | `out/商品名リネーム（2026年10月 全店改変）.xlsx` | 全55品の一覧（商品名マスタ＋凡例） |
 | `out/HP更新用マスタ（2026年10月）.md` | 公式HPに渡す36品ぶんの指示書 |
 | `out/商品名リネーム 修正のお知らせ（2026年9月15日）.pdf` | 変わったところだけを1枚にまとめた周知用（`python3 build_notice.py`） |
@@ -19,6 +20,7 @@
 cd docs/rename-2026-10
 pip install -r requirements.txt     # 最初の1回だけ
 python3 build.py                    # out/ に3点が出る
+python3 build.py --changes          # 名前が変わる13品だけの2ページ
 python3 build_notice.py             # 周知用の1枚（master.json の "notice"）
 ```
 

@@ -260,7 +260,8 @@ def draw_box(s, top, title, body, pad=13.65, min_h=0):
 
 
 # ── PDF ─────────────────────────────────────────────────────────
-def build_pdf(m, path):
+def build_pdf(m, path, only_changes=False):
+    """only_changes=True なら、名前が変わる商品の2ページだけを出す（海外に配る用）。"""
     items = m['items']
     meta, sec = m['meta'], m['sections']
     wamei = [i for i in items if i['kind'] == '和名維持']
@@ -274,7 +275,7 @@ def build_pdf(m, path):
     first_page = 5
     pages_of_rename = [rename[:first_page], rename[first_page:]]
     pages_of_rename = [p for p in pages_of_rename if p]
-    total = 2 + len(pages_of_rename)
+    total = len(pages_of_rename) if only_changes else 2 + len(pages_of_rename)
 
     s = Sheet(path, meta['pdf_title'])
 
@@ -298,6 +299,10 @@ def build_pdf(m, path):
         for it in group:
             y += draw_card(s, y, it)
         s.done()
+
+    if only_changes:
+        s.save()
+        return
 
     # 変更不要＋運用ルール ──────────────────────
     s.page(meta, sec['page3_subtitle'], total - 1, total)
@@ -448,6 +453,12 @@ def main():
     m = json.load(open(os.path.join(HERE, 'master.json'), encoding='utf-8'))
     os.makedirs(OUT, exist_ok=True)
     meta = m['meta']
+
+    if '--changes' in sys.argv:          # 名前が変わる商品だけの2ページ
+        pdf = os.path.join(OUT, meta['pdf_changes_filename'])
+        build_pdf(m, pdf, only_changes=True)
+        print('変更ぶんPDF:', os.path.basename(pdf))
+        return
 
     pdf = os.path.join(OUT, meta['pdf_filename'])
     build_pdf(m, pdf)
