@@ -1,0 +1,888 @@
+{
+  "_readme": "このファイルが元データ。直したら python3 build.py で PDF / xlsx / HP用md を作り直す。",
+  "meta": {
+    "pdf_filename": "商品名リネーム（2026年10月 全店改変）.pdf",
+    "xlsx_filename": "商品名リネーム（2026年10月 全店改変）.xlsx",
+    "md_filename": "HP更新用マスタ（2026年10月）.md",
+    "pdf_title": "商品名リネーム 2026年10月全店改変",
+    "title": "商品名リネーム ─ 和名は日本固有の味だけ、他はわかりやすく",
+    "policy": "方針：ものすごく和のものだけ和名を残す ／ それ以外はわかりやすい英語名に ／ 全品に英語説明文",
+    "header_right": "Age.3 国内全店・海外店　2026年10月改変",
+    "footer": "株式会社ANCHOR／Age.3　商品名リネーム（2026年10月 全店改変）　2026年9月 決裁済"
+  },
+  "sections": {
+    "wamei_lead": [
+      "和名を残すのは3品だけ。",
+      "あんバター・黒蜜きなこ（増し含む）は日本固有の味なので英語名でも和名を残し、説明文で中身を伝えます。"
+    ],
+    "rename_lead": [
+      "それ以外はわかりやすい英語名に変更（{n}品・{i}/{t}）。",
+      "説明文なしで名前だけで中身が伝わる形にします。日本語名は日本メニューの正式名称で、変更しません。"
+    ],
+    "rename_lead_cont": [
+      "わかりやすい英語名に変更（{n}品・{i}/{t}）。"
+    ],
+    "page2_subtitle": "わかりやすい英語名に変更（続き）",
+    "page3_subtitle": "変更不要の商品と、運用ルール",
+    "page3_table_title": "変更不要 ─ 名前だけで通じる商品（日本語名は変更なし）",
+    "page4_subtitle": "再販時の修正 ─ 現在販売していない商品は、再販する場合にこの名称へ変更する",
+    "page4_banner": "このページの商品は 10月1日の変更対象ではありません",
+    "page4_lead": "過去の限定商品・海外限定商品を再販する場合に、同じ基準（和名は日本固有の味だけ、他はわかりやすく）で以下の名称へ修正します。",
+    "page4_wamei_note": "Sakura は英語圏でも通じつつあり、和の象徴として残す価値があります。Anko は定番の Hokkaido Anko & Butter と表記を揃えます。"
+  },
+  "callouts": [
+    {
+      "title": "表記統一：Brûlée はアクセント付きで統一",
+      "body": "Crème Brûlée / Banana Brûlée（定番）、Matcha Brûlée / Purple Sweet Potato Brûlée（再販時）は全媒体でアクセント付き Brûlée に揃える。パネル・ポスター・サイネージのフォントに û・é が含まれるか事前に確認する。"
+    },
+    {
+      "title": "ジャンル帯の変更：Luxurious FRIED SANDWICH → Premium FRIED SANDWICH",
+      "body": "Luxurious は食品カテゴリには不自然。上位ラインを示す Premium に変更（10月1日変更対象）。"
+    }
+  ],
+  "rules_title": "運用ルール ─ 4つの原則",
+  "rules": [
+    {
+      "title": "① 和名を残すのは「日本固有の味」だけ",
+      "body": "あんバター・黒蜜きなこのように、英語に置き換えると味が別物になるものに限る。テリヤキ・焼きそば・焼肉など既に英語圏で通じる語はそのまま使ってよい。"
+    },
+    {
+      "title": "② それ以外は説明文なしで伝わる英語名",
+      "body": "「主材料＋味・調理法」で命名する（Ketchup Spaghetti + Egg、Sweet & Sour Chicken with Tartar）。名前を読んだだけで中身が分かることを基準にし、日本の料理名（Tsukimi・Namban・Yakiniku）は使わない。"
+    },
+    {
+      "title": "③ 説明文が必要なのは和名維持の3品だけ",
+      "body": "Hokkaido Anko & Butter・Kuromitsu Kinako は Sweet Japanese red bean paste & butter のように説明文で中身を補う。それ以外は説明文に頼らない。和製英語は例外なく直す。"
+    },
+    {
+      "title": "④ 産地名を表示する媒体には注記を入れる",
+      "body": "Hokkaido・石川県・宮崎県・青森県などの産地名が出る媒体（メニュー・チラシ・ポスター・パネル・サイネージ・Uber・公式サイト・Google ビジネスプロフィール）には、日本メニューと同じ注記を日英併記で入れる。／ ※一部の商品名では地域名を使用していますが、時期によっては産地が変更になる場合がございます。／ Certain products use regional names, but their origin may change depending on the season."
+    }
+  ],
+  "origin_note": {
+    "ja": "※一部の商品名では地域名を使用していますが、時期によっては産地が変更になる場合がございます。",
+    "en": "Certain products use regional names, but their origin may change depending on the season."
+  },
+  "legend": [
+    [
+      "変更区分",
+      "意味"
+    ],
+    [
+      "和名維持",
+      "日本固有の味。英語名に和名を残し、英語説明文で中身を伝える（10月1日変更対象）"
+    ],
+    [
+      "英語名変更",
+      "説明文なしで名前だけで伝わる英語名に変更（10月1日変更対象）"
+    ],
+    [
+      "変更不要",
+      "現行のままで通じる。海外店で表記が違う場合は日本に揃える"
+    ],
+    [
+      "再販時に修正",
+      "現在販売していない。再販する場合にこの英語名にする（10月1日変更対象外）"
+    ],
+    [
+      "",
+      ""
+    ],
+    [
+      "表記ルール",
+      "Brûlée はアクセント付きで統一（Crème Brûlée / Banana Brûlée / Matcha Brûlée / Purple Sweet Potato Brûlée）"
+    ],
+    [
+      "",
+      "No は日本メニューの番号。空欄は日本メニュー未掲載（海外店のみ・過去限定）"
+    ],
+    [
+      "",
+      "日本語名は変更なし。ジャンル帯は日本メニューの帯表記"
+    ],
+    [
+      "ジャンル帯の変更",
+      "Luxurious FRIED SANDWICH → Premium FRIED SANDWICH（10月1日変更対象。Luxurious は食品カテゴリに不自然なため）"
+    ],
+    [
+      "産地名の注記",
+      "Hokkaido・石川県・宮崎県・青森県などの産地名が表示される媒体（メニュー・チラシ・ポスター・パネル・サイネージ・Uber・公式サイト・Google ビジネスプロフィール）には、日英併記で以下の注記を入れる"
+    ],
+    [
+      "",
+      "※一部の商品名では地域名を使用していますが、時期によっては産地が変更になる場合がございます。"
+    ],
+    [
+      "",
+      "Certain products use regional names, but their origin may change depending on the season."
+    ]
+  ],
+  "hp": {
+    "title": "Age.3 公式HP メニュー更新用マスタ（2026年10月 全店改変）",
+    "intro": [
+      "対象：定番36品。このファイルに載っていない商品（過去限定・海外店限定）はHPに掲載しない",
+      "日本語名・英語名はこの表のとおりに反映する。表記の揺れ（全角/半角、スペース）もこの表を正とする",
+      "画像の元データは Dropbox の `regular` フォルダ。ファイル名は `英語名3s.png`（.psd は使わない、「使用しない」フォルダは無視）",
+      "Dropbox の `Anko & Butter3s.png` は使わない。No.8 は `Hokkaido Anko & Butter3s.png` を使う",
+      "Dropbox のファイル名はスペース・&・+・é を含みWeb用に不向きなので、`Web用ファイル名（zip）` 列のスラッグ名にリネームして使う（同梱 hp_images_2026-10.zip はリネーム済み。No.11 のみ Dropbox から `11_creme-brulee.png` として追加する）",
+      "ブランド表記はページ内すべて「Age.3」（「AGE.3」「age.3」にしない）",
+      "ジャンル帯「Luxurious FRIED SANDWICH」は「Premium FRIED SANDWICH」に変更",
+      "Brûlée はアクセント付きで統一（Crème Brûlée / Banana Brûlée）",
+      "産地名（北海道・石川県・宮崎県・青森県・Hokkaido）を表示するページには注記を入れる：",
+      "  ※一部の商品名では地域名を使用していますが、時期によっては産地が変更になる場合がございます。",
+      "  Certain products use regional names, but their origin may change depending on the season."
+    ],
+    "desc_section": "No.8 / 13 / 14 のみ英語名の下に説明文を表示する。13と14は同じ文。他の商品は説明文なし。",
+    "checklist": [
+      "36品すべての画像が表の「画像ファイル名（新）」と一致している",
+      "36品すべての日本語名が表と一致している",
+      "36品すべての英語名が表と一致している",
+      "No.8 / 13 / 14 に英語説明文が表示されている",
+      "ジャンル帯が Premium FRIED SANDWICH になっている",
+      "ページ内に「AGE.3」表記が残っていない",
+      "産地名の注記（日英）が表示されている",
+      "レイアウト・デザインは変更されていない"
+    ]
+  },
+  "items": [
+    {
+      "no": 1,
+      "group": "Sweets",
+      "genre": "Special Price",
+      "en": "Whipped Cream",
+      "ja": "ホイップ",
+      "old_en": "Whipped Cream",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "01_whipped-cream.png",
+        "dropbox_filename": "Whipped Cream3s.png"
+      }
+    },
+    {
+      "no": 2,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Strawberry Jam",
+      "ja": "ジャムいちご",
+      "old_en": "Jam Strawberry",
+      "kind": "英語名変更",
+      "note": "語順を修正。Whipped Cream カテゴリ内なので Blueberry 等と同じ命名で通じる",
+      "remark": "語順を修正",
+      "card_seq": 10,
+      "image": "strawberry-jam.png",
+      "hp": {
+        "web_filename": "02_strawberry-jam.png",
+        "dropbox_filename": "Strawberry Jam3s.png"
+      }
+    },
+    {
+      "no": 3,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Chocolate Strawberry",
+      "ja": "チョコいちご",
+      "old_en": "Chocolate Strawberry",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "03_chocolate-strawberry.png",
+        "dropbox_filename": "Chocolate Strawberry3s.png"
+      }
+    },
+    {
+      "no": 4,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Chocolate Banana",
+      "ja": "チョコバナナ",
+      "old_en": "Chocolate Banana",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "04_chocolate-banana.png",
+        "dropbox_filename": "Chocolate Banana3s.png"
+      }
+    },
+    {
+      "no": 5,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Mandarin Orange",
+      "ja": "生みかん",
+      "old_en": "Mandarin Orange",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "05_mandarin-orange.png",
+        "dropbox_filename": "Mandarin Orange3s.png"
+      }
+    },
+    {
+      "no": 6,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Blueberry",
+      "ja": "ブルーベリー",
+      "old_en": "Blueberry",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "06_blueberry.png",
+        "dropbox_filename": "Blueberry3s.png"
+      }
+    },
+    {
+      "no": 7,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Mango",
+      "ja": "マンゴー",
+      "old_en": "Mango",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "07_mango.png",
+        "dropbox_filename": "Mango3s.png"
+      }
+    },
+    {
+      "no": 8,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Hokkaido Anko & Butter",
+      "ja": "北海道あんバター",
+      "old_en": "Red bean Butter",
+      "kind": "和名維持",
+      "desc_en": "Sweet Japanese red bean paste & butter",
+      "remark": "日本固有の味のため和名維持。説明文必須",
+      "card_seq": 1,
+      "image": "hokkaido-anko-and-butter.png",
+      "hp": {
+        "web_filename": "08_hokkaido-anko-and-butter.png",
+        "dropbox_filename": "Hokkaido Anko & Butter3s.png"
+      }
+    },
+    {
+      "no": 9,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Caramel Biscuit",
+      "ja": "濃厚キャラメルビスケット",
+      "old_en": "Caramel Biscuit",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "09_caramel-biscuit.png",
+        "dropbox_filename": "Caramel Biscuit3s.png"
+      }
+    },
+    {
+      "no": 10,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Chestnut Cream",
+      "ja": "モンブラン",
+      "old_en": "Mont Blanc",
+      "kind": "英語名変更",
+      "note": "Mont Blanc では栗が伝わらないため",
+      "remark": "Mont Blanc では栗が伝わらない",
+      "card_seq": 12,
+      "image": "chestnut-cream.png",
+      "hp": {
+        "web_filename": "10_chestnut-cream.png",
+        "dropbox_filename": "Chestnut Cream3s.png"
+      }
+    },
+    {
+      "no": 11,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Crème Brûlée",
+      "ja": "クレームブリュレ",
+      "old_en": "Creme Brulee",
+      "kind": "変更不要",
+      "remark": "アクセント付き Brûlée で統一",
+      "hp": {
+        "web_filename": "11_creme-brulee.png",
+        "dropbox_filename": "Crème Brûlée3s.png"
+      }
+    },
+    {
+      "no": 12,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Candied Sweet Potato",
+      "ja": "大学芋",
+      "old_en": "Candied Sweet Potatos",
+      "kind": "英語名変更",
+      "note": "単数形 Potato に統一",
+      "remark": "単数形 Potato に統一",
+      "card_seq": 9,
+      "image": "candied-sweet-potato.png",
+      "hp": {
+        "web_filename": "12_candied-sweet-potato.png",
+        "dropbox_filename": "Candied Sweet Potato3s.png"
+      }
+    },
+    {
+      "no": 13,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Kuromitsu Kinako",
+      "ja": "黒蜜きなこ",
+      "old_en": "Kuromitsu Kinako",
+      "kind": "和名維持",
+      "desc_en": "Roasted soybean flour & brown sugar syrup",
+      "remark": "日本固有の味のため和名維持。説明文必須（Extra Kinako と共通）",
+      "card_seq": 2,
+      "image": "kuromitsu-kinako.png",
+      "hp": {
+        "web_filename": "13_kuromitsu-kinako.png",
+        "dropbox_filename": "Kuromitsu Kinako3s.png"
+      }
+    },
+    {
+      "no": 14,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Kuromitsu Extra Kinako",
+      "ja": "黒蜜たっぷりきなこ",
+      "old_en": "Kuromitsu Extra Kinako",
+      "kind": "和名維持",
+      "desc_en": "Roasted soybean flour & brown sugar syrup",
+      "remark": "説明文は Kuromitsu Kinako と共通",
+      "footnote": "説明文は黒蜜きなこと共通",
+      "card_seq": 3,
+      "image": "kuromitsu-extra-kinako.png",
+      "hp": {
+        "web_filename": "14_kuromitsu-extra-kinako.png",
+        "dropbox_filename": "Kuromitsu Extra Kinako3s.png"
+      }
+    },
+    {
+      "no": 15,
+      "group": "Sweets",
+      "genre": "Chocolate Cream",
+      "en": "Chocolate Cream Berry Nuts",
+      "ja": "チョコベリーナッツ",
+      "old_en": "Chocolate Cream Berry Nuts",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "15_chocolate-cream-berry-nuts.png",
+        "dropbox_filename": "Chocolate Cream Berry Nuts3s.png"
+      }
+    },
+    {
+      "no": 16,
+      "group": "Sweets",
+      "genre": "Chocolate Cream",
+      "en": "Chocolate Cream Strawberry",
+      "ja": "チョコクリームいちご",
+      "old_en": "Chocolate Cream Strawberry",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "16_chocolate-cream-strawberry.png",
+        "dropbox_filename": "Chocolate Cream Strawberry3s.png"
+      }
+    },
+    {
+      "no": 17,
+      "group": "Sweets",
+      "genre": "Chocolate Cream",
+      "en": "Chocolate Cream Banana",
+      "ja": "チョコクリームバナナ",
+      "old_en": "Chocolate Cream Banana",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "17_chocolate-cream-banana.png",
+        "dropbox_filename": "Chocolate Cream Banana3s.png"
+      }
+    },
+    {
+      "no": 18,
+      "group": "Sweets",
+      "genre": "Chocolate Cream",
+      "en": "Ganache",
+      "ja": "生チョコチョコ",
+      "old_en": "Ganache",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "18_ganache.png",
+        "dropbox_filename": "Ganache3s.png"
+      }
+    },
+    {
+      "no": 19,
+      "group": "Sweets",
+      "genre": "Matcha Cream",
+      "en": "Ganache Matcha",
+      "ja": "生チョコ抹茶",
+      "old_en": "Ganache Matcha",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "19_ganache-matcha.png",
+        "dropbox_filename": "Ganache Matcha3s.png"
+      }
+    },
+    {
+      "no": 20,
+      "group": "Sweets",
+      "genre": "Cheese Cream",
+      "en": "Honey Cheesecake Cream",
+      "ja": "はちみつレアチーズ",
+      "old_en": "Honey Rare Cheese",
+      "kind": "英語名変更",
+      "note": "和製英語 Rare cheese を Cheesecake に",
+      "remark": "Rare cheese は和製英語",
+      "card_seq": 8,
+      "image": "honey-cheesecake-cream.png",
+      "hp": {
+        "web_filename": "20_honey-cheesecake-cream.png",
+        "dropbox_filename": "Honey Cheesecake Cream3s.png"
+      }
+    },
+    {
+      "no": 21,
+      "group": "Sweets",
+      "genre": "Pistachio Cream",
+      "en": "Berry Pistachio",
+      "ja": "ベリーピスタチオ",
+      "old_en": "Berry Pistachio",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "21_berry-pistachio.png",
+        "dropbox_filename": "Berry Pistachio3s.png"
+      }
+    },
+    {
+      "no": 35,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Cinnamon Apple Pie",
+      "ja": "青森県 シナモンアップルパイ",
+      "old_en": "Cinnamon Apple Pie",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "35_cinnamon-apple-pie.png",
+        "dropbox_filename": "Cinnamon Apple Pie3s.png"
+      }
+    },
+    {
+      "no": 36,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Banana Brûlée",
+      "ja": "バナナブリュレ",
+      "old_en": "Banana Brulee",
+      "kind": "変更不要",
+      "remark": "アクセント付き Brûlée で統一",
+      "hp": {
+        "web_filename": "36_banana-brulee.png",
+        "dropbox_filename": "Banana Brûlée3s.png"
+      }
+    },
+    {
+      "no": 22,
+      "group": "Savory",
+      "genre": "Meat",
+      "en": "Teriyaki Burger + Egg",
+      "ja": "月見照り焼き",
+      "old_en": "Tsukimi Teriyaki",
+      "kind": "英語名変更",
+      "note": "Tsukimi を外し、パティと卵が名前で分かる形に",
+      "remark": "Tsukimi は英語圏に文化がない",
+      "card_seq": 4,
+      "image": "teriyaki-burger-plus-egg.png",
+      "hp": {
+        "web_filename": "22_teriyaki-burger-plus-egg.png",
+        "dropbox_filename": "Teriyaki Burger + Egg3s.png"
+      }
+    },
+    {
+      "no": 23,
+      "group": "Savory",
+      "genre": "Salad",
+      "en": "Potato Salad",
+      "ja": "たっぷりポテトサラダ",
+      "old_en": "Potato Salad",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "23_potato-salad.png",
+        "dropbox_filename": "Potato Salad3s.png"
+      }
+    },
+    {
+      "no": 24,
+      "group": "Savory",
+      "genre": "Salad",
+      "en": "Egg Salad",
+      "ja": "たっぷりたまごサラダ",
+      "old_en": "Egg Salad",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "24_egg-salad.png",
+        "dropbox_filename": "Egg Salad3s.png"
+      }
+    },
+    {
+      "no": 25,
+      "group": "Savory",
+      "genre": "Salad",
+      "en": "Tuna Mayonnaise",
+      "ja": "ツナマヨネーズ",
+      "old_en": "Tuna Mayonnaise",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "25_tuna-mayonnaise.png",
+        "dropbox_filename": "Tuna Mayonnaise3s.png"
+      }
+    },
+    {
+      "no": 26,
+      "group": "Savory",
+      "genre": "Japanese Cream Stew",
+      "en": "Grilled Cheesy Cream Stew",
+      "ja": "焼きチーズクリームシチュー",
+      "old_en": "Grilled Cheesy Cream Stew",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "26_grilled-cheesy-cream-stew.png",
+        "dropbox_filename": "Grilled Cheesy Cream Stew3s.png"
+      }
+    },
+    {
+      "no": 27,
+      "group": "Savory",
+      "genre": "Curry",
+      "en": "Grilled Keema Curry",
+      "ja": "焼きキーマカレー",
+      "old_en": "Grilled Keema Curry",
+      "kind": "変更不要",
+      "remark": "海外店の Grilled Cheese Curry（豆カレー）は別商品の可能性あり。要確認",
+      "hp": {
+        "web_filename": "27_grilled-keema-curry.png",
+        "dropbox_filename": "Grilled Keema Curry3s.png"
+      }
+    },
+    {
+      "no": 28,
+      "group": "Savory",
+      "genre": "Curry",
+      "en": "Hot! Grilled Keema Curry",
+      "ja": "激辛! 焼きキーマカレー",
+      "old_en": "Hot! Grilled Keema Curry",
+      "kind": "変更不要",
+      "remark": "海外店の Spicy Grilled Cheese Curry は別商品の可能性あり。要確認",
+      "hp": {
+        "web_filename": "28_hot-grilled-keema-curry.png",
+        "dropbox_filename": "Hot! Grilled Keema Curry3s.png"
+      }
+    },
+    {
+      "no": 29,
+      "group": "Savory",
+      "genre": "Noodles",
+      "en": "Ketchup Spaghetti + Egg",
+      "ja": "とろタマナポリタン",
+      "old_en": "Egg + Neapolitan",
+      "kind": "英語名変更",
+      "note": "Neapolitan を外し、味（ケチャップ）と具（卵）を名前に",
+      "remark": "Neapolitan は3色アイス・ナポリピザに誤解される",
+      "card_seq": 5,
+      "image": "ketchup-spaghetti-plus-egg.png",
+      "hp": {
+        "web_filename": "29_ketchup-spaghetti-plus-egg.png",
+        "dropbox_filename": "Ketchup Spaghetti + Egg3s.png"
+      }
+    },
+    {
+      "no": 30,
+      "group": "Savory",
+      "genre": "Noodles",
+      "en": "Ketchup Spaghetti + Egg, Extra Cheese",
+      "ja": "とろタマナポリタン 追いチーズ",
+      "old_en": "Egg + Neapolitan Extra Cheese",
+      "kind": "英語名変更",
+      "note": "通常版と対で変更",
+      "remark": "通常版と対で変更",
+      "card_seq": 6,
+      "image": "ketchup-spaghetti-plus-egg-extra-cheese.png",
+      "hp": {
+        "web_filename": "30_ketchup-spaghetti-plus-egg-extra-cheese.png",
+        "dropbox_filename": "Ketchup Spaghetti + Egg, Extra Cheese3s.png"
+      }
+    },
+    {
+      "no": 31,
+      "group": "Savory",
+      "genre": "Noodles",
+      "en": "Yakisoba Noodles + Egg",
+      "ja": "とろタマ焼きそば",
+      "old_en": "Egg + Fried Noodles",
+      "kind": "英語名変更",
+      "note": "Yakisoba だけでは不安が残るため Noodles を添え、麺だと分かる形に",
+      "remark": "Noodles を添えて麺だと分かる形に",
+      "card_seq": 11,
+      "image": "yakisoba-noodles-plus-egg.png",
+      "hp": {
+        "web_filename": "31_yakisoba-noodles-plus-egg.png",
+        "dropbox_filename": "Yakisoba Noodles + Egg3s.png"
+      }
+    },
+    {
+      "no": 32,
+      "group": "Savory",
+      "genre": "Premium FRIED SANDWICH",
+      "en": "Japanese BBQ Beef + Egg",
+      "ja": "石川県 旨だれ牛カルビ焼肉",
+      "old_en": "Beef Yakiniku",
+      "kind": "英語名変更",
+      "note": "Yakiniku は説明が要るため、BBQ Beef と卵を名前に",
+      "remark": "Yakiniku は説明が要る",
+      "card_seq": 13,
+      "image": "japanese-bbq-beef-plus-egg.png",
+      "hp": {
+        "web_filename": "32_japanese-bbq-beef-plus-egg.png",
+        "dropbox_filename": "Japanese BBQ Beef + Egg3s.png"
+      }
+    },
+    {
+      "no": 33,
+      "group": "Savory",
+      "genre": "Premium FRIED SANDWICH",
+      "en": "Sweet & Sour Chicken with Tartar",
+      "ja": "宮崎県 チキン南蛮",
+      "old_en": "Chicken Namban",
+      "kind": "英語名変更",
+      "note": "南蛮の特徴（甘酢＋タルタル）を名前で言い切る。別案：Tartar Fried Chicken",
+      "remark": "Namban は未知語。タルタルを名前に出す",
+      "card_seq": 7,
+      "image": "sweet-and-sour-chicken-with-tartar.png",
+      "hp": {
+        "web_filename": "33_sweet-and-sour-chicken-with-tartar.png",
+        "dropbox_filename": "Sweet & Sour Chicken with Tartar3s.png"
+      }
+    },
+    {
+      "no": 34,
+      "group": "Savory",
+      "genre": "Premium FRIED SANDWICH",
+      "en": "Grilled Cheese + Smoked Salmon",
+      "ja": "北海道 炙りチーズサーモン（スモークサーモン）",
+      "old_en": "Grilled Cheese + Smoked Salmon",
+      "kind": "変更不要",
+      "hp": {
+        "web_filename": "34_grilled-cheese-plus-smoked-salmon.png",
+        "dropbox_filename": "Grilled Cheese + Smoked Salmon3s.png"
+      }
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Lamington",
+      "ja": "（海外店のみ）",
+      "old_en": "Lamington",
+      "kind": "変更不要",
+      "remark": "豪州の菓子名",
+      "reprint_row": {
+        "ja": "ラミントン",
+        "note": "豪州の菓子名なのでそのまま"
+      }
+    },
+    {
+      "no": null,
+      "group": "Savory",
+      "genre": "Noodles",
+      "en": "Spicy Cod Roe Carbonara",
+      "ja": "明太カルボナーラ",
+      "old_en": "Mentai Carbonara",
+      "kind": "再販時に修正",
+      "note": "Mentai を英語に置き換え。別案：Cod Roe Carbonara (Mentaiko)",
+      "remark": "10月1日の変更対象外。別案：Cod Roe Carbonara (Mentaiko)",
+      "card_seq": 14,
+      "image": "spicy-cod-roe-carbonara.png"
+    },
+    {
+      "no": null,
+      "group": "Savory",
+      "genre": "Fish",
+      "en": "Fried Fish & Tartar",
+      "ja": "白身フライ",
+      "old_en": "Fish Fry",
+      "kind": "再販時に修正",
+      "note": "Fish Fry は英語として不自然。タルタルを名前に出す",
+      "remark": "10月1日の変更対象外",
+      "card_seq": 15,
+      "image": "fried-fish-and-tartar.png"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Chocolate Cream",
+      "en": "Mixed Berries Chocolate",
+      "ja": "（海外店限定）",
+      "old_en": "Mixed Berries Opera",
+      "kind": "再販時に修正",
+      "note": "Opera はケーキ名として通じにくいため Chocolate に",
+      "remark": "10月1日の変更対象外",
+      "card_seq": 16,
+      "image": "mixed-berries-chocolate.png"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Matcha Cream",
+      "en": "Sakura Matcha",
+      "ja": "SAKURA抹茶",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "desc_en": "Cherry blossom & matcha whipped cream",
+      "remark": "過去限定。和名維持"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Ice Cream",
+      "en": "Matcha Anko Ice Cream",
+      "ja": "アイス抹茶あんこ",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "desc_en": "Matcha ice cream & sweet red bean paste",
+      "remark": "過去限定。和名維持"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Purple Sweet Potato Brûlée",
+      "ja": "紅蜜芋ブリュレ",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "プレスリリースの英語表記そのままでOK",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Fig",
+      "ja": "いちじく",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Green Grape / Muscat Grape",
+      "ja": "シャインマスカット",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "英語圏では Shine Muscat の認知度が低い",
+      "remark": "過去限定。英語圏では Shine Muscat の認知度が低い"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Tiramisu",
+      "ja": "ティラミス",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Ice Cream",
+      "en": "Strawberry Jam Ice Cream",
+      "ja": "アイスジャムいちご",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "定番の Strawberry Jam と揃える",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Ice Cream",
+      "en": "Chocolate Strawberry Ice Cream",
+      "ja": "アイスチョコいちご",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Ice Cream",
+      "en": "Chocolate Banana Ice Cream",
+      "ja": "アイスチョコバナナ",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Savory",
+      "genre": "Meat",
+      "en": "Spicy Japanese BBQ Beef",
+      "ja": "旨辛焼肉",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "定番の Japanese BBQ Beef + Egg と揃える",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Savory",
+      "genre": "Curry",
+      "en": "Spicy Grilled Cheese Curry",
+      "ja": "旨辛チーズカレー",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "定番と同名になるため差別化が必要（例：Extra Spicy）",
+      "remark": "過去限定。定番と同名になるため差別化が必要"
+    },
+    {
+      "no": null,
+      "group": "Savory",
+      "genre": "Noodles",
+      "en": "Spicy Ketchup Spaghetti",
+      "ja": "旨辛ナポリタン",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "定番の Ketchup Spaghetti + Egg と揃える",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Mango & Almond Jelly",
+      "ja": "香港マンゴー杏仁豆腐",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "Almond Tofu は誤解されるため Jelly に",
+      "remark": "過去限定。Almond Tofu は誤解される"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Custard Whipped Cream",
+      "en": "Matcha Brûlée",
+      "ja": "抹茶ブリュレ",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "定番と同じ",
+      "remark": "過去限定"
+    },
+    {
+      "no": null,
+      "group": "Sweets",
+      "genre": "Whipped Cream",
+      "en": "Crêpe-Wrapped Fried Sandwich",
+      "ja": "ドレスクレープ",
+      "old_en": "",
+      "kind": "再販時に修正",
+      "note": "Dress Crêpe は意味が通らない",
+      "remark": "過去限定。Dress Crêpe は意味が通らない"
+    }
+  ]
+}
