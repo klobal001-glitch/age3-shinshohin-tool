@@ -92,6 +92,15 @@ Excel に無い項目（PDFの理由書き・写真・並び順・HP用のファ
 `master.json` の `overseas.recipe` で、どのPDFを足すか・どの動画のQRを重ねるかを決める。
 QRは `qrcode` で毎回作り直す。位置は `build.py` の `attach_recipe()`。
 
+- `anko-butter_recipe.pdf` … **日本用の原本**（レシピサイトの印刷用PDF）。触らない
+- `anko-butter_recipe_overseas.pdf` … **海外用**。`python3 strip_hokkaido.py` で原本から作る
+
+海外店は産地を北海道に限定できないので、レシピの中の「北海道 / Hokkaido」も外す
+（品名・材料名・手順の3か所・日英で計6か所）。`strip_hokkaido.py` はPDFの中の
+「文字を描く命令」を1文字ずつ拾って、その文字の命令だけを取り除く。
+文字送りの数値も一緒に消すので、**後ろが自動で詰まり、位置がずれない**。
+レシピを差し替えたら、このスクリプトを流し直してから `build.py` を打つこと。
+
 ## 写真
 
 `images/` に商品ごとのPNG（背景なし・高さ400px）。元は決裁済みPDFに入っていたものを取り出して、

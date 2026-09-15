@@ -679,6 +679,9 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 `docs/rename-2026-10/attach/anko-butter_recipe.pdf`（日英併記・レシピサイトの印刷用PDF）に、
 **作り方動画 https://youtu.be/KNrWLIq5Ad8 のQRコード**を重ねて足している。
 これが手順①の「レシピ共有」にあたる。日本語版（2ページ）には付けていない。
+**⚠️ レシピの中の「北海道 / Hokkaido」も外す**（品名・材料名・手順の日英6か所）。
+`strip_hokkaido.py` が原本から `anko-butter_recipe_overseas.pdf` を作る。
+レシピを差し替えたら、このスクリプトを流し直してから build すること。
 
 資料側は `docs/rename-2026-10/master.json` の No.8 に `overseas` を持たせてあり、
 英語版・タイ語版・中国語版のPDFだけ自動で差し替わる。
