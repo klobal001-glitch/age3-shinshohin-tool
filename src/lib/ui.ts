@@ -22,15 +22,21 @@
 export const focusRing =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/35 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
 
-/** 面。中身は自分で padding を付ける */
-export const card = "rounded-xl border border-stone-200 bg-white shadow-xs";
+/**
+ * 面。中身は自分で padding を付ける。
+ *
+ * 2026年9月14日、ホーム画面で試した見せ方を全画面に広げた（松尾さんの了承済み）。
+ * **枠線を引かず、白い面をうっすら浮かせる。** 線で囲むのをやめると、
+ * 同じ情報量でも画面が静かになる。角丸も大きくした（xl → 2xl）。
+ */
+export const card = "rounded-2xl bg-white shadow-sm";
 
-/** 面の見出し帯 */
+/** 面の見出し帯。区切りの線は残すが、うんと薄くする */
 export const cardHead =
-  "flex items-center gap-2.5 border-b border-stone-200 px-4 py-3.5 sm:px-5";
+  "flex items-center gap-2.5 border-b border-stone-100 px-5 py-4 sm:px-6";
 
 /** 面の中身 */
-export const cardBody = "p-4 sm:p-5";
+export const cardBody = "p-5 sm:p-6";
 
 /** 入力欄。高さと文字は globals.css 側でスマホだけ16pxにしている */
 export const field =
@@ -48,8 +54,8 @@ export type BtnTone = "primary" | "secondary" | "quiet" | "danger";
  */
 export function btn(tone: BtnTone = "secondary", extra = "") {
   const base =
-    `inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg ` +
-    `px-3.5 py-2 text-sm font-medium transition md:min-h-0 disabled:cursor-default ${focusRing}`;
+    `inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full ` +
+    `px-4 py-2 text-sm font-medium transition md:min-h-0 disabled:cursor-default ${focusRing}`;
   const tones: Record<BtnTone, string> = {
     primary:
       "bg-amber-700 text-white shadow-xs hover:bg-amber-800 active:bg-amber-900 disabled:bg-stone-300 disabled:shadow-none",
@@ -70,7 +76,7 @@ export function chip(active: boolean, extra = "", size: "md" | "sm" = "md") {
       ? "min-h-10 px-2.5 py-1 text-xs md:min-h-8"
       : "min-h-11 px-3 py-1.5 text-sm md:min-h-0";
   const base =
-    `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border ` +
+    `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border ` +
     `transition ${dim} ${focusRing}`;
   const state = active
     ? "border-amber-700 bg-amber-700 font-medium text-white shadow-xs"
@@ -114,8 +120,8 @@ export const scrollRow =
   "scroll-x-clean flex items-center gap-2 overflow-x-auto";
 
 /** 画面の見出し */
-export const h2 = "text-lg font-semibold text-stone-900";
-export const h3 = "text-base font-semibold text-stone-900";
+export const h2 = "text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl";
+export const h3 = "text-base font-semibold tracking-tight text-stone-900";
 /** 一覧の上に置く、小さな区切りの見出し */
 export const eyebrow = "text-xs font-medium tracking-wide text-stone-400";
 /** 補足の文章 */
