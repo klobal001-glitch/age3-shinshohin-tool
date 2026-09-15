@@ -674,7 +674,7 @@ PDF上は10月1日の対象外だが、**2026年9月13日に松尾さんの指�
 SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream／
 シャインマスカット＝**Muscat Grape**／アイスジャムいちご＝Strawberry Jam Ice Cream／
 アイスチョコいちご＝Chocolate Strawberry Ice Cream／アイスチョコバナナ＝Chocolate Banana Ice Cream／
-旨辛焼肉＝Spicy Japanese BBQ Beef／旨辛チーズカレー＝Spicy Grilled Cheese Curry／
+旨辛焼肉＝Spicy Japanese BBQ Beef／旨辛チーズカレー＝**Extra Spicy Grilled Cheese Curry**／
 旨辛ナポリタン＝Spicy Ketchup Spaghetti／抹茶ブリュレ＝Matcha Brûlée／
 明太カルボナーラ＝Spicy Cod Roe Carbonara／白身フライ＝Fried Fish & Tartar／
 ミックスベリーオペラ＝Mixed Berries Chocolate。
@@ -682,8 +682,16 @@ SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream�
 **ツールに無い商品**：香港マンゴー杏仁豆腐（Mango & Almond Jelly）／
 ドレスクレープ（Crêpe-Wrapped Fried Sandwich）／ラミントン（Lamington・海外店のみ）。
 
-⚠️ **旨辛チーズカレーの英語名は、PDFに「定番と同名になるため差別化が必要（例：Extra Spicy）」と
-注記がある。** いまは表の値どおり Spicy Grilled Cheese Curry にしてあるが、確定ではない。
+**旨辛チーズカレー＝`Extra Spicy Grilled Cheese Curry` に決まった**（2026年9月15日・松尾さんの決定）。
+元のPDFは `Spicy Grilled Cheese Curry` で、補足に「定番と同名になるため差別化が必要（例：Extra Spicy）」
+とあった。同名の相手は日本の定番ではなく**海外店のメニュー**（Excelの備考に
+「海外店の Spicy Grilled Cheese Curry は別商品の可能性あり。要確認」と残っている）。
+`docs/rename-2026-10/` の資料には反映済み。**⚠️ ツール側（Supabase の `nameEn`）はまだ
+`Spicy Grilled Cheese Curry` のまま**なので、次に商品データベースを触るときに直すこと。
+
+⚠️ **海外店の Grilled Cheese Curry（豆カレー）・Spicy Grilled Cheese Curry が別商品かどうかは
+未確認のまま。** 別商品だと確定すれば、定番の焼きキーマカレー（Grilled Keema Curry）側の
+表記も見直しが要るかもしれない。
 
 ### PDFから変えた決定（PDFより新しい）
 
