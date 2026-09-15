@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProductInfo } from "@/lib/types";
-import { isFullBleed, pickCardImage } from "@/lib/visualThumb";
+import { isFullBleed, pickProductThumb } from "@/lib/visualThumb";
 import { toThumbnailUrl } from "@/lib/imageUrl";
 
 /**
@@ -14,8 +14,9 @@ import { toThumbnailUrl } from "@/lib/imageUrl";
  * 88商品を名前だけで見分けるのは大変で、下までスクロールすると
  * 何の商品を開いているか分からなくなっていた。**絵は名前より早く分かる。**
  *
- * - 出す絵は ビジュアル一覧のカードと同じ選び方（`pickCardImage`）。
+ * - 出す絵は ビジュアル一覧のカードと同じ選び方（`pickProductThumb`）。
  *   Instagram画像 → 商品画像（背景なし）→ それ以外、の順。
+ *   今の回にまだ絵が無いときは、前の回の絵を使う（ものは同じなので）。
  * - **画像が無い商品では何も出さない。** 空の枠を置くと、名前の位置が
  *   商品ごとにずれて、かえって読みにくくなる。
  * - 読み込みに失敗したときも消す（リンク切れの灰色の四角を残さない）。
@@ -30,7 +31,7 @@ export default function ProductThumb({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const card = pickCardImage(info);
+  const card = pickProductThumb(info);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   if (!card) return null;
