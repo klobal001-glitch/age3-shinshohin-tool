@@ -8,6 +8,7 @@ import ProductSheetView from "@/components/ProductSheetView";
 import PrepTaskView from "@/components/PrepTaskView";
 import VisualGalleryView from "@/components/VisualGalleryView";
 import HelpView from "@/components/HelpView";
+import GrandMenuView from "@/components/GrandMenuView";
 import ProductSwitcher, { useRecentProducts } from "@/components/ProductSwitcher";
 import { useAppData } from "@/hooks/useAppData";
 import { useIsClient } from "@/hooks/useIsClient";
@@ -69,6 +70,7 @@ function AppShell() {
           {tab === "sheet" && <ProductSheetView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "tasks" && <PrepTaskView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "gallery" && <VisualGalleryView app={app} onNavigate={setTab} />}
+          {tab === "flyer" && <GrandMenuView />}
           {tab === "help" && <HelpView />}
         </main>
       </div>
