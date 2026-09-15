@@ -17,6 +17,7 @@ const NAV: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "sheet", icon: "sheet", label: "シート" },
   { key: "tasks", icon: "task", label: "タスク" },
   { key: "gallery", icon: "gallery", label: "ビジュアル" },
+  { key: "flyer", icon: "calendar", label: "チラシ" },
 ];
 
 /** シーズン以外の並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる

@@ -4,7 +4,7 @@ import Age3Logo from "@/components/Age3Logo";
 import Icon, { IconName } from "@/components/Icon";
 import { focusRing } from "@/lib/ui";
 
-export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "help";
+export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
 
 /**
  * このヘッダーはスマホ専用（PCでは左のサイドバーを使う）。
@@ -21,6 +21,7 @@ const TABS: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "sheet", icon: "sheet", label: "シート" },
   { key: "tasks", icon: "task", label: "タスク" },
   { key: "gallery", icon: "gallery", label: "ビジュアル" },
+  { key: "flyer", icon: "calendar", label: "チラシ" },
   { key: "help", icon: "help", label: "使い方" },
 ];
 
@@ -29,6 +30,7 @@ const SUBTITLES: Record<TabKey, string> = {
   sheet: "商品情報シート：空欄を埋めていく",
   tasks: "準備タスク：発売月から締め切りを自動計算",
   gallery: "ビジュアル一覧（Instagram 1枚目）",
+  flyer: "グランドメニュー：号ごとの配布日と入稿日",
   help: "使い方",
 };
 
@@ -44,7 +46,8 @@ export default function Header({
   onOpenSwitcher?: () => void;
 }) {
   /* ホームと使い方は商品に紐づかないので、商品名は出さない */
-  const showProduct = Boolean(productName) && activeTab !== "menu" && activeTab !== "help";
+  const showProduct =
+    Boolean(productName) && activeTab !== "menu" && activeTab !== "help" && activeTab !== "flyer";
 
   return (
     <>
@@ -83,7 +86,7 @@ export default function Header({
         aria-label="画面の切り替え"
         className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-rail/95 backdrop-blur print:hidden"
       >
-        <div className="mx-auto grid max-w-5xl grid-cols-5 px-1 pb-1 pt-1.5">
+        <div className="mx-auto grid max-w-5xl grid-cols-6 px-0.5 pb-1 pt-1.5">
           {TABS.map((t) => {
             const on = activeTab === t.key;
             return (
@@ -92,12 +95,14 @@ export default function Header({
                 type="button"
                 onClick={() => onChangeTab(t.key)}
                 aria-current={on ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 transition ${focusRing} ${
+                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-0.5 py-1.5 transition ${focusRing} ${
                   on ? "text-amber-700" : "text-stone-400 active:bg-stone-100"
                 }`}
               >
                 <Icon name={t.icon} className="h-5 w-5" strokeWidth={on ? 2 : 1.7} />
-                <span className={`text-xs leading-none ${on ? "font-semibold" : "font-medium"}`}>
+                <span
+                  className={`whitespace-nowrap text-xs leading-none ${on ? "font-semibold" : "font-medium"}`}
+                >
                   {t.label}
                 </span>
               </button>
