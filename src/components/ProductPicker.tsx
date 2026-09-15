@@ -5,6 +5,7 @@ import { GENRE_LABELS, Genre } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import Icon from "@/components/Icon";
+import ProductThumb from "@/components/ProductThumb";
 import { badge, btn, card, field, focusRing } from "@/lib/ui";
 
 const GENRE_OPTIONS: { value: Genre; label: string }[] = [
@@ -95,8 +96,10 @@ export default function ProductPicker({
         <button
           type="button"
           onClick={onOpenSwitcher}
-          className={`hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-lg font-semibold text-stone-900 transition hover:bg-stone-100 md:flex ${focusRing}`}
+          className={`hidden min-w-0 items-center gap-2.5 rounded-lg px-2 py-1 text-left text-lg font-semibold text-stone-900 transition hover:bg-stone-100 md:flex ${focusRing}`}
         >
+          {/* 絵は名前より早く分かる。画像が無い商品では出ない */}
+          <ProductThumb info={info} size="md" />
           <span className="min-w-0 truncate">{selectedProduct.name}</span>
           <span className="flex shrink-0 items-center gap-1 text-xs font-normal text-stone-500">
             商品を変える

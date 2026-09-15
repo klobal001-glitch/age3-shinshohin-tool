@@ -2,6 +2,8 @@
 
 import Age3Logo from "@/components/Age3Logo";
 import Icon, { IconName } from "@/components/Icon";
+import ProductThumb from "@/components/ProductThumb";
+import { ProductInfo } from "@/lib/types";
 import { focusRing } from "@/lib/ui";
 
 export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
@@ -38,11 +40,14 @@ export default function Header({
   activeTab,
   onChangeTab,
   productName,
+  productInfo,
   onOpenSwitcher,
 }: {
   activeTab: TabKey;
   onChangeTab: (t: TabKey) => void;
   productName?: string;
+  /** 商品の小さな絵を出すために使う。無ければ絵は出ない */
+  productInfo?: ProductInfo;
   onOpenSwitcher?: () => void;
 }) {
   /* ホームと使い方は商品に紐づかないので、商品名は出さない */
@@ -65,8 +70,9 @@ export default function Header({
             <button
               type="button"
               onClick={onOpenSwitcher}
-              className={`mt-2 flex min-h-11 w-full items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left shadow-xs transition active:bg-stone-50 ${focusRing}`}
+              className={`mt-2 flex min-h-11 w-full items-center gap-2.5 rounded-xl bg-white px-3 py-2 text-left shadow-sm transition active:bg-stone-50 ${focusRing}`}
             >
+              {productInfo && <ProductThumb info={productInfo} />}
               <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-900">
                 {productName}
               </span>

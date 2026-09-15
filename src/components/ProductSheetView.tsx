@@ -24,6 +24,7 @@ import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
+import ProductThumb from "@/components/ProductThumb";
 import RunTabs, { PastRunNotice, runView } from "./RunTabs";
 import { badge, btn, focusRing, h3, muted } from "@/lib/ui";
 
@@ -851,8 +852,9 @@ export default function ProductSheetView({
             type="button"
             onClick={onOpenSwitcher}
             /* 狭い画面では商品名だけで1行を使う。右に詰めると名前が1〜2文字に潰れる */
-            className={`flex min-w-0 basis-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
+            className={`flex min-w-0 basis-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
           >
+            <ProductThumb info={info} />
             <span className="min-w-0 truncate font-semibold text-stone-900">
               {selectedProduct.name}
             </span>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import Icon from "@/components/Icon";
+import ProductThumb from "@/components/ProductThumb";
 import {
   badge,
   btn,
@@ -743,8 +744,9 @@ export default function PrepTaskView({
           <button
             type="button"
             onClick={onOpenSwitcher}
-            className={`flex min-w-0 basis-full items-center gap-1.5 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
+            className={`flex min-w-0 basis-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-stone-100 sm:flex-1 sm:basis-auto ${focusRing}`}
           >
+            {info && <ProductThumb info={info} />}
             <span className="min-w-0 truncate text-sm font-semibold text-stone-900">
               {selectedProduct.name}
             </span>
