@@ -337,7 +337,7 @@ function MilestoneCard({
   const dl = diffLabel(daysDiffFromToday(deadline));
 
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xs">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
       <button
         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-3 text-left transition hover:bg-stone-50"
         onClick={() => setOpen((v) => !v)}
@@ -738,7 +738,7 @@ export default function PrepTaskView({
           という指摘で入れた（2026年9月13日・松尾さん）。
           スマホでは商品名だけで1行を使う。右に数字を詰めると名前が数文字に潰れて、
           結局どの商品か分からなくなるため。数字と棒は下の行にまとめる */}
-      <div className="sticky top-0 z-20 rounded-xl border border-stone-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur print:static print:bg-white print:shadow-none sm:px-4 sm:py-3">
+      <div className="sticky top-0 z-20 rounded-2xl bg-white/90 px-3 py-2.5 shadow-md backdrop-blur print:static print:bg-white print:shadow-none sm:px-4 sm:py-3">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <button
             type="button"
@@ -802,7 +802,7 @@ export default function PrepTaskView({
 
         <div className="space-y-4 p-4">
           {nextUp ? (
-            <div className="rounded-lg border border-stone-200 border-l-2 border-l-amber-600 bg-white p-3 shadow-xs">
+            <div className="rounded-xl border-l-4 border-l-amber-500 bg-amber-50 p-3 shadow-sm">
               <div className="text-xs font-medium text-amber-700">次にやること</div>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-sm font-semibold text-stone-800">
@@ -1042,7 +1042,7 @@ export default function PrepTaskView({
         </button>
       </div>
 
-      <p className={`rounded-lg border border-stone-200 bg-stone-50 p-3 ${muted}`}>
+      <p className={`px-1 pb-2 ${muted}`}>
         ※これは新商品1つ分の準備業務（G-1〜G-5）です。締め切りは発売月から自動計算した目安（前々月＝2か月前／前月＝1か月前）。G-5「販売終了後」は「販売終了月」を選ぶと月末の日付が出ます。チェックは共有データベースに自動保存され、チーム全員が同じ状態を見ます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
     </div>

@@ -350,7 +350,7 @@ export default function VisualGalleryView({
       )}
 
       {rows.length === 0 ? (
-        <p className="rounded-xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+        <p className="rounded-2xl bg-white p-10 text-center text-sm text-stone-500 shadow-sm">
           条件に合う商品がありません。絞り込みを変えてください。
         </p>
       ) : (

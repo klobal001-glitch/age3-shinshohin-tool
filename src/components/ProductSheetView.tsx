@@ -51,13 +51,14 @@ function Section({
   return (
     <section
       id={id}
-      className={`scroll-mt-4 overflow-hidden rounded-xl border bg-white transition-colors ${
-        active ? "border-amber-300 shadow-sm" : "border-stone-200 shadow-xs"
+      /* 枠線をやめて、影だけで浮かせる。今開いているセクションは橙の細い輪郭で示す */
+      className={`scroll-mt-4 overflow-hidden rounded-2xl bg-white transition-shadow ${
+        active ? "shadow-md ring-1 ring-amber-300" : "shadow-sm"
       }`}
     >
       <div
-        className={`flex items-center gap-2.5 border-b px-4 py-3.5 transition-colors sm:px-5 ${
-          active ? "border-amber-200 bg-amber-50" : "border-stone-200"
+        className={`flex items-center gap-2.5 border-b px-5 py-4 transition-colors sm:px-6 ${
+          active ? "border-amber-200 bg-amber-50" : "border-stone-100"
         }`}
       >
         <span
@@ -380,7 +381,7 @@ function PriceBlock({
   const isManual = uber !== null;
 
   return (
-    <div className="rounded-lg border border-stone-200 p-3">
+    <div className="rounded-xl bg-stone-50 p-3">
       <Field label={label} filled={filled}>
         {notSold ? (
           <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
@@ -838,8 +839,8 @@ export default function ProductSheetView({
 
       <div
         id="sheet-progress"
-        className={`sticky top-0 z-20 rounded-xl border p-3 shadow-sm backdrop-blur print:static print:bg-white print:shadow-none sm:p-4 ${
-          inactive ? "border-stone-200 bg-stone-100/90" : "border-stone-200 bg-white/90"
+        className={`sticky top-0 z-20 rounded-2xl p-3 shadow-md backdrop-blur print:static print:bg-white print:shadow-none sm:p-4 ${
+          inactive ? "bg-stone-100/90" : "bg-white/90"
         }`}
       >
         {/* 貼り付く帯なので、1行に収める。詳しい内訳は下の「入力の状況」に出す。
