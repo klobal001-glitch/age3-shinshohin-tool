@@ -55,3 +55,22 @@ export function pickCardImage(info: ProductInfo): CardImage | null {
 export function isFullBleed(card: CardImage): boolean {
   return card.key === "ig_feed";
 }
+
+/**
+ * 上の帯などに出す「商品の顔」。
+ *
+ * 今の回にまだビジュアルが入っていない商品（再販の準備中など）でも、
+ * **前の回の絵**を出す。ものは同じなので、絵が出ないより出たほうが分かる。
+ * runs は古い順に積まれているので、新しい回から順に探す。
+ */
+export function pickProductThumb(info: ProductInfo): CardImage | null {
+  const now = pickCardImage(info);
+  if (now) return now;
+  for (let i = info.runs.length - 1; i >= 0; i--) {
+    const visuals = info.runs[i]?.visuals;
+    if (!visuals || visuals.length === 0) continue;
+    const hit = pickCardImage({ ...info, visualDownloads: visuals });
+    if (hit) return hit;
+  }
+  return null;
+}
