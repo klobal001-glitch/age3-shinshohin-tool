@@ -688,10 +688,10 @@ SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream�
 ### PDFから変えた決定（PDFより新しい）
 
 - **シャインマスカット＝`Muscat Grape`**（2026年9月13日・松尾さんの決定）。
-  PDFは「Green Grape / Muscat Grape」の併記だったが、**併記はやめて Muscat Grape だけにする。**
-  これはPDFのルール変更なので、次にマスタを刷新するときはこちらが正。
-  **`docs/rename-2026-10/master.json` はまだPDFどおりの併記のまま**（決裁済の資料を勝手に
-  変えないため）。刷新するときは、ここを `Muscat Grape` にしてから作り直す。
+  元のPDFは「Green Grape / Muscat Grape」の併記だったが、**併記はやめて Muscat Grape だけにする。**
+  **2026年9月15日に松尾さんの指示で資料側にも反映済み**（`docs/rename-2026-10/master.json` →
+  作り直したPDF4ページ目・Excel）。手元の古いPDFには併記が残っているので、配るときは
+  `docs/rename-2026-10/out/` の新しいほうを使うこと。
 
 ## リネーム資料の作り直し（2026年9月15日）
 
