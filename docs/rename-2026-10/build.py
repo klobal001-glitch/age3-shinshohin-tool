@@ -28,13 +28,19 @@ PW, PH = 595.2756, 841.8898          # A4 縦
 M, R = 39.6850, 555.5906             # 左余白 14mm / 右端
 CW = R - M                           # 本文の幅
 
-FONT = 'JP'
+FONT = 'JP'                          # 日本語・英数字。元のPDFと同じ IPA Pゴシック
 FONT_CANDIDATES = [
     '/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf',   # IPA Pゴシック（元のPDFと同じ）
     '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf',
     '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc',
     '/Library/Fonts/Arial Unicode.ttf',
 ]
+# タイ語（Loma）は CFF なので reportlab が読めない。初回だけ TrueType に変換して .fontcache に置く。
+TH_CANDIDATES = ['/usr/share/fonts/opentype/tlwg/Loma.otf',
+                 '/usr/share/fonts/truetype/tlwg/Loma.ttf']
+ZH_CANDIDATES = [('/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', 0),
+                 ('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', 2)]
+FONTCACHE = os.path.join(HERE, '.fontcache')
 
 # ── 色 ──────────────────────────────────────────────────────────
 DARK   = (0.133333, 0.133333, 0.133333)   # #222222 文字・帯
@@ -95,10 +101,112 @@ def _find_font():
 
 
 pdfmetrics.registerFont(TTFont(FONT, _find_font()))
+_CMAP = {FONT: set(pdfmetrics.getFont(FONT).face.charToGlyph)}
+LANG = 'ja'                          # main() が言語を入れる
+
+
+def _otf_to_ttf(src, dst):
+    """CFF の OTF を TrueType に変換する（reportlab は CFF を読めないため）。"""
+    from fontTools.ttLib import TTFont as FT, newTable
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.pens.cu2quPen import Cu2QuPen
+    f = FT(src)
+    gs = f.getGlyphSet()
+    glyf = newTable('glyf')
+    glyf.glyphOrder = f.getGlyphOrder()
+    glyf.glyphs = {}
+    for name in f.getGlyphOrder():
+        pen = TTGlyphPen(gs)
+        gs[name].draw(Cu2QuPen(pen, 1.0, reverse_direction=True))
+        glyf.glyphs[name] = pen.glyph()
+    f['glyf'] = glyf
+    for g in glyf.glyphs.values():
+        g.recalcBounds(glyf)
+    f['loca'] = newTable('loca')
+    maxp = newTable('maxp')
+    maxp.tableVersion = 0x00010000
+    for k, v in dict(maxZones=1, maxTwilightPoints=0, maxStorage=0, maxFunctionDefs=0,
+                     maxInstructionDefs=0, maxStackElements=0, maxSizeOfInstructions=0,
+                     maxComponentElements=0, maxComponentDepth=0).items():
+        setattr(maxp, k, v)
+    f['maxp'] = maxp
+    maxp.recalc(f)
+    f['head'].indexToLocFormat = 0
+    f['head'].glyphDataFormat = 0
+    for t in ('CFF ', 'VORG'):
+        if t in f:
+            del f[t]
+    f.sfntVersion = '\000\001\000\000'
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    f.save(dst)
+
+
+def _register(name, path, index=None):
+    try:
+        pdfmetrics.registerFont(TTFont(name, path) if index is None
+                                else TTFont(name, path, subfontIndex=index))
+    except Exception:
+        return False
+    _CMAP[name] = set(pdfmetrics.getFont(name).face.charToGlyph)
+    return True
+
+
+def use_language(lang):
+    """必要な言語のフォントをそろえる。"""
+    global LANG
+    LANG = lang
+    if lang == 'th' and 'TH' not in _CMAP:
+        for src in TH_CANDIDATES:
+            if not os.path.exists(src):
+                continue
+            path = src
+            if src.endswith('.otf'):
+                path = os.path.join(FONTCACHE, 'Loma.ttf')
+                if not os.path.exists(path):
+                    _otf_to_ttf(src, path)
+            if _register('TH', path):
+                break
+        else:
+            sys.exit('タイ語フォントが見つかりません： apt-get install fonts-tlwg-loma-otf')
+    if lang == 'zh' and 'ZH' not in _CMAP:
+        for src, idx in ZH_CANDIDATES:
+            if os.path.exists(src) and _register('ZH', src, idx):
+                break
+        else:
+            sys.exit('中国語フォントが見つかりません： apt-get install fonts-wqy-zenhei')
+
+
+def font_of(ch):
+    """1文字ごとに使うフォントを決める（英数字はどの言語でも IPA ＝元の資料と同じ見た目）。"""
+    o = ord(ch)
+    if 0x0E00 <= o <= 0x0E7F and 'TH' in _CMAP:
+        return 'TH'
+    if LANG == 'zh' and o >= 0x2E80 and 'ZH' in _CMAP:
+        return 'ZH'
+    if o in _CMAP[FONT]:
+        return FONT
+    for name in ('ZH', 'TH'):
+        if name in _CMAP and o in _CMAP[name]:
+            return name
+    return FONT
+
+
+def runs(s):
+    """文字列を「同じフォントで書けるかたまり」に分ける。"""
+    out = []
+    for ch in s:
+        f = font_of(ch)
+        if out and out[-1][0] == f:
+            out[-1][1] += ch
+        else:
+            out.append([f, ch])
+    return out
 
 
 def w(s, size):
-    return pdfmetrics.stringWidth(s, FONT, size)
+    if not s:
+        return 0
+    return sum(pdfmetrics.stringWidth(t, f, size) for f, t in runs(s))
 
 
 class Sheet:
@@ -119,10 +227,12 @@ class Sheet:
         elif align == 'center':
             x -= w(s, size) / 2
         self.c.setFillColorRGB(*color)
-        self.c.setFont(FONT, size)
-        self.c.drawString(x, PH - y, s)
-        if bold:                       # 太字を持たないフォントなので0.25ptずらして二度打ち
-            self.c.drawString(x + 0.25, PH - y, s)
+        for font, part in runs(s):     # 言語ごとにフォントが変わるので、かたまりごとに書く
+            self.c.setFont(font, size)
+            self.c.drawString(x, PH - y, part)
+            if bold:                   # 太字を持たないフォントなので0.25ptずらして二度打ち
+                self.c.drawString(x + 0.25, PH - y, part)
+            x += pdfmetrics.stringWidth(part, font, size)
 
     def rect(self, x, y, width, height, color, radius=0):
         self.c.setFillColorRGB(*color)
@@ -181,8 +291,32 @@ def wrap(s, size, width):
     return lines or ['']
 
 
+# ── 言語ごとの文言 ──────────────────────────────────────────────
+class Words:
+    """master.json の i18n から文言を取る。無ければ日本語に戻す。"""
+
+    def __init__(self, m, lang):
+        self.lang = lang
+        self.d = {} if lang == 'ja' else m.get('i18n', {}).get(lang, {})
+        self.ja = dict(m['meta'], **m['sections'])
+
+    def __call__(self, key, default=None):
+        if key in self.d:
+            return self.d[key]
+        if key in self.ja:
+            return self.ja[key]
+        return default
+
+    def badge(self, kind):
+        return self.d.get('badge', {}).get(kind, BADGE[kind][0])
+
+    def item(self, it, key):
+        """note / footnote は商品ごとに note_en のような形で持っている。"""
+        return it.get('%s_%s' % (key, self.lang), it.get(key) if self.lang == 'ja' else '')
+
+
 # ── 1〜2ページ目・4ページ目のカード ────────────────────────────
-def draw_card(s, top, it):
+def draw_card(s, top, it, t=None):
     has_desc = bool(it.get('desc_en'))
     h = CARD_H_DESC if has_desc else CARD_H_PLAIN
     s.rect(CARD_X, top, CARD_W, h, BEIGE, radius=8.5039)
@@ -191,9 +325,12 @@ def draw_card(s, top, it):
     if it.get('image'):
         s.image(it['image'], IMG_CX, top + h - IMG_BOTTOM_PAD, img_h)
 
-    s.text(R, top + DY_GENRE, 'ジャンル帯：' + it['genre'], 7, MUTED, align='right')
+    genre_label = t('genre_label', 'ジャンル帯：') if t else 'ジャンル帯：'
+    s.text(R, top + DY_GENRE, genre_label + it['genre'], 7, MUTED, align='right')
 
     label, color = BADGE[it['kind']]
+    if t:
+        label = t.badge(it['kind'])
     s.rect(BADGE_X, top + DY_BADGE, BADGE_W, BADGE_H, color, radius=2.8346)
     s.text(BADGE_X + BADGE_W / 2, top + DY_BADGE + 10.46, label, 7, WHITE,
            bold=True, align='center')
@@ -209,27 +346,33 @@ def draw_card(s, top, it):
 
     old = it.get('old_en')
     if old and old != it['en']:
-        s.text(BADGE_X, top + DY_OLD, '現行：' + old, 7.5, RED)
+        cur = t('current_label', '現行：') if t else '現行：'
+        s.text(BADGE_X, top + DY_OLD, cur + old, 7.5, RED)
 
     if has_desc:
         box_top = top + (DY_BOX if old and old != it['en'] else DY_BOX_NO_OLD)
         s.rect(BOX_X, box_top, BOX_W, BOX_H, WHITE, radius=4.2520)
         s.rect(BOX_X, box_top, BAR_W, BOX_H, GOLD, radius=2)
-        s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_LABEL, '説明文', 7, GOLD, bold=True)
+        s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_LABEL,
+               t('desc_label', '説明文') if t else '説明文', 7, GOLD, bold=True)
         s.text(BOX_X + BOX_PAD_X, box_top + DY_BOX_BODY, it['desc_en'], 10, DARK, bold=True)
-        if it.get('footnote'):
-            s.text(BADGE_X, top + DY_FOOT, it['footnote'], 7.5, MUTED)
-    elif it.get('note'):
-        s.text(BADGE_X, top + DY_NOTE, it['note'], 8, MUTED)
+        foot = t.item(it, 'footnote') if t else it.get('footnote')
+        if foot:
+            s.text(BADGE_X, top + DY_FOOT, foot, 7.5, MUTED)
+    else:
+        note = t.item(it, 'note') if t else it.get('note')
+        if note:
+            s.text(BADGE_X, top + DY_NOTE, note, 8, MUTED)
 
     return h + (CARD_GAP_DESC if has_desc else CARD_GAP_PLAIN)
 
 
 def draw_lead(s, y, lines, size=9.5, color=DARK):
-    for i, line in enumerate(lines):
+    flat = [l for line in lines for l in wrap(line, size, CW)]   # 念のため折り返す
+    for i, line in enumerate(flat):
         s.text(M, y + i * LEAD_LH, line, size, color)
     # リード文の下に置くものの上端
-    return y + (len(lines) - 1) * LEAD_LH + (12.73 if len(lines) > 1 else 10.33)
+    return y + (len(flat) - 1) * LEAD_LH + (12.73 if len(flat) > 1 else 10.33)
 
 
 # ── 表 ──────────────────────────────────────────────────────────
@@ -260,10 +403,13 @@ def draw_box(s, top, title, body, pad=13.65, min_h=0):
 
 
 # ── PDF ─────────────────────────────────────────────────────────
-def build_pdf(m, path, only_changes=False):
+def build_pdf(m, path, only_changes=False, lang='ja'):
     """only_changes=True なら、名前が変わる商品の2ページだけを出す（海外に配る用）。"""
+    use_language(lang)
+    t = Words(m, lang)
     items = m['items']
     meta, sec = m['meta'], m['sections']
+    head = {'title': t('title'), 'header_right': t('header_right'), 'footer': t('footer')}
     wamei = [i for i in items if i['kind'] == '和名維持']
     rename = sorted([i for i in items if i['kind'] == '英語名変更'],
                     key=lambda i: i.get('card_seq', 999))
@@ -277,27 +423,27 @@ def build_pdf(m, path, only_changes=False):
     pages_of_rename = [p for p in pages_of_rename if p]
     total = len(pages_of_rename) if only_changes else 2 + len(pages_of_rename)
 
-    s = Sheet(path, meta['pdf_title'])
+    s = Sheet(path, t('pdf_title'))
 
     # 1ページ目 ────────────────────────────────
-    s.page(meta, meta['policy'], 1, total)
-    y = draw_lead(s, LEAD_Y, sec['wamei_lead'])
+    s.page(head, t('policy'), 1, total)
+    y = draw_lead(s, LEAD_Y, t('wamei_lead'))
     for it in wamei:
-        y += draw_card(s, y, it)
+        y += draw_card(s, y, it, t)
     n = len(rename)
-    lead = [l.format(n=n, i=1, t=len(pages_of_rename)) for l in sec['rename_lead']]
+    lead = [l.format(n=n, i=1, t=len(pages_of_rename)) for l in t('rename_lead')]
     y = draw_lead(s, y + 17.87, lead)
     for it in pages_of_rename[0]:
-        y += draw_card(s, y, it)
+        y += draw_card(s, y, it, t)
     s.done()
 
     # 2ページ目以降（英語名変更の続き） ─────────
     for idx, group in enumerate(pages_of_rename[1:], start=2):
-        s.page(meta, sec['page2_subtitle'], idx, total)
-        lead = [l.format(n=n, i=idx, t=len(pages_of_rename)) for l in sec['rename_lead_cont']]
+        s.page(head, t('page2_subtitle'), idx, total)
+        lead = [l.format(n=n, i=idx, t=len(pages_of_rename)) for l in t('rename_lead_cont')]
         y = draw_lead(s, LEAD_Y, lead)
         for it in group:
-            y += draw_card(s, y, it)
+            y += draw_card(s, y, it, t)
         s.done()
 
     if only_changes:
@@ -305,7 +451,7 @@ def build_pdf(m, path, only_changes=False):
         return
 
     # 変更不要＋運用ルール ──────────────────────
-    s.page(meta, sec['page3_subtitle'], total - 1, total)
+    s.page(head, sec['page3_subtitle'], total - 1, total)
     s.text(M, 90.7, sec['page3_table_title'], 10, DARK, bold=True)
     rows = [(i['en'], i['ja'], i['genre']) for i in keep]
     y = table(s, 104.8819, ['英語名', '日本語名', 'ジャンル帯'],
@@ -324,7 +470,7 @@ def build_pdf(m, path, only_changes=False):
     s.done()
 
     # 再販時に修正 ──────────────────────────────
-    s.page(meta, sec['page4_subtitle'], total, total)
+    s.page(head, sec['page4_subtitle'], total, total)
     s.rect(M, 85.0394, CW, 31.1811, RED, radius=4.2520)
     s.text(M + CW / 2, 105.74, sec['page4_banner'], 13, WHITE, bold=True, align='center')
     s.text(M, 136.5, sec['page4_lead'], 9, MUTED)
@@ -455,9 +601,12 @@ def main():
     meta = m['meta']
 
     if '--changes' in sys.argv:          # 名前が変わる商品だけの2ページ
-        pdf = os.path.join(OUT, meta['pdf_changes_filename'])
-        build_pdf(m, pdf, only_changes=True)
-        print('変更ぶんPDF:', os.path.basename(pdf))
+        langs = [a.split('=', 1)[1] for a in sys.argv if a.startswith('--lang=')] or ['ja']
+        for lang in (['ja', 'en', 'th', 'zh'] if langs == ['all'] else langs):
+            t = Words(m, lang)
+            pdf = os.path.join(OUT, t('pdf_changes_filename'))
+            build_pdf(m, pdf, only_changes=True, lang=lang)
+            print('変更ぶんPDF[%s]:' % lang, os.path.basename(pdf))
         return
 
     pdf = os.path.join(OUT, meta['pdf_filename'])

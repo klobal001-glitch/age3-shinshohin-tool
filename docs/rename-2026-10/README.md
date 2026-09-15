@@ -7,6 +7,7 @@
 | --- | --- |
 | `out/商品名リネーム（2026年10月 全店改変）.pdf` | 決裁用の4ページ（写真つきカード・変更不要の表・運用ルール・再販時の修正） |
 | `out/商品名リネーム 変更する商品（2026年10月 全店改変）.pdf` | 上の1〜2ページ目だけ＝名前が変わる13品（`python3 build.py --changes`）。海外に配る用 |
+| `out/Age.3 Product Renaming Oct 2026 (EN/TH/ZH).pdf` | 同じ2ページの英語版・タイ語版・中国語版（`--lang=all`） |
 | `out/商品名リネーム（2026年10月 全店改変）.xlsx` | 全55品の一覧（商品名マスタ＋凡例） |
 | `out/HP更新用マスタ（2026年10月）.md` | 公式HPに渡す36品ぶんの指示書 |
 | `out/商品名リネーム 修正のお知らせ（2026年9月15日）.pdf` | 変わったところだけを1枚にまとめた周知用（`python3 build_notice.py`） |
@@ -20,7 +21,8 @@
 cd docs/rename-2026-10
 pip install -r requirements.txt     # 最初の1回だけ
 python3 build.py                    # out/ に3点が出る
-python3 build.py --changes          # 名前が変わる13品だけの2ページ
+python3 build.py --changes          # 名前が変わる13品だけの2ページ（日本語）
+python3 build.py --changes --lang=all   # 日本語・英語・タイ語・中国語の4つ
 python3 build_notice.py             # 周知用の1枚（master.json の "notice"）
 ```
 
@@ -49,6 +51,7 @@ Excel に無い項目（PDFの理由書き・写真・並び順・HP用のファ
 | `legend` | Excel の「凡例」シート |
 | `hp` | HP用mdの前書き・チェックリスト |
 | `notice` | 周知用1枚の中身（見出し・赤帯・「修正前→修正後」の2品・結びの1行） |
+| `i18n` | 英語・タイ語・中国語の文言（表題・リード文・バッジ・ラベル・ファイル名） |
 | `items` | 商品55件。**ここが本体** |
 
 ### items の項目
@@ -67,6 +70,7 @@ Excel に無い項目（PDFの理由書き・写真・並び順・HP用のファ
 | `image` | `images/` の中のファイル名。無ければ写真なし |
 | `hp` | HP用mdに出す商品だけ。`web_filename`（Web用の名前）と `dropbox_filename` |
 | `reprint_row` | 例外。ラミントンだけ3ページ目と4ページ目の両方に出るので、4ページ目用の表記をここに持つ |
+| `note_en` `note_th` `note_zh` | 理由書きの訳。無い言語は空欄になる（`footnote_*` も同じ） |
 
 ### ページの割り付け
 
@@ -93,9 +97,21 @@ Excel に無い項目（PDFの理由書き・写真・並び順・HP用のファ
 色は `DARK`（#222222）・`GOLD`（#C9A227）・`RED`（#C8362B）・`NAVY`（#2F4858）・`BEIGE`（#F4F1EA）。
 ツール本体（`src/app/globals.css`）の配色とは別物なので、片方を変えても連動しない。
 
+## 多言語版（英語・タイ語・中国語）
+
+- 訳は `master.json` の `i18n`。商品ごとの理由書きは `note_en` / `note_th` / `note_zh`。
+  **商品名（英語）と英語説明文はどの言語でも英語のまま**（メニューに載る名前そのものなので）。
+  日本語名は「／ 月見照り焼き」の形で残してある（日本チームとやりとりするときの手がかり）。
+- **文字が長いとはみ出す。** リード文は自動で折り返すが、上の帯の方針文と商品の理由書きは
+  折り返さない。訳を直したら必ずPDFを開いて確かめること。
+- 英数字はどの言語でも IPA Pゴシックで書く（元の資料と同じ見た目にするため）。
+
 ## 必要なもの
 
-- Python 3 と `reportlab` `openpyxl` `Pillow`（`requirements.txt`）
+- Python 3 と `reportlab` `openpyxl` `Pillow` `fonttools`（`requirements.txt`）
 - 日本語フォント（IPA Pゴシック）。元のPDFと同じものを使っている。
   Linux なら `apt-get install fonts-ipafont-gothic`。Mac ではヒラギノを探しに行くので、
   **フォントが違うと字送りが変わり、折り返しの位置がずれる**ことがある。
+- タイ語は Loma（`fonts-tlwg-loma-otf`）、中国語は WenQuanYi Zen Hei（`fonts-wqy-zenhei`）。
+  Loma は CFF で reportlab が読めないため、初回だけ TrueType に変換して `.fontcache/` に置く
+  （このフォルダは git に入れない）。

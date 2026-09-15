@@ -175,6 +175,89 @@
     ],
     "closing": "修正済みの資料を添付します。お手元のPDFは差し替えをお願いします。"
   },
+  "i18n": {
+    "en": {
+      "pdf_changes_filename": "Age.3 Product Renaming Oct 2026 (EN).pdf",
+      "pdf_title": "Age.3 Product Renaming October 2026",
+      "title": "Product Renaming — Japanese names only for uniquely Japanese flavors",
+      "policy": "Policy: Japanese names only for truly Japanese flavors / clear English for the rest",
+      "header_right": "Age.3 Japan & overseas stores — October 2026",
+      "footer": "ANCHOR Inc. / Age.3   Product Renaming (October 2026, all stores)   Approved September 2026",
+      "wamei_lead": [
+        "Only three items keep a Japanese name.",
+        "Anko & Butter and Kuromitsu Kinako are uniquely Japanese, so the Japanese stays with a short description."
+      ],
+      "rename_lead": [
+        "Everything else moves to a clear English name ({n} items · {i}/{t}).",
+        "The name alone should tell the customer what is inside. The Japanese menu names do not change."
+      ],
+      "rename_lead_cont": [
+        "Clear English names ({n} items · {i}/{t})."
+      ],
+      "page2_subtitle": "Clear English names (continued)",
+      "badge": {
+        "和名維持": "Japanese kept",
+        "英語名変更": "Name changed"
+      },
+      "genre_label": "Menu band: ",
+      "current_label": "Current: ",
+      "desc_label": "Description"
+    },
+    "th": {
+      "pdf_changes_filename": "Age.3 Product Renaming Oct 2026 (TH).pdf",
+      "pdf_title": "Age.3 Product Renaming October 2026 (Thai)",
+      "title": "การเปลี่ยนชื่อสินค้า — คงชื่อญี่ปุ่นเฉพาะรสที่เป็นของญี่ปุ่นแท้",
+      "policy": "แนวทาง: คงชื่อญี่ปุ่นเฉพาะรสญี่ปุ่นแท้ / ที่เหลือใช้ชื่ออังกฤษที่เข้าใจง่าย",
+      "header_right": "Age.3 ทุกสาขาในญี่ปุ่นและต่างประเทศ — ตุลาคม 2026",
+      "footer": "ANCHOR Inc. / Age.3   การเปลี่ยนชื่อสินค้า (ตุลาคม 2026 ทุกสาขา)   อนุมัติเมื่อกันยายน 2026",
+      "wamei_lead": [
+        "มีเพียง 3 รายการที่คงชื่อภาษาญี่ปุ่นไว้",
+        "Anko & Butter และ Kuromitsu Kinako เป็นรสเฉพาะของญี่ปุ่น จึงคงคำญี่ปุ่นไว้ในชื่อพร้อมคำอธิบายสั้น ๆ"
+      ],
+      "rename_lead": [
+        "รายการอื่นเปลี่ยนเป็นชื่อภาษาอังกฤษที่เข้าใจง่าย ({n} รายการ · {i}/{t})",
+        "ชื่อเพียงอย่างเดียวต้องบอกได้ว่าข้างในคืออะไร ส่วนชื่อภาษาญี่ปุ่นบนเมนูญี่ปุ่นไม่เปลี่ยนแปลง"
+      ],
+      "rename_lead_cont": [
+        "ชื่อภาษาอังกฤษที่เข้าใจง่าย ({n} รายการ · {i}/{t})"
+      ],
+      "page2_subtitle": "ชื่อภาษาอังกฤษที่เข้าใจง่าย (ต่อ)",
+      "badge": {
+        "和名維持": "คงชื่อญี่ปุ่น",
+        "英語名変更": "เปลี่ยนชื่อ"
+      },
+      "genre_label": "หมวดเมนู: ",
+      "current_label": "ปัจจุบัน: ",
+      "desc_label": "คำอธิบาย"
+    },
+    "zh": {
+      "pdf_changes_filename": "Age.3 Product Renaming Oct 2026 (ZH).pdf",
+      "pdf_title": "Age.3 商品名称调整 2026年10月",
+      "title": "商品名称调整 — 仅日本特有风味保留日文名",
+      "policy": "方针：仅日本特有的风味保留日文名 ／ 其余改为易懂的英文名 ／ 附英文说明",
+      "header_right": "Age.3 日本国内及海外全店 — 2026年10月实施",
+      "footer": "ANCHOR株式会社／Age.3　商品名称调整（2026年10月 全店实施）　2026年9月 已批准",
+      "wamei_lead": [
+        "仅有3款保留日文名称。",
+        "Anko & Butter 与 Kuromitsu Kinako（含加量版）属日本特有风味，英文名中保留日文词，并以简短说明介绍内容。"
+      ],
+      "rename_lead": [
+        "其余商品改为易懂的英文名（共{n}款・{i}/{t}）。",
+        "让名称本身就能说明内容，无需另加说明。日文名是日本菜单的正式名称，不作变更。"
+      ],
+      "rename_lead_cont": [
+        "改为易懂的英文名（共{n}款・{i}/{t}）。"
+      ],
+      "page2_subtitle": "改为易懂的英文名（续）",
+      "badge": {
+        "和名維持": "保留日文名",
+        "英語名変更": "更改英文名"
+      },
+      "genre_label": "菜单分类：",
+      "current_label": "现行：",
+      "desc_label": "说明"
+    }
+  },
   "items": [
     {
       "no": 1,
@@ -204,7 +287,10 @@
       "hp": {
         "web_filename": "02_strawberry-jam.png",
         "dropbox_filename": "Strawberry Jam3s.png"
-      }
+      },
+      "note_en": "Word order fixed. Inside the Whipped Cream band it reads like Blueberry and the rest",
+      "note_th": "แก้ลำดับคำ อยู่ในหมวด Whipped Cream จึงตั้งชื่อแบบเดียวกับ Blueberry และรายการอื่น",
+      "note_zh": "调整语序。属于 Whipped Cream 分类，与 Blueberry 等采用相同命名方式"
     },
     {
       "no": 3,
@@ -316,7 +402,10 @@
       "hp": {
         "web_filename": "10_chestnut-cream.png",
         "dropbox_filename": "Chestnut Cream3s.png"
-      }
+      },
+      "note_en": "Mont Blanc does not convey chestnut",
+      "note_th": "Mont Blanc ไม่สื่อว่าเป็นเกาลัด",
+      "note_zh": "Mont Blanc 无法传达栗子"
     },
     {
       "no": 11,
@@ -347,7 +436,10 @@
       "hp": {
         "web_filename": "12_candied-sweet-potato.png",
         "dropbox_filename": "Candied Sweet Potato3s.png"
-      }
+      },
+      "note_en": "Standardized to the singular 'Potato'",
+      "note_th": "ปรับเป็นรูปเอกพจน์ Potato",
+      "note_zh": "统一为单数 Potato"
     },
     {
       "no": 13,
@@ -382,7 +474,10 @@
       "hp": {
         "web_filename": "14_kuromitsu-extra-kinako.png",
         "dropbox_filename": "Kuromitsu Extra Kinako3s.png"
-      }
+      },
+      "footnote_en": "Same description as Kuromitsu Kinako",
+      "footnote_th": "ใช้คำอธิบายเดียวกับ Kuromitsu Kinako",
+      "footnote_zh": "说明与 Kuromitsu Kinako 相同"
     },
     {
       "no": 15,
@@ -464,7 +559,10 @@
       "hp": {
         "web_filename": "20_honey-cheesecake-cream.png",
         "dropbox_filename": "Honey Cheesecake Cream3s.png"
-      }
+      },
+      "note_en": "Replaces the Japanese-English 'Rare cheese' with Cheesecake",
+      "note_th": "เปลี่ยนคำอังกฤษแบบญี่ปุ่น 'Rare cheese' เป็น Cheesecake",
+      "note_zh": "将和制英语 Rare cheese 改为 Cheesecake"
     },
     {
       "no": 21,
@@ -521,7 +619,10 @@
       "hp": {
         "web_filename": "22_teriyaki-burger-plus-egg.png",
         "dropbox_filename": "Teriyaki Burger + Egg3s.png"
-      }
+      },
+      "note_en": "Drops Tsukimi so the patty and the egg are clear from the name",
+      "note_th": "ตัดคำว่า Tsukimi ออก เพื่อให้ชื่อบอกได้ว่ามีเนื้อและไข่",
+      "note_zh": "去掉 Tsukimi，让名称直接说明肉饼与鸡蛋"
     },
     {
       "no": 23,
@@ -618,7 +719,10 @@
       "hp": {
         "web_filename": "29_ketchup-spaghetti-plus-egg.png",
         "dropbox_filename": "Ketchup Spaghetti + Egg3s.png"
-      }
+      },
+      "note_en": "Drops Neapolitan; the name now carries the flavor (ketchup) and the topping (egg)",
+      "note_th": "ตัดคำว่า Neapolitan ออก ชื่อจึงบอกรสชาติ (ซอสมะเขือเทศ) และวัตถุดิบ (ไข่)",
+      "note_zh": "去掉 Neapolitan，名称改为体现味道（番茄酱）与配料（鸡蛋）"
     },
     {
       "no": 30,
@@ -635,7 +739,10 @@
       "hp": {
         "web_filename": "30_ketchup-spaghetti-plus-egg-extra-cheese.png",
         "dropbox_filename": "Ketchup Spaghetti + Egg, Extra Cheese3s.png"
-      }
+      },
+      "note_en": "Changed to match the regular version",
+      "note_th": "เปลี่ยนให้สอดคล้องกับเวอร์ชันปกติ",
+      "note_zh": "与常规版本对应调整"
     },
     {
       "no": 31,
@@ -652,7 +759,10 @@
       "hp": {
         "web_filename": "31_yakisoba-noodles-plus-egg.png",
         "dropbox_filename": "Yakisoba Noodles + Egg3s.png"
-      }
+      },
+      "note_en": "Yakisoba alone is not clear enough, so Noodles is added to show it is a noodle dish",
+      "note_th": "คำว่า Yakisoba อย่างเดียวยังไม่ชัดเจน จึงเติม Noodles เพื่อให้รู้ว่าเป็นเส้น",
+      "note_zh": "仅写 Yakisoba 仍不够清楚，加上 Noodles 以表明是面食"
     },
     {
       "no": 32,
@@ -669,7 +779,10 @@
       "hp": {
         "web_filename": "32_japanese-bbq-beef-plus-egg.png",
         "dropbox_filename": "Japanese BBQ Beef + Egg3s.png"
-      }
+      },
+      "note_en": "Yakiniku needs explaining, so the name says BBQ Beef and egg",
+      "note_th": "คำว่า Yakiniku ต้องอธิบายเพิ่ม จึงใช้ BBQ Beef และไข่ในชื่อ",
+      "note_zh": "Yakiniku 需要额外解释，故名称改用 BBQ Beef 与鸡蛋"
     },
     {
       "no": 33,
@@ -686,7 +799,10 @@
       "hp": {
         "web_filename": "33_sweet-and-sour-chicken-with-tartar.png",
         "dropbox_filename": "Sweet & Sour Chicken with Tartar3s.png"
-      }
+      },
+      "note_en": "Says what Namban is (sweet & sour with tartar). Alternative: Tartar Fried Chicken",
+      "note_th": "ระบุลักษณะของ Namban (เปรี้ยวหวานกับทาร์ทาร์) ไว้ในชื่อ ทางเลือก: Tartar Fried Chicken",
+      "note_zh": "在名称中直接说明南蛮的特点（甜醋与塔塔酱）。备选：Tartar Fried Chicken"
     },
     {
       "no": 34,
