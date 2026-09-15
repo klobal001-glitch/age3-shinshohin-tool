@@ -379,9 +379,9 @@
         "photo_changed": true,
         "photo_tag": {
           "ja": "写真も変更",
-          "en": "PHOTO UPDATED",
+          "en": "PHOTO CHANGED",
           "th": "รูปเปลี่ยนใหม่",
-          "zh": "图片已更新"
+          "zh": "图片已更换"
         },
         "notice": {
           "label": {
@@ -392,21 +392,40 @@
           },
           "lines": {
             "ja": [
-              "画像も差し替えになります。この資料の写真を使ってください。",
+              "商品の形（見た目）が変わります。",
+              "この形が作れるようになってから、名前と画像を変更してください。",
               "レシピは後ほど共有します。"
             ],
             "en": [
-              "The photo changes too. Please use the photo shown here.",
+              "The appearance of the product changes.",
+              "Please switch the name and the photo once your store can make it this way.",
               "The recipe will be shared later."
             ],
             "th": [
-              "รูปภาพเปลี่ยนด้วย กรุณาใช้รูปที่แสดงไว้นี้",
+              "รูปลักษณ์ของสินค้าเปลี่ยนไป",
+              "กรุณาเปลี่ยนชื่อและรูปภาพเมื่อร้านของท่านทำแบบนี้ได้แล้ว",
               "สูตรจะแจ้งให้ทราบภายหลัง"
             ],
             "zh": [
-              "图片也一并更换，请使用本资料中的图片。",
+              "商品的外形有变化。",
+              "请在贵店能够做出此形态后，再更换名称与图片。",
               "食谱稍后共享。"
             ]
+          }
+        },
+        "photo_before": "hokkaido-anko-and-butter-old.png",
+        "photo_labels": {
+          "before": {
+            "ja": "現行",
+            "en": "Current",
+            "th": "ปัจจุบัน",
+            "zh": "现行"
+          },
+          "after": {
+            "ja": "新しい形",
+            "en": "New",
+            "th": "แบบใหม่",
+            "zh": "新"
           }
         }
       }

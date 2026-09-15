@@ -244,14 +244,25 @@ class Sheet:
         else:
             self.c.rect(x, PH - y - height, width, height, stroke=0, fill=1)
 
-    def image(self, name, cx, bottom, height):
+    def image(self, name, cx, bottom, height, max_w=None):
+        """cx を中心に、下端 bottom で描く。max_w を超えるときは縮める。"""
         path = os.path.join(IMG, name)
         if not os.path.exists(path):
-            return
+            return False
         img = ImageReader(path)
         iw, ih = img.getSize()
         width = iw * height / ih
+        if max_w and width > max_w:
+            height *= max_w / width
+            width = max_w
         self.c.drawImage(img, cx - width / 2, PH - bottom, width, height, mask='auto')
+        return True
+
+    def missing_image(self, cx, bottom, height, width, label):
+        """画像がまだ無いとき、置き場所だけ分かるように灰色の枠を出す。"""
+        self.c.setFillColorRGB(0.898, 0.894, 0.886)
+        self.c.roundRect(cx - width / 2, PH - bottom, width, height, 3, stroke=0, fill=1)
+        self.text(cx, bottom - height / 2 + 3, label, 6, MUTED, align='center')
 
     # --- ページ ---------------------------------------------------
     def page(self, meta, subtitle, num, total, show_page_num=True):
@@ -355,13 +366,25 @@ def draw_card(s, top, it, t=None):
 
     img_h = IMG_H_DESC if has_desc else IMG_H_PLAIN
     img_bottom = top + (CARD_H_DESC + extra if has_desc else CARD_H_PLAIN) - IMG_BOTTOM_PAD
-    if it.get('image'):
+    if ov and ov.get('photo_before'):
+        # 旧 → 新 を並べて、写真が変わることを絵で見せる
+        pair_h, pair_bottom = 58.0, top + 68.0
+        lab = ov.get('photo_labels', {})
+        for cx, fname, key in ((69.0, ov['photo_before'], 'before'),
+                               (127.0, it.get('image', ''), 'after')):
+            if not fname or not s.image(fname, cx, pair_bottom, pair_h, max_w=46):
+                s.missing_image(cx, pair_bottom, pair_h, 40, '？')
+            name = lab.get(key, {}).get(p['lang'], lab.get(key, {}).get('ja', ''))
+            s.text(cx, pair_bottom + 9.5, name, 6.5, MUTED if key == 'before' else DARK,
+                   bold=(key == 'after'), align='center')
+        s.text(98.0, pair_bottom - pair_h / 2 + 4, '→', 11, DARK, bold=True, align='center')
+        if ov.get('photo_changed'):
+            tag = ov['photo_tag'].get(p['lang'], ov['photo_tag']['ja'])
+            tw = w(tag, 6.5) + 11
+            s.rect(IMG_CX - tw / 2, pair_bottom + 14.5, tw, 12.5, RED, radius=6.25)
+            s.text(IMG_CX, pair_bottom + 23.2, tag, 6.5, WHITE, bold=True, align='center')
+    elif it.get('image'):
         s.image(it['image'], IMG_CX, img_bottom, img_h)
-    if ov and ov.get('photo_changed'):   # 写真が変わったことを、写真の上に赤い印で出す
-        tag = ov['photo_tag'].get(p['lang'], ov['photo_tag']['ja'])
-        tw = w(tag, 6.5) + 11
-        s.rect(IMG_CX - tw / 2, img_bottom + 3.5, tw, 12.5, RED, radius=6.25)
-        s.text(IMG_CX, img_bottom + 12.2, tag, 6.5, WHITE, bold=True, align='center')
 
     genre_label = t('genre_label', 'ジャンル帯：') if t else 'ジャンル帯：'
     s.text(R, top + DY_GENRE, genre_label + it['genre'], 7, MUTED, align='right')
