@@ -376,13 +376,6 @@
       "overseas": {
         "en": "Anko & Butter",
         "ja": "あんバター",
-        "photo_changed": true,
-        "photo_tag": {
-          "ja": "写真も変更",
-          "en": "PHOTO CHANGED",
-          "th": "รูปเปลี่ยนใหม่",
-          "zh": "图片已更换"
-        },
         "notice": {
           "label": {
             "ja": "注意",
@@ -392,40 +385,68 @@
           },
           "lines": {
             "ja": [
-              "商品の形（見た目）が変わります。",
-              "この形が作れるようになってから、名前と画像を変更してください。",
+              "名前は上のとおり変更します。画像は当面、現行のものを使ってください。",
               "レシピは後ほど共有します。"
             ],
             "en": [
-              "The appearance of the product changes.",
-              "Please switch the name and the photo once your store can make it this way.",
+              "The name changes as shown above. Please keep using the current photo for now.",
               "The recipe will be shared later."
             ],
             "th": [
-              "รูปลักษณ์ของสินค้าเปลี่ยนไป",
-              "กรุณาเปลี่ยนชื่อและรูปภาพเมื่อร้านของท่านทำแบบนี้ได้แล้ว",
+              "ชื่อเปลี่ยนตามด้านบน ส่วนรูปภาพกรุณาใช้รูปปัจจุบันไปก่อน",
               "สูตรจะแจ้งให้ทราบภายหลัง"
             ],
             "zh": [
-              "商品的外形有变化。",
-              "请在贵店能够做出此形态后，再更换名称与图片。",
+              "名称按上方更改。图片暂时请继续使用现行版本。",
               "食谱稍后共享。"
+            ]
+          },
+          "steps_title": {
+            "ja": "新しい形で販売するまで",
+            "en": "Before you can sell the new form",
+            "th": "ก่อนจำหน่ายแบบใหม่",
+            "zh": "销售新形态前的流程"
+          },
+          "steps": {
+            "ja": [
+              "① レシピ共有",
+              "② 試作",
+              "③ 動画を送る",
+              "④ 本部の承認"
+            ],
+            "en": [
+              "① Recipe shared",
+              "② Trial at your store",
+              "③ Send us a video",
+              "④ Head office approval"
+            ],
+            "th": [
+              "① ส่งสูตร",
+              "② ทดลองทำ",
+              "③ ส่งวิดีโอ",
+              "④ อนุมัติจากสำนักงานใหญ่"
+            ],
+            "zh": [
+              "① 共享食谱",
+              "② 试做",
+              "③ 提交视频",
+              "④ 总部批准"
             ]
           }
         },
         "photo_before": "hokkaido-anko-and-butter-old.png",
         "photo_labels": {
           "before": {
-            "ja": "現行",
-            "en": "Current",
-            "th": "ปัจจุบัน",
-            "zh": "现行"
+            "ja": "いま使う",
+            "en": "Use for now",
+            "th": "ใช้ไปก่อน",
+            "zh": "暂时使用"
           },
           "after": {
-            "ja": "新しい形",
-            "en": "New",
-            "th": "แบบใหม่",
-            "zh": "新"
+            "ja": "承認後",
+            "en": "After approval",
+            "th": "หลังอนุมัติ",
+            "zh": "获批后"
           }
         }
       }

@@ -87,6 +87,7 @@ DY_BOX, DY_BOX_NO_OLD = 49.14, 36.84
 DY_BOX_LABEL, DY_BOX_BODY = 11.36, 23.60
 
 NOTICE_PAD, NOTICE_LH = 16.5, 11.6         # 注意の枠：ラベルぶんの高さと行送り
+NOTICE_STEPS_H = 32.5                      # 注意の枠：手順の帯ぶんの高さ
 TBL_PAD_X = 5.6693                         # 表の左右の内側余白
 CALLOUT_X = M + 14.1732                    # 囲みの中の文字の左
 WRAP_W = 490.0                             # 囲みの中の折り返し幅
@@ -343,14 +344,18 @@ def card_parts(it, t=None):
         t.item(it, 'footnote') if t else it.get('footnote'))
     notice = ov.get('notice') if ov else None
     n_lines = notice['lines'].get(lang, notice['lines']['ja']) if notice else []
+    n_steps = (notice.get('steps') or {}).get(lang, (notice.get('steps') or {}).get('ja', [])) \
+        if notice else []
     # 「現行」の行と脚注が両方あると説明文の枠と重なるので、その分だけカードを伸ばす
     extra = 12.3 if (has_desc and show_old and foot) else 0
     h = (CARD_H_DESC + extra) if has_desc else CARD_H_PLAIN
     if notice:
         h += NOTICE_PAD + len(n_lines) * NOTICE_LH + 8.5
+        if n_steps:
+            h += NOTICE_STEPS_H
     return dict(ov=ov, lang=lang, has_desc=has_desc, en_name=en_name, old=old,
                 show_old=show_old, foot=foot, notice=notice, n_lines=n_lines,
-                extra=extra, h=h)
+                n_steps=n_steps, extra=extra, h=h)
 
 
 def card_height(it, t=None):
@@ -375,14 +380,13 @@ def draw_card(s, top, it, t=None):
             if not fname or not s.image(fname, cx, pair_bottom, pair_h, max_w=46):
                 s.missing_image(cx, pair_bottom, pair_h, 40, '？')
             name = lab.get(key, {}).get(p['lang'], lab.get(key, {}).get('ja', ''))
-            s.text(cx, pair_bottom + 9.5, name, 6.5, MUTED if key == 'before' else DARK,
-                   bold=(key == 'after'), align='center')
-        s.text(98.0, pair_bottom - pair_h / 2 + 4, '→', 11, DARK, bold=True, align='center')
-        if ov.get('photo_changed'):
-            tag = ov['photo_tag'].get(p['lang'], ov['photo_tag']['ja'])
-            tw = w(tag, 6.5) + 11
-            s.rect(IMG_CX - tw / 2, pair_bottom + 14.5, tw, 12.5, RED, radius=6.25)
-            s.text(IMG_CX, pair_bottom + 23.2, tag, 6.5, WHITE, bold=True, align='center')
+            tw = w(name, 6.5) + 10
+            now = (key == 'before')      # いま使うほうを橙で塗って目立たせる
+            s.rect(cx - tw / 2, pair_bottom + 3.5, tw, 12.0, GOLD if now else (0.87, 0.865, 0.855),
+                   radius=6.0)
+            s.text(cx, pair_bottom + 12.0, name, 6.5, WHITE if now else MUTED,
+                   bold=now, align='center')
+        s.text(98.0, pair_bottom - pair_h / 2 + 4, '→', 11, MUTED, bold=True, align='center')
     elif it.get('image'):
         s.image(it['image'], IMG_CX, img_bottom, img_h)
 
@@ -429,6 +433,20 @@ def draw_card(s, top, it, t=None):
                    7, RED, bold=True)
             for i, line in enumerate(p['n_lines']):
                 s.text(BOX_X + BOX_PAD_X, n_top + 22.6 + i * NOTICE_LH, line, 8, DARK)
+            if p['n_steps']:
+                base = n_top + 22.6 + len(p['n_lines']) * NOTICE_LH
+                title = p['notice'].get('steps_title', {})
+                s.text(BOX_X + BOX_PAD_X, base + 7.0,
+                       title.get(p['lang'], title.get('ja', '')), 7, RED, bold=True)
+                x, cy = BOX_X + BOX_PAD_X, base + 11.0
+                for i, st in enumerate(p['n_steps']):
+                    cw_ = w(st, 7) + 12
+                    s.rect(x, cy, cw_, 13.5, WHITE, radius=6.75)
+                    s.text(x + cw_ / 2, cy + 9.4, st, 7, DARK, align='center')
+                    x += cw_
+                    if i < len(p['n_steps']) - 1:
+                        s.text(x + 5.5, cy + 9.4, '→', 7, MUTED, align='center')
+                        x += 11
     else:
         note = t.item(it, 'note') if t else it.get('note')
         if ov:
