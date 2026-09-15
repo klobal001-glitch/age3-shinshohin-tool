@@ -669,7 +669,11 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 海外版のPDFでは、旧画像に橙の「いま使う」、新画像に灰色の「承認後」を付けて並べ、
 赤い注意の枠に「名前は変更・画像は当面そのまま」「レシピは後ほど共有」と、
 ①〜④の手順を1列の帯で出している。
-旧画像は `images/hokkaido-anko-and-butter-old.png`（松尾さんからもらったもの）。
+**あんバターの画像は3世代ある**（2026年9月15日に松尾さんからもらった）。
+`docs/rename-2026-10/` の中では：
+① 旧旧＝`reference/anko-butter_older.png`（**資料には載せない**。経緯を知るためだけの控え）／
+② 旧＝`images/hokkaido-anko-and-butter-old.png`（**海外店にいま使ってもらう画像**）／
+③ 新＝`images/hokkaido-anko-and-butter.png`（承認後に使う画像）。
 
 資料側は `docs/rename-2026-10/master.json` の No.8 に `overseas` を持たせてあり、
 英語版・タイ語版・中国語版のPDFだけ自動で差し替わる。
