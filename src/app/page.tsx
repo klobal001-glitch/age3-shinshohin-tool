@@ -61,6 +61,7 @@ function AppShell() {
             activeTab={tab}
             onChangeTab={setTab}
             productName={app.selectedProduct?.name}
+            productInfo={app.selectedProduct ? app.getInfo(app.selectedProduct.id) : undefined}
             onOpenSwitcher={openSwitcher}
           />
         </div>
