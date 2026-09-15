@@ -686,8 +686,8 @@ SAKURA抹茶＝Sakura Matcha／アイス抹茶あんこ＝Matcha Anko Ice Cream�
 元のPDFは `Spicy Grilled Cheese Curry` で、補足に「定番と同名になるため差別化が必要（例：Extra Spicy）」
 とあった。同名の相手は日本の定番ではなく**海外店のメニュー**（Excelの備考に
 「海外店の Spicy Grilled Cheese Curry は別商品の可能性あり。要確認」と残っている）。
-`docs/rename-2026-10/` の資料には反映済み。**⚠️ ツール側（Supabase の `nameEn`）はまだ
-`Spicy Grilled Cheese Curry` のまま**なので、次に商品データベースを触るときに直すこと。
+`docs/rename-2026-10/` の資料も、**ツール側（`product_info` の `nameEn`・商品ID `currycheese`）も
+反映済み**（ツール側は同日、松尾さんが画面から直した）。
 
 ⚠️ **海外店の Grilled Cheese Curry（豆カレー）・Spicy Grilled Cheese Curry が別商品かどうかは
 未確認のまま。** 別商品だと確定すれば、定番の焼きキーマカレー（Grilled Keema Curry）側の
