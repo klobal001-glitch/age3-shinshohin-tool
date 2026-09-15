@@ -14,18 +14,22 @@ import {
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { GENRE_LABELS } from "@/lib/types";
 import { formatJpDate } from "@/lib/deadline";
-import { badge, btn, chip, focusRing, meter } from "@/lib/ui";
+import { badge, chip, focusRing, meter } from "@/lib/ui";
 
 /**
  * ホーム画面の見た目について（2026年9月14日）
  *
- * 松尾さんの指示：「Appleのサイトを参考に」。橙（ブランドの色）はそのままに、
- * **余白・文字の大きさ・面の形**だけを Apple のやり方に寄せている。
+ * 松尾さんの指示：「Appleのサイトを参考に」→ 余白と文字を Apple 風にしたところ、
+ * **「色が必要」**との指摘。白とグレーだけでは寒々しく、どこを見ればよいかも
+ * 分からなかった。**余白は Apple 風のまま、色を戻した。**
  *
- * - 地は白に近いグレー、載せる面は白。**枠線は引かず、余白と影で区切る**
- * - 見出しは大きく・字間を詰める。説明は薄いグレーで一段下げる
- * - 面の角丸は大きめ（2xl・3xl）。押すものは丸い（pill）
- * - セクションの見出しは**面の外**に置く。面の中は中身だけにする
+ * - 余白・大きな見出し・大きな角丸・枠線なしは Apple 風のまま
+ * - **色は意味のあるところにだけ入れる。** 意味はタスクの色分けと同じ：
+ *   橙＝いま手を付けるもの／緑＝進んでいるもの／赤＝遅れているもの
+ * - **「次にやること」は橙で塗る。** この画面でいちばん見てほしい1枚なので、
+ *   面ごと橙にして白文字にした（この画面で塗るのはここだけ）
+ * - 数字のタイルは、数字とうっすらした地に色を付ける
+ * - 締め切りの行は、左に遅れ具合の色の線を入れる
  *
  * 中身・押したときの動きは今までと同じ。見た目だけを変えている。
  */
@@ -36,43 +40,61 @@ const surface = "rounded-2xl bg-white shadow-sm sm:rounded-3xl";
 /** 面の外に置く小見出し */
 const sectionTitle = "text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl";
 
+type StatTone = "plain" | "info" | "task" | "danger";
+
 /**
  * 数字のタイル。数字を大きく、ラベルは小さく下に置く。
  * 進み具合が分かるものには細い棒を足して、数字だけを睨まなくても済むようにする。
+ *
+ * 色の意味はタスクの色分けと同じ。
+ * info（シートの入力）＝橙／task（タスクの進み）＝緑／danger（遅れ）＝赤。
  */
 function StatCard({
   label,
   value,
   suffix,
   pct,
-  tone,
+  tone = "plain",
 }: {
   label: string;
   value: string;
   suffix?: string;
   pct?: number;
-  tone?: "danger";
+  tone?: StatTone;
 }) {
-  const m = pct !== undefined ? meter(pct, "mt-4") : null;
+  const tones: Record<StatTone, { face: string; num: string; bar: string }> = {
+    plain: { face: "bg-white", num: "text-stone-900", bar: "bg-stone-300" },
+    info: { face: "bg-amber-50", num: "text-amber-700", bar: "bg-amber-500" },
+    task: { face: "bg-emerald-50", num: "text-emerald-700", bar: "bg-emerald-500" },
+    danger: { face: "bg-red-50", num: "text-red-600", bar: "bg-red-500" },
+  };
+  const t = tones[tone];
   return (
-    <div className={`${surface} p-5 sm:p-6`}>
+    <div className={`rounded-2xl ${t.face} p-5 shadow-sm sm:rounded-3xl sm:p-6`}>
       <div className="flex items-baseline gap-1">
-        <span
-          className={`text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl ${
-            tone === "danger" ? "text-red-600" : "text-stone-900"
-          }`}
-        >
+        <span className={`text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl ${t.num}`}>
           {value}
         </span>
-        {suffix && <span className="text-base font-medium text-stone-400">{suffix}</span>}
+        {suffix && <span className={`text-base font-medium ${t.num} opacity-60`}>{suffix}</span>}
       </div>
-      <div className="mt-2 text-xs leading-snug text-stone-500 sm:text-sm">{label}</div>
-      {m && (
-        <div className={m.track}>
-          <div className={`h-full rounded-full ${m.bar}`} style={{ width: `${pct}%` }} />
+      <div className="mt-2 text-xs leading-snug text-stone-600 sm:text-sm">{label}</div>
+      {pct !== undefined && (
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/70">
+          <div className={`h-full rounded-full ${t.bar}`} style={{ width: `${pct}%` }} />
         </div>
       )}
     </div>
+  );
+}
+
+/** セクションの見出しに付ける、色の付いた四角いアイコン */
+function SectionIcon({ name, tone }: { name: "calendar" | "sheet"; tone: "danger" | "info" }) {
+  const face =
+    tone === "danger" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700";
+  return (
+    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${face}`}>
+      <Icon name={name} className="h-5 w-5" />
+    </span>
   );
 }
 
@@ -163,29 +185,35 @@ export default function MenuView({
 
       {/* いちばん急ぐ1件だけを大きく出す。数字の一覧を眺めても「次に何をするか」は分からないため */}
       {next && (
-        <div className={`${surface} p-6 sm:p-8`}>
+        <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 p-6 shadow-md sm:rounded-3xl sm:p-8">
           <div className="flex items-center gap-2.5">
-            <Icon name="arrowRight" className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-stone-500">次にやること</span>
-            <DueBadge days={next.days} extra="ml-auto" />
+            <Icon name="arrowRight" className="h-4 w-4 text-white/80" />
+            <span className="text-sm font-semibold text-white/90">次にやること</span>
+            <span className="ml-auto shrink-0 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold tabular-nums text-white ring-1 ring-inset ring-white/30">
+              {next.days < 0
+                ? `${-next.days}日遅れ`
+                : next.days === 0
+                  ? "本日締切"
+                  : `あと${next.days}日`}
+            </span>
           </div>
 
           <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-8">
             <div className="min-w-0 flex-1">
-              <div className="truncate text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+              <div className="truncate text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 {next.product.name}
               </div>
-              <div className="mt-2 text-[15px] leading-relaxed text-stone-600">
+              <div className="mt-2 text-[15px] leading-relaxed text-white/90">
                 {next.group.icon} {next.group.title}
-                <span className="mx-2 text-stone-300">/</span>
+                <span className="mx-2 text-white/50">/</span>
                 {next.milestone.label}（{formatJpDate(next.deadline)}）
               </div>
-              <div className="mt-1 text-sm tabular-nums text-stone-500">
+              <div className="mt-1 text-sm tabular-nums text-white/75">
                 このまとまりの残り {next.total - next.checked}件
               </div>
             </div>
             <button
-              className={`${btn("primary")} w-full rounded-full px-6 sm:w-auto`}
+              className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-6 py-2 text-sm font-semibold text-amber-700 shadow-sm transition hover:bg-amber-50 active:bg-amber-100 sm:w-auto md:min-h-0 ${focusRing}`}
               onClick={() => openTasks(next.product.id)}
             >
               このタスクを開く
@@ -202,25 +230,27 @@ export default function MenuView({
           value={String(stats.avgInfoFill)}
           suffix="%"
           pct={stats.avgInfoFill}
+          tone="info"
         />
         <StatCard
           label="タスク 平均完了率"
           value={String(stats.avgTaskCompletion)}
           suffix="%"
           pct={stats.avgTaskCompletion}
+          tone="task"
         />
         <StatCard
           label="期限超過のタスク"
           value={String(stats.overdueTaskCount)}
           suffix="件"
-          tone={stats.overdueTaskCount > 0 ? "danger" : undefined}
+          tone={stats.overdueTaskCount > 0 ? "danger" : "plain"}
         />
       </div>
 
       {/* 直近の締め切り。見出しは面の外に置き、面の中は行だけにする */}
       <section>
-        <div className="mb-4 flex items-center gap-2.5 px-1">
-          <Icon name="calendar" className="h-5 w-5 text-stone-400" />
+        <div className="mb-4 flex items-center gap-3 px-1">
+          <SectionIcon name="calendar" tone="danger" />
           <h3 className={sectionTitle}>直近の締め切り</h3>
         </div>
         <p className="mb-4 px-1 text-sm leading-relaxed text-stone-500">
@@ -239,8 +269,14 @@ export default function MenuView({
                 <button
                   key={`${e.product.id}-${e.group.id}-${e.milestone.id}`}
                   onClick={() => openTasks(e.product.id)}
-                  className={`flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-5 py-3.5 text-left transition hover:bg-stone-50 sm:px-7 ${focusRing}`}
+                  className={`flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3.5 text-left transition hover:bg-stone-50 sm:px-6 ${focusRing}`}
                 >
+                  {/* 左の線で遅れ具合を出す。数字を読まなくても、色で並び具合が分かる */}
+                  <span
+                    className={`h-7 w-1.5 shrink-0 rounded-full ${
+                      e.days < 0 ? "bg-red-500" : e.days === 0 ? "bg-amber-500" : "bg-emerald-500"
+                    }`}
+                  />
                   <span className="min-w-[9rem] text-[15px] font-medium text-stone-900">
                     {e.product.name}
                   </span>
@@ -258,6 +294,7 @@ export default function MenuView({
       {/* 商品一覧 */}
       <section>
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
+          <SectionIcon name="sheet" tone="info" />
           <h3 className={sectionTitle}>商品一覧</h3>
           <span className="text-sm tabular-nums text-stone-400">{productRows.length}件</span>
           <div className="ml-auto flex gap-2">
