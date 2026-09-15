@@ -392,22 +392,18 @@
           },
           "lines": {
             "ja": [
-              "海外は北海道産に限定できないため、名前から Hokkaido を外します。",
               "画像も差し替えになります。この資料の写真を使ってください。",
               "レシピは後ほど共有します。"
             ],
             "en": [
-              "Overseas cannot guarantee Hokkaido azuki, so Hokkaido is dropped from the name.",
               "The photo changes too. Please use the photo shown here.",
               "The recipe will be shared later."
             ],
             "th": [
-              "ต่างประเทศระบุถั่วแดงฮอกไกโดไม่ได้ จึงตัดคำว่า Hokkaido ออกจากชื่อ",
               "รูปภาพเปลี่ยนด้วย กรุณาใช้รูปที่แสดงไว้นี้",
               "สูตรจะแจ้งให้ทราบภายหลัง"
             ],
             "zh": [
-              "海外无法保证使用北海道红豆，故名称去掉 Hokkaido。",
               "图片也一并更换，请使用本资料中的图片。",
               "食谱稍后共享。"
             ]
