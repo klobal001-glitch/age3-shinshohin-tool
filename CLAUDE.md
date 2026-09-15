@@ -675,6 +675,11 @@ Instagram投稿もポスターもサイネージも作らず、あるのは
 ② 旧＝`images/hokkaido-anko-and-butter-old.png`（**海外店にいま使ってもらう画像**）／
 ③ 新＝`images/hokkaido-anko-and-butter.png`（承認後に使う画像）。
 
+**海外版には、最後にレシピのページが付く**（2026年9月15日・松尾さんから受領）。
+`docs/rename-2026-10/attach/anko-butter_recipe.pdf`（日英併記・レシピサイトの印刷用PDF）に、
+**作り方動画 https://youtu.be/KNrWLIq5Ad8 のQRコード**を重ねて足している。
+これが手順①の「レシピ共有」にあたる。日本語版（2ページ）には付けていない。
+
 資料側は `docs/rename-2026-10/master.json` の No.8 に `overseas` を持たせてあり、
 英語版・タイ語版・中国語版のPDFだけ自動で差し替わる。
 

@@ -386,19 +386,19 @@
           "lines": {
             "ja": [
               "名前は上のとおり変更します。画像は当面、現行のものを使ってください。",
-              "レシピは後ほど共有します。"
+              "レシピと作り方動画は、この資料のいちばん最後のページにあります。"
             ],
             "en": [
               "The name changes as shown above. Please keep using the current photo for now.",
-              "The recipe will be shared later."
+              "The recipe and the how-to video are on the last page of this document."
             ],
             "th": [
               "ชื่อเปลี่ยนตามด้านบน ส่วนรูปภาพกรุณาใช้รูปปัจจุบันไปก่อน",
-              "สูตรจะแจ้งให้ทราบภายหลัง"
+              "สูตรและวิดีโอวิธีทำอยู่ในหน้าสุดท้ายของเอกสารนี้"
             ],
             "zh": [
               "名称按上方更改。图片暂时请继续使用现行版本。",
-              "食谱稍后共享。"
+              "食谱与制作视频在本资料的最后一页。"
             ]
           },
           "steps_title": {
@@ -447,6 +447,22 @@
             "en": "After approval",
             "th": "หลังอนุมัติ",
             "zh": "获批后"
+          }
+        },
+        "recipe": {
+          "pdf": "anko-butter_recipe.pdf",
+          "video": "https://youtu.be/KNrWLIq5Ad8",
+          "label": {
+            "ja": "作り方動画",
+            "en": "HOW-TO VIDEO",
+            "th": "วิดีโอวิธีทำ",
+            "zh": "制作视频"
+          },
+          "hint": {
+            "ja": "スマホで読み取ってください",
+            "en": "Scan with your phone",
+            "th": "สแกนด้วยโทรศัพท์ของท่าน",
+            "zh": "请用手机扫码"
           }
         }
       }

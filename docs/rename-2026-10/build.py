@@ -22,6 +22,7 @@ from reportlab.lib.utils import ImageReader
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'out')
 IMG = os.path.join(HERE, 'images')
+ATTACH = os.path.join(HERE, 'attach')   # 資料の最後に足すPDF（レシピなど）
 
 # ── 紙とフォント ────────────────────────────────────────────────
 PW, PH = 595.2756, 841.8898          # A4 縦
@@ -216,8 +217,9 @@ def w(s, size):
 class Sheet:
     """上端からの y（pt）で書ける薄いラッパー。"""
 
-    def __init__(self, path, title):
-        self.c = canvas.Canvas(path, pagesize=(PW, PH))
+    def __init__(self, path, title, size=None):
+        self.pw, self.ph = size or (PW, PH)
+        self.c = canvas.Canvas(path, pagesize=(self.pw, self.ph))
         self.c.setTitle(title)
         self.c.setAuthor('株式会社ANCHOR／Age.3')
         self.c.setSubject('商品名リネーム')
@@ -233,17 +235,17 @@ class Sheet:
         self.c.setFillColorRGB(*color)
         for font, part in runs(s):     # 言語ごとにフォントが変わるので、かたまりごとに書く
             self.c.setFont(font, size)
-            self.c.drawString(x, PH - y, part)
+            self.c.drawString(x, self.ph - y, part)
             if bold:                   # 太字を持たないフォントなので0.25ptずらして二度打ち
-                self.c.drawString(x + 0.25, PH - y, part)
+                self.c.drawString(x + 0.25, self.ph - y, part)
             x += pdfmetrics.stringWidth(part, font, size)
 
     def rect(self, x, y, width, height, color, radius=0):
         self.c.setFillColorRGB(*color)
         if radius:
-            self.c.roundRect(x, PH - y - height, width, height, radius, stroke=0, fill=1)
+            self.c.roundRect(x, self.ph - y - height, width, height, radius, stroke=0, fill=1)
         else:
-            self.c.rect(x, PH - y - height, width, height, stroke=0, fill=1)
+            self.c.rect(x, self.ph - y - height, width, height, stroke=0, fill=1)
 
     def image(self, name, cx, bottom, height, max_w=None):
         """cx を中心に、下端 bottom で描く。max_w を超えるときは縮める。"""
@@ -256,13 +258,17 @@ class Sheet:
         if max_w and width > max_w:
             height *= max_w / width
             width = max_w
-        self.c.drawImage(img, cx - width / 2, PH - bottom, width, height, mask='auto')
+        self.c.drawImage(img, cx - width / 2, self.ph - bottom, width, height, mask='auto')
         return True
+
+    def image_file(self, path, x, top, size):
+        """正方形の絵（QRコードなど）を左上から置く。"""
+        self.c.drawImage(ImageReader(path), x, self.ph - top - size, size, size)
 
     def missing_image(self, cx, bottom, height, width, label):
         """画像がまだ無いとき、置き場所だけ分かるように灰色の枠を出す。"""
         self.c.setFillColorRGB(0.898, 0.894, 0.886)
-        self.c.roundRect(cx - width / 2, PH - bottom, width, height, 3, stroke=0, fill=1)
+        self.c.roundRect(cx - width / 2, self.ph - bottom, width, height, 3, stroke=0, fill=1)
         self.text(cx, bottom - height / 2 + 3, label, 6, MUTED, align='center')
 
     # --- ページ ---------------------------------------------------
@@ -304,6 +310,62 @@ def wrap(s, size, width):
     if cur:
         lines.append(cur)
     return lines or ['']
+
+
+def find_recipe(m):
+    """資料の最後に足すレシピ（いまは海外版のあんバターだけ）。"""
+    for it in m['items']:
+        rec = (it.get('overseas') or {}).get('recipe')
+        if rec:
+            return rec
+    return None
+
+
+def attach_recipe(path, rec, lang):
+    """レシピのPDFを最後に足し、作り方動画のQRコードを重ねる。"""
+    import io
+    import qrcode
+    from pypdf import PdfReader, PdfWriter
+
+    src = os.path.join(ATTACH, rec['pdf'])
+    if not os.path.exists(src):
+        print('  ※ レシピPDFが見つかりません:', src)
+        return
+    page = PdfReader(src).pages[0]
+    pw = float(page.mediabox.width)
+    ph = float(page.mediabox.height)
+
+    # QRコードを作る
+    q = qrcode.QRCode(border=1, box_size=10,
+                      error_correction=qrcode.constants.ERROR_CORRECT_M)
+    q.add_data(rec['video'])
+    q.make(fit=True)
+    qr_png = os.path.join(FONTCACHE, 'qr.png')
+    os.makedirs(FONTCACHE, exist_ok=True)
+    q.make_image(fill_color='black', back_color='white').convert('RGB').save(qr_png)
+
+    # 重ねる紙（レシピの右下の空きに置く）
+    tmp = os.path.join(OUT, '_overlay.tmp.pdf')
+    o = Sheet(tmp, 'overlay', size=(pw, ph))
+    bx, by, bw, bh = 292.0, 641.0, 264.0, 94.0
+    o.rect(bx, by, bw, bh, BEIGE, radius=6)
+    o.rect(bx, by, 4.2520, bh, GOLD, radius=2)
+    o.image_file(qr_png, bx + 14, by + 16, 62)
+    tx = bx + 88
+    o.text(tx, by + 24, rec['label'].get(lang, rec['label']['ja']), 8, GOLD, bold=True)
+    o.text(tx, by + 42, 'youtu.be/' + rec['video'].rstrip('/').split('/')[-1], 10, DARK, bold=True)
+    o.text(tx, by + 58, rec['hint'].get(lang, rec['hint']['ja']), 7.5, MUTED)
+    o.done()
+    o.save()
+
+    page.merge_page(PdfReader(tmp).pages[0])
+    out = PdfWriter()
+    for p_ in PdfReader(path).pages:
+        out.add_page(p_)
+    out.add_page(page)
+    with open(path, 'wb') as f:
+        out.write(f)
+    os.remove(tmp)
 
 
 # ── 言語ごとの文言 ──────────────────────────────────────────────
@@ -526,6 +588,10 @@ def build_pdf(m, path, only_changes=False, lang='ja'):
     if cur:
         pages_of_rename.append(cur)
     total = len(pages_of_rename) if only_changes else 2 + len(pages_of_rename)
+    # 海外版はレシピのページを最後に足すので、ページ数に1つ足しておく
+    recipe = find_recipe(m) if (only_changes and lang != 'ja') else None
+    if recipe:
+        total += 1
 
     s = Sheet(path, t('pdf_title'))
 
@@ -552,6 +618,8 @@ def build_pdf(m, path, only_changes=False, lang='ja'):
 
     if only_changes:
         s.save()
+        if recipe:
+            attach_recipe(path, recipe, lang)
         return
 
     # 変更不要＋運用ルール ──────────────────────
