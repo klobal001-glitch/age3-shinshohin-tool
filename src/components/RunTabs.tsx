@@ -46,6 +46,111 @@ export default function RunTabs({
   const { currentLabel, viewingLabel } = runView(app, info);
   const hasRuns = !!currentLabel || info.runs.length > 0;
 
+  const viewingCurrent = viewingLabel === currentLabel;
+
+  /** いま選んでいる回を、今準備中の回に入れ替える。いまの回は控えに移るだけで消えない */
+  const makeCurrent = () => {
+    if (!id || viewingCurrent) return;
+    const idx = info.runs.findIndex((r) => r.label === viewingLabel);
+    const pick = info.runs[idx];
+    if (!pick) return;
+    if (!currentLabel) {
+      alert("いまの回に名前がありません。先に「✎ 名前」で名前を付けてください。");
+      return;
+    }
+    if (
+      !confirm(
+        "「" + pick.label + "」を今準備中にします。\n\n" +
+          "いまの「" + currentLabel + "」は控えに移ります。中身（発売月・販売終了月・ビジュアル・チェック）は消えません。\n\n" +
+          "よろしいですか？"
+      )
+    )
+      return;
+    const parked: ProductRun = {
+      label: currentLabel,
+      releaseDate: info.releaseDate,
+      endDate: info.endDate,
+      ongoing: info.ongoing,
+      visuals: info.visualDownloads,
+      taskState: app.getTaskState(id),
+    };
+    const nextRuns = info.runs.slice();
+    nextRuns.splice(idx, 1, parked);
+    app.updateInfo(id, {
+      runLabel: pick.label,
+      runs: nextRuns,
+      releaseDate: pick.releaseDate,
+      endDate: pick.endDate,
+      ongoing: pick.ongoing,
+      visualDownloads: pick.visuals,
+    });
+    app.setProductTasks(id, pick.taskState);
+    app.setRunTab(null);
+  };
+
+  /**
+   * いま選んでいる回を消す。
+   *
+   * 間違えて増やした回や、空のまま残った回を片づけるため。
+   * 控えの回を消すと、その回の 発売月・販売終了月・ビジュアル・チェック だけがなくなる。
+   * 今準備中の回を消すときは、代わりに今準備中にする回を選んでもらう。
+   * 品名・材料・価格・レシピ・紹介文は、どちらの場合も消えない（商品で1つなので）。
+   */
+  const deleteRun = () => {
+    if (!id) return;
+
+    if (!viewingCurrent) {
+      if (
+        !confirm(
+          "「" + viewingLabel + "」を消します。\n\n" +
+            "この回の 発売月・販売終了月・ビジュアル・チェック の控えがなくなります。\n" +
+            "品名・材料・価格・レシピ・紹介文は消えません。\n\n" +
+            "元に戻せません。よろしいですか？"
+        )
+      )
+        return;
+      app.updateInfo(id, { runs: info.runs.filter((r) => r.label !== viewingLabel) });
+      app.setRunTab(null);
+      return;
+    }
+
+    if (info.runs.length === 0) {
+      alert(
+        "回が1つしかないので消せません。\n回で分けるのをやめるときは「✎ 名前」で名前を空にしてください。"
+      );
+      return;
+    }
+    const list = info.runs.map((r, i) => String(i + 1) + ". " + r.label).join("\n");
+    const answer = prompt(
+      "「" + viewingLabel + "」を消します。いま入っている 発売月・販売終了月・ビジュアル・チェック も一緒に消えます。\n\n" +
+        "代わりに「今準備中」にする回の番号を入れてください。\n" + list,
+      "1"
+    );
+    if (answer === null) return;
+    const idx = Number(answer.trim()) - 1;
+    const pick = info.runs[idx];
+    if (!pick) {
+      alert("番号が違います。");
+      return;
+    }
+    if (
+      !confirm(
+        "「" + viewingLabel + "」を消して、「" + pick.label + "」を今準備中にします。\n\n元に戻せません。よろしいですか？"
+      )
+    )
+      return;
+    app.updateInfo(id, {
+      runLabel: pick.label,
+      runs: info.runs.filter((_, i) => i !== idx),
+      releaseDate: pick.releaseDate,
+      endDate: pick.endDate,
+      ongoing: pick.ongoing,
+      visualDownloads: pick.visuals,
+    });
+    app.setProductTasks(id, pick.taskState);
+    app.setRunTab(null);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1.5 print:hidden">
       {hasRuns && (
@@ -94,6 +199,26 @@ export default function RunTabs({
           ✎ 名前
         </button>
       )}
+      {hasRuns && !viewingCurrent && (
+        <button
+          type="button"
+          title="いま選んでいる回を、今準備中の回にする"
+          onClick={makeCurrent}
+          className={"rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-500 transition hover:border-amber-500 hover:text-amber-700 " + focusRing}
+        >
+          ↺ 今準備中にする
+        </button>
+      )}
+      {hasRuns && (
+        <button
+          type="button"
+          title="いま選んでいる回を消す"
+          onClick={deleteRun}
+          className={"rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-500 transition hover:border-red-500 hover:text-red-700 " + focusRing}
+        >
+          🗑 この回を消す
+        </button>
+      )}
       <button
         type="button"
         onClick={onAddRun}
@@ -110,7 +235,8 @@ export function PastRunNotice({ label, current }: { label: string; current: stri
   return (
     <p className="rounded-lg border border-stone-300 bg-stone-200/60 px-3 py-2 text-xs text-stone-700">
       <span className="font-medium">{label}</span>{" "}
-      は終わった回です。見るだけで、直せません。
+      は、いま準備中の回ではありません。見るだけで、直せません。
+      直すときは「↺ 今準備中にする」を押してください。
       締め切りの数・進捗・入力率は「{current || "今の回"}」を見ています。
     </p>
   );
