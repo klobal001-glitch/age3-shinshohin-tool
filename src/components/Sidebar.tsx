@@ -9,7 +9,7 @@ import { TabKey } from "./Header";
 import Age3Logo from "@/components/Age3Logo";
 import Icon, { IconName } from "@/components/Icon";
 import { GENRE_ORDER, genreLabel } from "./ProductSwitcher";
-import { btn, eyebrow, field, focusRing, rowSelect } from "@/lib/ui";
+import { btn, focusRing, rowSelect } from "@/lib/ui";
 
 /* ラベルはスマホ下端のタブと同じ言葉にして、どちらで使っても迷わないようにする */
 const NAV: { key: TabKey; icon: IconName; label: string }[] = [
@@ -24,11 +24,21 @@ const NAV: { key: TabKey; icon: IconName; label: string }[] = [
     （シーズンは発売日だけで並べる。下の sort を参照） */
 const SALE_RANK: Record<SaleStatus, number> = { active: 0, ended: 1, retired: 2 };
 
+/**
+ * 入力率の丸。こげ茶の地に載るので、明るい側の色を使う。
+ * 意味は他の画面と同じ（緑＝進んでいる／橙＝途中／灰＝ほぼ空）。
+ */
 function fillDotColor(pct: number) {
-  if (pct >= 70) return "bg-emerald-500";
-  if (pct >= 30) return "bg-amber-500";
-  return "bg-stone-300";
+  if (pct >= 70) return "bg-emerald-400";
+  if (pct >= 30) return "bg-amber-400";
+  return "bg-white/30";
 }
+
+/** こげ茶の地に載る入力欄。白い箱をそのまま置くと、そこだけ明るく浮いてしまう */
+const darkField =
+  "w-full min-h-11 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white " +
+  "shadow-xs transition placeholder:text-white/40 hover:border-white/30 md:min-h-0 " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50";
 
 export default function Sidebar({
   app,
@@ -99,11 +109,14 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="hidden w-[17rem] shrink-0 flex-col border-r border-stone-200 bg-rail md:flex">
+    /* 左の帯はこげ茶（2026年9月15日・松尾さんの指定）。
+       地が暗いので、この中の文字・線・入力欄はすべて白側の色にしてある。
+       色そのものは globals.css の --color-sidebar。 */
+    <aside className="hidden w-[17rem] shrink-0 flex-col bg-sidebar md:flex">
       <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
-        <Age3Logo className="h-5 w-auto shrink-0 text-stone-900" />
-        <span aria-hidden className="h-3.5 w-px bg-stone-300" />
-        <h1 className="truncate text-sm font-semibold text-stone-700">商品データベース</h1>
+        <Age3Logo className="h-5 w-auto shrink-0 text-white" />
+        <span aria-hidden className="h-3.5 w-px bg-white/25" />
+        <h1 className="truncate text-sm font-semibold text-white/85">商品データベース</h1>
       </div>
 
       <nav className="space-y-0.5 px-2.5 pb-3">
@@ -116,13 +129,13 @@ export default function Sidebar({
               aria-current={on ? "page" : undefined}
               className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition ${focusRing} ${
                 on
-                  ? "bg-white font-semibold text-stone-900 shadow-xs"
-                  : "font-medium text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                  ? "bg-white/15 font-semibold text-white"
+                  : "font-medium text-white/60 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Icon
                 name={t.icon}
-                className={`h-4 w-4 ${on ? "text-amber-600" : "text-stone-400"}`}
+                className={`h-4 w-4 ${on ? "text-amber-400" : "text-white/45"}`}
                 strokeWidth={on ? 1.9 : 1.7}
               />
               {t.label}
@@ -131,14 +144,14 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="border-t border-stone-200 px-2.5 pb-2 pt-3">
+      <div className="border-t border-white/10 px-2.5 pb-2 pt-3">
         <div className="relative">
           <Icon
             name="search"
-            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
           />
           <input
-            className={`${field} pl-9`}
+            className={`${darkField} pl-9`}
             placeholder="商品を検索"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -148,11 +161,13 @@ export default function Sidebar({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2">
         {grouped.length === 0 && (
-          <p className="px-1 py-4 text-xs text-stone-400">該当する商品がありません。</p>
+          <p className="px-1 py-4 text-xs text-white/45">該当する商品がありません。</p>
         )}
         {grouped.map(({ genre, items }) => (
           <div key={genre ?? "none"} className="mb-3">
-            <div className={`mb-1 px-2.5 pt-1 ${eyebrow}`}>{genreLabel(genre)}</div>
+            <div className="mb-1 px-2.5 pt-1 text-xs font-medium tracking-wide text-white/45">
+              {genreLabel(genre)}
+            </div>
             <ul className="space-y-px">
               {items.map((p) => {
                 const info = getInfo(p.id);
@@ -165,20 +180,20 @@ export default function Sidebar({
                   <li key={p.id}>
                     <button
                       onClick={() => setSelectedId(p.id)}
-                      className={rowSelect(active, off && !active ? "text-stone-400" : "")}
+                      className={rowSelect(active, off && !active ? "text-white/40" : "", "dark")}
                     >
                       <span
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          off ? "bg-stone-300" : fillDotColor(pct)
+                          off ? "bg-white/25" : fillDotColor(pct)
                         }`}
                       />
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
                       {off ? (
-                        <span className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-xs font-medium text-stone-500">
+                        <span className="shrink-0 rounded-full bg-white/15 px-1.5 py-0.5 text-xs font-medium text-white/70">
                           {SALE_STATUS_LABEL[status]}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-xs text-stone-400 tabular-nums">{pct}%</span>
+                        <span className="shrink-0 text-xs text-white/45 tabular-nums">{pct}%</span>
                       )}
                     </button>
                   </li>
@@ -189,18 +204,18 @@ export default function Sidebar({
         ))}
       </div>
 
-      <div className="border-t border-stone-200 p-2.5">
+      <div className="border-t border-white/10 p-2.5">
         <button
           onClick={() => onChangeTab("help")}
           className={`mb-1.5 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition ${focusRing} ${
             activeTab === "help"
-              ? "bg-white text-stone-900 shadow-xs"
-              : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+              ? "bg-white/15 text-white"
+              : "text-white/60 hover:bg-white/10 hover:text-white"
           }`}
         >
           <Icon
             name="help"
-            className={`h-4 w-4 ${activeTab === "help" ? "text-amber-600" : "text-stone-400"}`}
+            className={`h-4 w-4 ${activeTab === "help" ? "text-amber-400" : "text-white/45"}`}
           />
           使い方
         </button>
@@ -208,7 +223,7 @@ export default function Sidebar({
           <div className="flex items-center gap-2">
             <input
               autoFocus
-              className={`${field} flex-1`}
+              className={`${darkField} flex-1`}
               placeholder="新しい商品名"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -222,7 +237,10 @@ export default function Sidebar({
             </button>
           </div>
         ) : (
-          <button className={`${btn("secondary")} w-full`} onClick={() => setAdding(true)}>
+          <button
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 md:min-h-0 ${focusRing}`}
+            onClick={() => setAdding(true)}
+          >
             <Icon name="plus" className="h-4 w-4" />
             商品を追加
           </button>
