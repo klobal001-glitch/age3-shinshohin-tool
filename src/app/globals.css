@@ -55,6 +55,7 @@
 
     /* ── 名前のある面 ── */
     --color-canvas: #f6f5f3; /* 画面の地 */
+    --color-sidebar: #3a2a20; /* PCの左の帯（こげ茶）。2026年9月・松尾さんの指定 */
     --color-rail: #fbfaf9; /* サイドバー・上下の帯 */
     --color-line: #e8e5e1; /* 面の区切り */
 
