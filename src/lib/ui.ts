@@ -88,14 +88,21 @@ export function chip(active: boolean, extra = "", size: "md" | "sm" = "md") {
  * 一覧の行の選択。塗りつぶさず、薄いグレー＋左のアクセントの線で示す。
  * （一覧は行数が多いので、オレンジで塗ると画面が騒がしくなる）
  */
-export function rowSelect(active: boolean, extra = "") {
+export function rowSelect(active: boolean, extra = "", tone: "light" | "dark" = "light") {
+  const accent = tone === "dark" ? "before:bg-amber-400" : "before:bg-amber-600";
   const base =
     `relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition ` +
     `before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 ` +
-    `before:rounded-full before:bg-amber-600 before:transition-opacity ${focusRing}`;
-  const state = active
-    ? "bg-stone-100 font-medium text-stone-900 before:opacity-100"
-    : "text-stone-600 before:opacity-0 hover:bg-stone-100/70 hover:text-stone-900";
+    `before:rounded-full ${accent} before:transition-opacity ${focusRing}`;
+  /* dark は「こげ茶の左の帯」の中で使う。白の面と同じ濃さでは沈んで見えないため */
+  const state =
+    tone === "dark"
+      ? active
+        ? "bg-white/12 font-medium text-white before:opacity-100"
+        : "text-white/65 before:opacity-0 hover:bg-white/8 hover:text-white"
+      : active
+        ? "bg-stone-100 font-medium text-stone-900 before:opacity-100"
+        : "text-stone-600 before:opacity-0 hover:bg-stone-100/70 hover:text-stone-900";
   return `${base} ${state} ${extra}`.trim();
 }
 
