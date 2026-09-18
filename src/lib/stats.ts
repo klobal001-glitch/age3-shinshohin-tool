@@ -182,6 +182,21 @@ export function isBacklogDeadline(deadline: Date): boolean {
   return deadline.getTime() < limit.getTime();
 }
 
+/**
+ * 発売月が今月以前の商品（もう発売している／今月発売する商品）は、
+ * 準備タスクをすべて過去分にする（2026年9月19日・松尾さんの指示：
+ * 「8月と9月の新商品のタスクは過去分にしたい」）。
+ * 月が変われば線も動く（10月になれば10月発売の商品も過去分になる）。
+ */
+export function isReleasedByThisMonth(releaseDate: string): boolean {
+  const m = /^(\d{4})-(\d{2})/.exec(releaseDate);
+  if (!m) return false;
+  const now = new Date();
+  const ym = Number(m[1]) * 100 + Number(m[2]);
+  const nowYm = now.getFullYear() * 100 + (now.getMonth() + 1);
+  return ym <= nowYm;
+}
+
 /** ダッシュボードで締め切りを追わなくなるまでの期間（発売日から） */
 export const DEADLINE_TRACKING_MONTHS = 12;
 
@@ -218,7 +233,7 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
           days,
           checked,
           total,
-          backlog: isBacklogDeadline(deadline),
+          backlog: isBacklogDeadline(deadline) || isReleasedByThisMonth(info.releaseDate),
         });
       }
     }
