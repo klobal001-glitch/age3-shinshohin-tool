@@ -1,8 +1,13 @@
 import { useAppData } from "@/hooks/useAppData";
-import { effectiveUberPrice, optionalProgress, requiredProgress } from "./productInfo";
+import {
+  effectiveUberPrice,
+  optionalProgress,
+  requiredProgress,
+  isStorePriceFilled,
+} from "./productInfo";
 import { TASK_GROUPS } from "./prepTasks";
 import { computeDeadline, daysDiffFromToday, isReleasedLongAgo } from "./deadline";
-import { Genre, Product, ProductInfo, TaskGroup, TaskItem, Milestone } from "./types";
+import { Genre, Product, ProductInfo, StoreId, TaskGroup, TaskItem, Milestone } from "./types";
 
 type App = ReturnType<typeof useAppData>;
 type TaskState = Record<string, boolean>;
@@ -67,23 +72,28 @@ export function isLinkedTaskDone(task: TaskItem, info: ProductInfo): boolean {
     case "recipeImages":
       return info.recipeImages.some((l) => l.trim());
     /* 取り扱いのない店舗は、価格が無くても済んだものとして数える */
-    case "priceTokyo":
-      return info.priceTokyo !== null || info.priceTokyoNotSold;
-    case "priceKama":
-      return info.priceKama !== null || info.priceKamaNotSold;
+    case "priceBase":
+      return info.priceBase !== null || info.priceBaseNotSold;
     /* Uber は元価格からの自動計算でも埋まったとみなす */
-    case "priceTokyoUber":
+    case "priceBaseUber":
       return (
-        info.priceTokyoNotSold ||
-        effectiveUberPrice(info.priceTokyoUber, info.priceTokyo) !== null
+        info.priceBaseNotSold || effectiveUberPrice(info.priceBaseUber, info.priceBase) !== null
       );
-    case "priceKamaUber":
-      return (
-        info.priceKamaNotSold ||
-        effectiveUberPrice(info.priceKamaUber, info.priceKama) !== null
-      );
-    default:
+    default: {
+      /* 店舗別の価格（`priceStore:kama` のような形）。
+         標準価格から埋まったことにはしない。その店の欄そのものを見る
+         （入力率の数え方＝`isStorePriceFilled` と揃えている） */
+      const field = task.linkedField ?? "";
+      if (field.startsWith("priceStore:")) {
+        return isStorePriceFilled(info, field.slice("priceStore:".length) as StoreId);
+      }
+      if (field.startsWith("priceStoreUber:")) {
+        const sp = info.priceByStore[field.slice("priceStoreUber:".length) as StoreId];
+        if (!sp) return false;
+        return sp.notSold || effectiveUberPrice(sp.uber, sp.price) !== null;
+      }
       return false;
+    }
   }
 }
 

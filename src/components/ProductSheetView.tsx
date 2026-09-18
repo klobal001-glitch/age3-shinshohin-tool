@@ -18,15 +18,20 @@ import {
   requiredProgress,
   requiredVisualFilled,
   requiredVisualTotal,
+  isStorePriceFilled,
+  patchStorePrice,
+  removeStorePrice,
+  resolveStorePrice,
+  storePriceEntries,
 } from "@/lib/productInfo";
-import { GENRE_LABELS } from "@/lib/types";
+import { GENRE_LABELS, ProductInfo, STORE_IDS, STORE_LABELS, StoreId } from "@/lib/types";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
 import RunTabs, { PastRunNotice, runView } from "./RunTabs";
-import { badge, btn, focusRing, h3, muted } from "@/lib/ui";
+import { badge, btn, chip, focusRing, h3, muted } from "@/lib/ui";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
 function Section({
@@ -359,38 +364,62 @@ function UrlInput({
 function PriceBlock({
   id,
   label,
+  note,
   filled,
   base,
   uber,
   notSold,
+  notSoldLabel,
+  notSoldNote,
   onBase,
   onUber,
   onNotSold,
+  onRemove,
 }: {
   id: string;
   label: string;
-  filled: boolean;
+  /** 見出しの下に一段小さく添える案内 */
+  note?: string;
+  /** 必須項目のときだけ渡す。渡すと左に赤／緑の点が出る */
+  filled?: boolean;
   base: number | null;
   uber: number | null;
   /** この店舗では売らない商品（店舗限定など）。価格が無くても充足とみなす */
   notSold: boolean;
+  /** 「取り扱いなし」の言い方。標準価格と店舗別で文が変わる */
+  notSoldLabel: string;
+  notSoldNote: string;
   onBase: (v: number | null) => void;
   onUber: (v: number | null) => void;
   onNotSold: (v: boolean) => void;
+  /** 店舗別の例外だけ、行ごと消せる（標準価格と嘉麻は消せない） */
+  onRemove?: () => void;
 }) {
   const auto = autoUberPrice(base);
   const isManual = uber !== null;
 
   return (
     <div className="rounded-xl bg-stone-50 p-3">
+      {onRemove && (
+        <div className="mb-1 flex justify-end">
+          <button
+            type="button"
+            className={btn("danger", "min-h-9 px-2.5 py-1 text-xs md:min-h-0")}
+            onClick={onRemove}
+          >
+            この店の価格を消す
+          </button>
+        </div>
+      )}
       <Field label={label} filled={filled}>
         {notSold ? (
           <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500">
-            この店舗では取り扱いません
+            {notSoldNote}
           </div>
         ) : (
           <PriceInput id={id} value={base} placeholder="950" onChange={onBase} />
         )}
+        {note && <p className="mt-1 text-xs text-stone-400">{note}</p>}
       </Field>
       <label className="mt-2 flex items-center gap-2 text-sm text-stone-600">
         <input
@@ -399,7 +428,7 @@ function PriceBlock({
           checked={notSold}
           onChange={(e) => onNotSold(e.target.checked)}
         />
-        この店舗では取り扱いなし
+        {notSoldLabel}
       </label>
       {/* 取り扱いがないなら Uber 価格も出さない。入れた価格は消さずに残す */}
       <div className={`mt-3 ${notSold ? "hidden" : ""}`}>
@@ -438,6 +467,94 @@ function PriceBlock({
             : "元価格を変えると自動で更新されます。直接入力すると手入力に切り替わります。"}
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * 店舗1つぶんの価格。中身は標準価格と同じ PriceBlock を使い回す
+ * （似て非なる入力欄を増やさないため）。
+ */
+function StorePriceBlock({
+  info,
+  store,
+  filled,
+  patch,
+  onRemove,
+}: {
+  info: ProductInfo;
+  store: StoreId;
+  /** 必須の店（嘉麻）のときだけ渡す */
+  filled?: boolean;
+  patch: (p: Partial<ProductInfo>) => void;
+  onRemove?: () => void;
+}) {
+  const value = info.priceByStore[store] ?? { price: null, uber: null, notSold: false };
+  const set = (change: Partial<typeof value>) =>
+    patch({ priceByStore: patchStorePrice(info, store, change) });
+
+  return (
+    <PriceBlock
+      id={`f-price-${store}`}
+      label={`販売価格（${STORE_LABELS[store]}／税込）`}
+      filled={filled}
+      base={value.price}
+      uber={value.uber}
+      notSold={value.notSold}
+      notSoldLabel="この店舗では取り扱いなし"
+      notSoldNote="この店舗では取り扱いません"
+      onBase={(v) => set({ price: v })}
+      onUber={(v) => set({ uber: v })}
+      onNotSold={(v) => set({ notSold: v })}
+      onRemove={onRemove}
+    />
+  );
+}
+
+/**
+ * 標準と違う価格の店を足すところ。
+ * 押すまで店の一覧は出さない（ほとんどの商品は全店同じ価格なので、
+ * いつも出しておくと画面が騒がしくなる）。
+ */
+function AddStorePrice({
+  stores,
+  onAdd,
+}: {
+  stores: StoreId[];
+  onAdd: (store: StoreId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button type="button" className={btn("secondary", "mt-3")} onClick={() => setOpen(true)}>
+        ＋ 店舗別の価格を足す
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl bg-stone-50 p-3">
+      <p className="mb-2 text-sm text-stone-600">標準と価格が違う店を選んでください</p>
+      <div className="flex flex-wrap gap-2">
+        {stores.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={chip(false)}
+            onClick={() => {
+              onAdd(id);
+              setOpen(false);
+            }}
+          >
+            ＋ {STORE_LABELS[id]}
+          </button>
+        ))}
+        <button type="button" className={btn("quiet")} onClick={() => setOpen(false)}>
+          やめる
+        </button>
+      </div>
+      <p className={`mt-2 ${muted}`}>足した直後は標準価格が入っています。違う金額に直してください。</p>
     </div>
   );
 }
@@ -512,17 +629,21 @@ export default function ProductSheetView({
   );
   const visualFilledOf = (links: string[]) => links.some((l) => l.trim());
 
-  /* 取り扱いのない店舗は、価格が無くても入力済みとみなす */
-  const tokyoDone = info.priceTokyo !== null || info.priceTokyoNotSold;
-  const kamaDone = info.priceKama !== null || info.priceKamaNotSold;
+  /* 取り扱いのない店舗は、価格が無くても入力済みとみなす。
+     必須は「標準価格」と「嘉麻」の2件。ほかの店の例外は任意 */
+  const baseDone = info.priceBase !== null || info.priceBaseNotSold;
+  const kamaDone = isStorePriceFilled(info, "kama");
+  /* 嘉麻は必須なので常に出す。それ以外は入っている店だけ並べる */
+  const storeExceptions = storePriceEntries(info).filter((e) => e.store !== "kama");
+  const addableStores = STORE_IDS.filter((id) => id !== "kama" && !info.priceByStore[id]);
 
   const requiredItems: { filled: boolean; focusId: string }[] = [
     { filled: !!info.nameJa, focusId: "f-nameJa" },
     { filled: !!info.slipName, focusId: "f-slipName" },
     { filled: !!info.releaseDate, focusId: "f-releaseDate" },
     { filled: info.noAlcoholPork !== null, focusId: "f-noAlcoholPork" },
-    { filled: tokyoDone, focusId: "f-priceTokyo" },
-    { filled: kamaDone, focusId: "f-priceKama" },
+    { filled: baseDone, focusId: "f-priceBase" },
+    { filled: kamaDone, focusId: "f-price-kama" },
     { filled: ingredientsFilled, focusId: `f-ing-ja-${firstOpenIngredient}` },
     ...info.visualDownloads
       .filter((v) => isRequiredVisualKey(genre, v.key, v))
@@ -552,7 +673,7 @@ export default function ProductSheetView({
     !!info.releaseDate,
     !!info.endDate || info.ongoing,
     !!info.nameEn,
-    tokyoDone,
+    baseDone,
     kamaDone,
   ].filter(Boolean).length;
   const howtoFilled = [!!info.howToVideoUrl, !!info.recipeNotes].filter(Boolean).length;
@@ -773,18 +894,21 @@ export default function ProductSheetView({
       `伝票記載名：${info.slipName}`,
       `品名（英語）：${info.nameEn}`,
       `Instagram投稿文：${info.instagramPost}`,
-      `販売価格（銀座・原宿・浅草・飛騨高山）：${
-        info.priceTokyoNotSold ? "取り扱いなし" : formatYen(info.priceTokyo) || "―"
+      `販売価格（標準）：${
+        info.priceBaseNotSold ? "取り扱いなし" : formatYen(info.priceBase) || "―"
       }`,
-      ...(info.priceTokyoNotSold
+      ...(info.priceBaseNotSold
         ? []
-        : [`　└ Uber：${formatYen(effectiveUberPrice(info.priceTokyoUber, info.priceTokyo)) || "―"}`]),
-      `販売価格（嘉麻）：${
-        info.priceKamaNotSold ? "取り扱いなし" : formatYen(info.priceKama) || "―"
-      }`,
-      ...(info.priceKamaNotSold
-        ? []
-        : [`　└ Uber：${formatYen(effectiveUberPrice(info.priceKamaUber, info.priceKama)) || "―"}`]),
+        : [`　└ Uber：${formatYen(effectiveUberPrice(info.priceBaseUber, info.priceBase)) || "―"}`]),
+      /* 標準と違う店だけ、店舗名を付けて並べる（例外が無ければ標準価格の2行だけ） */
+      ...storePriceEntries(info).flatMap(({ store, value }) => [
+        `販売価格（${STORE_LABELS[store]}）：${
+          value.notSold ? "取り扱いなし" : formatYen(value.price) || "―"
+        }`,
+        ...(value.notSold
+          ? []
+          : [`　└ Uber：${formatYen(effectiveUberPrice(value.uber, value.price)) || "―"}`]),
+      ]),
       "",
       "■材料",
       ...info.ingredients
@@ -1030,34 +1154,52 @@ export default function ProductSheetView({
             </Field>
           )}
         </div>
+        {/* 価格は「標準価格 ＋ 標準と違う店だけの例外」で持つ。
+            全店同じ価格なら、今までどおり標準と嘉麻の2つを入れるだけでよい */}
         <div className="grid gap-4 sm:grid-cols-2">
-          {showRequired(tokyoDone) && (
+          {showRequired(baseDone) && (
             <PriceBlock
-              id="f-priceTokyo"
-              label="販売価格（銀座・原宿・浅草・飛騨高山／税込）"
-              filled={tokyoDone}
-              base={info.priceTokyo}
-              uber={info.priceTokyoUber}
-              notSold={info.priceTokyoNotSold}
-              onBase={(v) => patch({ priceTokyo: v })}
-              onUber={(v) => patch({ priceTokyoUber: v })}
-              onNotSold={(v) => patch({ priceTokyoNotSold: v })}
+              id="f-priceBase"
+              label="販売価格（標準／税込）"
+              note="下に足していない店は、この価格で売る"
+              filled={baseDone}
+              base={info.priceBase}
+              uber={info.priceBaseUber}
+              notSold={info.priceBaseNotSold}
+              notSoldLabel="下に足した店以外では取り扱いなし"
+              notSoldNote="下に足した店以外では取り扱いません"
+              onBase={(v) => patch({ priceBase: v })}
+              onUber={(v) => patch({ priceBaseUber: v })}
+              onNotSold={(v) => patch({ priceBaseNotSold: v })}
             />
           )}
           {showRequired(kamaDone) && (
-            <PriceBlock
-              id="f-priceKama"
-              label="販売価格（嘉麻／税込）"
+            <StorePriceBlock
+              info={info}
+              store="kama"
               filled={kamaDone}
-              base={info.priceKama}
-              uber={info.priceKamaUber}
-              notSold={info.priceKamaNotSold}
-              onBase={(v) => patch({ priceKama: v })}
-              onUber={(v) => patch({ priceKamaUber: v })}
-              onNotSold={(v) => patch({ priceKamaNotSold: v })}
+              patch={patch}
             />
           )}
+          {showOptional() &&
+            storeExceptions.map(({ store }) => (
+              <StorePriceBlock
+                key={store}
+                info={info}
+                store={store}
+                patch={patch}
+                onRemove={() => patch({ priceByStore: removeStorePrice(info, store) })}
+              />
+            ))}
         </div>
+        {showOptional() && addableStores.length > 0 && (
+          <AddStorePrice
+            stores={addableStores}
+            onAdd={(store) =>
+              patch({ priceByStore: patchStorePrice(info, store, resolveStorePrice(info, store)) })
+            }
+          />
+        )}
         {/* 長い文章は一番下に置く。
             目安は140字。ぴったりで切れると文章が壊れるので、入力そのものは145字まで受ける
             （2026年9月・松尾さんの指示）。140字を超えたら数字を赤くして気付けるようにする */}

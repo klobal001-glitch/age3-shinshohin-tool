@@ -20,7 +20,7 @@ import {
 } from "@/lib/ui";
 import { TASK_GROUPS } from "@/lib/prepTasks";
 import { computeDeadline, daysDiffFromToday, diffLabel, formatJpDate } from "@/lib/deadline";
-import { Milestone, ProductInfo, TaskGroup, TaskItem } from "@/lib/types";
+import { Milestone, ProductInfo, StoreId, TaskGroup, TaskItem } from "@/lib/types";
 import { canSkipTask, isLinkedTaskDone, skipKey } from "@/lib/stats";
 import { PriceInput } from "./PriceInput";
 import { VisualLinkRow } from "./VisualLinkRow";
@@ -30,6 +30,7 @@ import {
   createDefaultProductInfo,
   effectiveUberPrice,
   formatYen,
+  patchStorePrice,
 } from "@/lib/productInfo";
 import RunTabs, { PastRunNotice, runView } from "./RunTabs";
 
@@ -133,22 +134,22 @@ function LinkedImageRow({
 }
 
 /**
- * 価格の連動タスクと、情報シートの価格欄の対応。
- * base … 元価格の欄／uber … Uber価格の欄かどうか／notSold … 取り扱いなしの印
+ * 価格の連動タスクが、情報シートのどの価格欄を指しているか。
+ *
+ * store … 店舗別の価格（null なら標準価格）／isUber … Uber価格の欄かどうか
  */
-const PRICE_LINKS: Record<
-  string,
-  {
-    base: "priceTokyo" | "priceKama";
-    uberKey?: "priceTokyoUber" | "priceKamaUber";
-    notSold: "priceTokyoNotSold" | "priceKamaNotSold";
-  }
-> = {
-  priceTokyo: { base: "priceTokyo", notSold: "priceTokyoNotSold" },
-  priceTokyoUber: { base: "priceTokyo", uberKey: "priceTokyoUber", notSold: "priceTokyoNotSold" },
-  priceKama: { base: "priceKama", notSold: "priceKamaNotSold" },
-  priceKamaUber: { base: "priceKama", uberKey: "priceKamaUber", notSold: "priceKamaNotSold" },
-};
+function parsePriceLink(
+  field: string | undefined
+): { store: StoreId | null; isUber: boolean } | null {
+  if (!field) return null;
+  if (field === "priceBase") return { store: null, isUber: false };
+  if (field === "priceBaseUber") return { store: null, isUber: true };
+  if (field.startsWith("priceStore:"))
+    return { store: field.slice("priceStore:".length) as StoreId, isUber: false };
+  if (field.startsWith("priceStoreUber:"))
+    return { store: field.slice("priceStoreUber:".length) as StoreId, isUber: true };
+  return null;
+}
 
 /**
  * 価格を入れる連動タスクの行。
@@ -166,16 +167,33 @@ function LinkedPriceRow({
   info: ProductInfo;
   onPatch: (patch: Partial<ProductInfo>) => void;
 }) {
-  const link = PRICE_LINKS[task.linkedField ?? ""];
+  const link = parsePriceLink(task.linkedField);
   if (!link) return null;
 
-  const notSold = info[link.notSold];
-  const base = info[link.base];
-  const isUber = !!link.uberKey;
-  const uberExplicit = link.uberKey ? info[link.uberKey] : null;
+  /* 標準価格は info の欄、店舗別は priceByStore の中を見る */
+  const cur = link.store
+    ? info.priceByStore[link.store] ?? { price: null, uber: null, notSold: false }
+    : { price: info.priceBase, uber: info.priceBaseUber, notSold: info.priceBaseNotSold };
+
+  const notSold = cur.notSold;
+  const base = cur.price;
+  const isUber = link.isUber;
+  const uberExplicit = isUber ? cur.uber : null;
   const value = isUber ? effectiveUberPrice(uberExplicit, base) : base;
-  const done = notSold || value !== null;
+  /* 店舗別は「欄そのものが埋まっているか」で数える（標準価格から埋まったことにはしない） */
+  const filledHere = link.store ? !!info.priceByStore[link.store] : true;
+  const done = filledHere && (notSold || value !== null);
   const isManual = isUber && uberExplicit !== null;
+
+  /* 入力された値を、標準価格か店舗別の欄のどちらかに書き戻す */
+  const writePrice = (v: number | null) => {
+    const change = isUber ? { uber: v } : { price: v };
+    if (link.store) {
+      onPatch({ priceByStore: patchStorePrice(info, link.store, change) });
+      return;
+    }
+    onPatch(isUber ? { priceBaseUber: v } : { priceBase: v });
+  };
 
   return (
     <div className={taskRow(done ? "done" : "todo", "px-3 py-2.5")}>
@@ -198,7 +216,7 @@ function LinkedPriceRow({
               <button
                 type="button"
                 className="text-xs text-amber-700 hover:underline"
-                onClick={() => link.uberKey && onPatch({ [link.uberKey]: null })}
+                onClick={() => writePrice(null)}
               >
                 自動に戻す
               </button>
@@ -219,9 +237,7 @@ function LinkedPriceRow({
             value={value}
             muted={isUber && !isManual}
             placeholder={isUber ? "元価格を入れると自動計算" : "950"}
-            onChange={(v) =>
-              onPatch(link.uberKey ? { [link.uberKey]: v } : { [link.base]: v })
-            }
+            onChange={writePrice}
           />
         )}
       </div>
@@ -442,7 +458,7 @@ function MilestoneCard({
                   onChange={(links) => onPatchInfo({ recipeImages: links })}
                 />
               )
-            ) : t.linkedField && PRICE_LINKS[t.linkedField] ? (
+            ) : parsePriceLink(t.linkedField) ? (
               info && (
                 <LinkedPriceRow key={t.id} task={t} info={info} onPatch={onPatchInfo} />
               )

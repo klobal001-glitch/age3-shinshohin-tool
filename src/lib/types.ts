@@ -20,6 +20,39 @@ export const GENRE_LABELS: Record<NonNullable<Genre>, string> = {
     season: "シーズン",
 };
 
+/* ------------------------------------------------------------------ *
+ * 店舗と価格
+ *
+ * 以前は「東京ほか4店で1つの価格」「嘉麻で1つの価格」の2つしか持てなかった。
+ * 2026年9月17日の飛騨高山定例で、はみ出る鰻玉が 浅草1,500円／飛騨高山2,000円 と
+ * 決まり、同じ欄の中で価格が割れたため、店舗ごとに持てるようにした。
+ *
+ * 持ち方は「標準価格 ＋ 標準と違う店だけの例外」。ほとんどの商品は全店同じなので、
+ * 例外を持たなければ今までと同じ1つの価格で済む。
+ * ------------------------------------------------------------------ */
+
+export type StoreId = "ginza" | "harajuku" | "asakusa" | "hida" | "kama";
+
+/** 画面に出す順番。北から南ではなく、直営4店→嘉麻の順 */
+export const STORE_IDS: StoreId[] = ["ginza", "harajuku", "asakusa", "hida", "kama"];
+
+export const STORE_LABELS: Record<StoreId, string> = {
+    ginza: "銀座",
+    harajuku: "原宿",
+    asakusa: "浅草",
+    hida: "飛騨高山",
+    kama: "嘉麻",
+};
+
+/** 標準価格と違う店の価格1件ぶん */
+export interface StorePrice {
+    price: number | null;
+    /** Uber価格。null = 自動計算（price × UBER_RATE） */
+    uber: number | null;
+    /** この店では売らない商品。価格が無くても充足とみなす */
+    notSold: boolean;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -97,13 +130,13 @@ export interface ProductInfo {
     descriptionEn: string;
     instagramPost: string;
     // 価格はすべて数値（税込・円）。未入力は null。
-  // 片方の店舗でしか売らない商品があるので、店舗ごとに「取り扱いなし」を持てる
-  priceTokyoNotSold: boolean;
-  priceKamaNotSold: boolean;
-  priceTokyo: number | null; // 銀座・原宿・浅草・飛騨高山
-  priceTokyoUber: number | null; // 上記のUber価格。null = 自動計算（priceTokyo × 1.4）
-  priceKama: number | null; // 嘉麻
-  priceKamaUber: number | null; // 上記のUber価格。null = 自動計算（priceKama × 1.4）
+  // 標準価格（priceBase）を全店の基準にして、これと違う店だけ priceByStore に入れる。
+  // 店舗によっては売らない商品があるので、店舗ごとに「取り扱いなし」を持てる。
+  priceBase: number | null; // 標準価格。例外を入れていない店はこの値で売る
+  priceBaseUber: number | null; // 上記のUber価格。null = 自動計算（priceBase × 1.4）
+  priceBaseNotSold: boolean;
+  /** 標準と違う店だけ。嘉麻はほとんどの商品で価格が違うので、必須の数に入れている */
+  priceByStore: Partial<Record<StoreId, StorePrice>>;
 
   // 材料
   ingredients: IngredientRow[];
@@ -167,10 +200,11 @@ export interface TaskItem {
     linkedField?:
         | "noAlcoholPork"
         | "recipeImages"
-        | "priceTokyo"
-        | "priceTokyoUber"
-        | "priceKama"
-        | "priceKamaUber";
+        | "priceBase"
+        | "priceBaseUber"
+        /** 店舗別の価格。例：`priceStore:kama` = 嘉麻の元価格 */
+        | `priceStore:${StoreId}`
+        | `priceStoreUber:${StoreId}`;
 }
 
 export type DeadlineRule =

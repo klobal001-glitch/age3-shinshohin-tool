@@ -2,6 +2,9 @@ import {
   Genre,
   IngredientRow,
   ProductInfo,
+  StoreId,
+  StorePrice,
+  STORE_IDS,
   ProductRun,
   TaskYearArchive,
   VisualLinkGroup,
@@ -105,12 +108,10 @@ export function createDefaultProductInfo(): ProductInfo {
     descriptionJa: "",
     descriptionEn: "",
     instagramPost: "",
-    priceTokyoNotSold: false,
-    priceKamaNotSold: false,
-    priceTokyo: null,
-    priceTokyoUber: null,
-    priceKama: null,
-    priceKamaUber: null,
+    priceBase: null,
+    priceBaseUber: null,
+    priceBaseNotSold: false,
+    priceByStore: {},
     ingredients: Array.from({ length: DEFAULT_INGREDIENT_ROWS }, () => ({
       nameJa: "",
       nameEn: "",
@@ -147,8 +148,9 @@ export function requiredProgress(info: ProductInfo, genre: Genre): ProgressCount
     !!info.releaseDate,
     info.noAlcoholPork !== null,
     // 取り扱いのない店舗は、価格が無くても充足とみなす
-    info.priceTokyo !== null || info.priceTokyoNotSold,
-    info.priceKama !== null || info.priceKamaNotSold,
+    // 必須は「標準価格」と「嘉麻」の2件。ほかの店の例外は任意なので分母に入れない
+    info.priceBase !== null || info.priceBaseNotSold,
+    isStorePriceFilled(info, "kama"),
     info.ingredients.some((i) => i.nameJa && i.amount),
     // 各サイズのビジュアルは1つでもリンクが入っていれば充足（空欄の行は数えない）。
     // レギュラー商品は必須が3件だけなので、それ以外は数に入れない
@@ -253,6 +255,90 @@ export function effectiveUberPrice(explicit: number | null, base: number | null)
   return explicit !== null ? explicit : autoUberPrice(base);
 }
 
+/* ------------------------------------------------------------------ *
+ * 店舗別の価格
+ *
+ * 標準価格（priceBase）が全店の基準。これと違う店だけ priceByStore に入れる。
+ * 例外を持たない店は、標準価格をそのまま使う。
+ * ------------------------------------------------------------------ */
+
+/** 空の店舗別価格（行を足したばかりの状態） */
+export function emptyStorePrice(): StorePrice {
+  return { price: null, uber: null, notSold: false };
+}
+
+/** その店に例外が入っているか（入っていなければ標準価格で売る） */
+export function hasStorePrice(info: ProductInfo, store: StoreId): boolean {
+  return !!info.priceByStore[store];
+}
+
+/** その店の価格欄が埋まっているか。取り扱いなしも埋まったものとして数える */
+export function isStorePriceFilled(info: ProductInfo, store: StoreId): boolean {
+  const sp = info.priceByStore[store];
+  if (!sp) return false;
+  return sp.price !== null || sp.notSold;
+}
+
+/** その店で実際に売る価格。例外が無ければ標準価格 */
+export function resolveStorePrice(info: ProductInfo, store: StoreId): StorePrice {
+  return (
+    info.priceByStore[store] ?? {
+      price: info.priceBase,
+      uber: info.priceBaseUber,
+      notSold: info.priceBaseNotSold,
+    }
+  );
+}
+
+/** priceByStore の一部だけを書き換えた新しい値を作る（patch にそのまま渡す形） */
+export function patchStorePrice(
+  info: ProductInfo,
+  store: StoreId,
+  change: Partial<StorePrice>
+): Partial<Record<StoreId, StorePrice>> {
+  const cur = info.priceByStore[store] ?? emptyStorePrice();
+  return { ...info.priceByStore, [store]: { ...cur, ...change } };
+}
+
+/** その店の例外を取り消して、標準価格に戻す */
+export function removeStorePrice(
+  info: ProductInfo,
+  store: StoreId
+): Partial<Record<StoreId, StorePrice>> {
+  const next = { ...info.priceByStore };
+  delete next[store];
+  return next;
+}
+
+/** 例外が入っている店を、画面に出す順番で並べて返す */
+export function storePriceEntries(info: ProductInfo): { store: StoreId; value: StorePrice }[] {
+  return STORE_IDS.filter((id) => info.priceByStore[id]).map((id) => ({
+    store: id,
+    value: info.priceByStore[id] as StorePrice,
+  }));
+}
+
+/**
+ * 保存されている店舗別価格をそろえる。
+ * 知らない店舗名は捨て、欠けている欄は空で埋める。
+ */
+function normalizeStorePrices(raw: unknown): Partial<Record<StoreId, StorePrice>> {
+  const out: Partial<Record<StoreId, StorePrice>> = {};
+  if (!raw || typeof raw !== "object") return out;
+  const r = raw as Record<string, unknown>;
+  for (const id of STORE_IDS) {
+    const v = r[id];
+    if (!v || typeof v !== "object") continue;
+    const sp = v as Record<string, unknown>;
+    out[id] = {
+      price: legacyPriceToNumber(sp.price),
+      uber: legacyPriceToNumber(sp.uber),
+      notSold: sp.notSold === true,
+    };
+  }
+  return out;
+}
+
 /** 表示用フォーマット。null は空文字。 */
 export function formatYen(value: number | null): string {
   if (value === null) return "";
@@ -334,14 +420,42 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   const merged = { ...base, ...(r as Partial<ProductInfo>) } as ProductInfo;
 
   merged.ongoing = r.ongoing === true;
-  merged.priceTokyoNotSold = r.priceTokyoNotSold === true;
-  merged.priceKamaNotSold = r.priceKamaNotSold === true;
   merged.slipName = typeof r.slipName === "string" ? r.slipName : "";
   merged.discontinued = r.discontinued === true;
-  merged.priceTokyo = legacyPriceToNumber(r.priceTokyo);
-  merged.priceKama = legacyPriceToNumber(r.priceKama);
-  merged.priceTokyoUber = legacyPriceToNumber(r.priceTokyoUber);
-  merged.priceKamaUber = legacyPriceToNumber(r.priceKamaUber);
+
+  /* 価格の古い形（東京ほか4店で1つ／嘉麻で1つ）を、
+     標準価格＋店舗別の例外に読み替える。保存されている中身はそのままで、
+     読み込んだ瞬間に新しい形になり、次の保存で置き換わる。 */
+  const hasNewPrice = "priceBase" in r || "priceByStore" in r;
+  merged.priceBase = legacyPriceToNumber(hasNewPrice ? r.priceBase : r.priceTokyo);
+  merged.priceBaseUber = legacyPriceToNumber(hasNewPrice ? r.priceBaseUber : r.priceTokyoUber);
+  merged.priceBaseNotSold = hasNewPrice
+    ? r.priceBaseNotSold === true
+    : r.priceTokyoNotSold === true;
+
+  merged.priceByStore = normalizeStorePrices(r.priceByStore);
+  /* 嘉麻は古い形では専用の欄だった。例外の1件として移す */
+  if (!merged.priceByStore.kama) {
+    const kamaPrice = legacyPriceToNumber(r.priceKama);
+    const kamaUber = legacyPriceToNumber(r.priceKamaUber);
+    const kamaNotSold = r.priceKamaNotSold === true;
+    if (kamaPrice !== null || kamaUber !== null || kamaNotSold) {
+      merged.priceByStore.kama = { price: kamaPrice, uber: kamaUber, notSold: kamaNotSold };
+    }
+  }
+
+  /* 古い欄は保存し直さない（残すと2か所に価格が出来て食い違う） */
+  const stale = merged as unknown as Record<string, unknown>;
+  for (const key of [
+    "priceTokyo",
+    "priceTokyoUber",
+    "priceTokyoNotSold",
+    "priceKama",
+    "priceKamaUber",
+    "priceKamaNotSold",
+  ]) {
+    delete stale[key];
+  }
 
   if (!Array.isArray(merged.ingredients) || merged.ingredients.length === 0) {
     merged.ingredients = base.ingredients;
