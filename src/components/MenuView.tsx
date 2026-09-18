@@ -273,7 +273,7 @@ export default function MenuView({
           <h3 className={sectionTitle}>直近の締め切り</h3>
         </div>
         <p className="mb-4 px-1 text-sm leading-relaxed text-stone-500">
-          締め切りが{BACKLOG_MONTHS}か月より前のものは、下の「過去分のタスク」に分けています。継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
+          締め切りが{BACKLOG_MONTHS}か月より前のものと、発売月が今月以前の商品のタスクは、下の「過去分のタスク」に分けています。継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
         </p>
         <div className={`${surface} overflow-hidden`}>
           {nearestDeadlines.length === 0 ? (
@@ -329,7 +329,7 @@ export default function MenuView({
           )}
         </div>
         <p className="mb-4 px-1 text-sm leading-relaxed text-stone-500">
-          締め切りが{BACKLOG_MONTHS}か月より前に過ぎたタスクです。期限超過の数には入れていません。時間があるときに埋めていきます。
+          締め切りが{BACKLOG_MONTHS}か月より前に過ぎたタスクと、発売月が今月以前の商品（もう発売した・今月発売する商品）のタスクです。期限超過の数には入れていません。時間があるときに埋めていきます。
         </p>
         {showBacklog && (
           <div className={`${surface} overflow-hidden`}>
