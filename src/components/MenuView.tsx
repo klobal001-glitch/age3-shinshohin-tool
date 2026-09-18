@@ -5,6 +5,8 @@ import { useAppData } from "@/hooks/useAppData";
 import { TabKey } from "./Header";
 import Icon from "@/components/Icon";
 import {
+  BACKLOG_MONTHS,
+  backlogPerProduct,
   collectDeadlines,
   computeDashboardStats,
   infoFillRate,
@@ -88,9 +90,19 @@ function StatCard({
 }
 
 /** セクションの見出しに付ける、色の付いた四角いアイコン */
-function SectionIcon({ name, tone }: { name: "calendar" | "sheet"; tone: "danger" | "info" }) {
+function SectionIcon({
+  name,
+  tone,
+}: {
+  name: "calendar" | "sheet";
+  tone: "danger" | "info" | "plain";
+}) {
   const face =
-    tone === "danger" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700";
+    tone === "danger"
+      ? "bg-red-100 text-red-600"
+      : tone === "info"
+        ? "bg-amber-100 text-amber-700"
+        : "bg-stone-100 text-stone-500";
   return (
     <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${face}`}>
       <Icon name={name} className="h-5 w-5" />
@@ -130,7 +142,14 @@ export default function MenuView({
 
   const deadlines = useMemo(() => collectDeadlines(app), [app]);
   const stats = useMemo(() => computeDashboardStats(app, deadlines), [app, deadlines]);
-  const nearestDeadlines = useMemo(() => nearestPerProduct(deadlines), [deadlines]);
+  /* 「次にやること」と「直近の締め切り」は過去分（2か月より前）を入れない。
+     過去分は下の「過去分のタスク」に分けて出す（2026年9月18日・松尾さんの指示） */
+  const nearestDeadlines = useMemo(
+    () => nearestPerProduct(deadlines.filter((e) => !e.backlog)),
+    [deadlines]
+  );
+  const backlogRows = useMemo(() => backlogPerProduct(deadlines), [deadlines]);
+  const [showBacklog, setShowBacklog] = useState(false);
 
   const today = todayKey();
 
@@ -240,7 +259,7 @@ export default function MenuView({
           tone="task"
         />
         <StatCard
-          label="期限超過のタスク"
+          label={`期限超過のタスク（直近${BACKLOG_MONTHS}か月）`}
           value={String(stats.overdueTaskCount)}
           suffix="件"
           tone={stats.overdueTaskCount > 0 ? "danger" : "plain"}
@@ -254,7 +273,7 @@ export default function MenuView({
           <h3 className={sectionTitle}>直近の締め切り</h3>
         </div>
         <p className="mb-4 px-1 text-sm leading-relaxed text-stone-500">
-          継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
+          締め切りが{BACKLOG_MONTHS}か月より前のものは、下の「過去分のタスク」に分けています。継続販売中の商品と、発売から1年以上が経過した商品は表示していません（各商品の準備タスク画面では従来どおり確認できます）。
         </p>
         <div className={`${surface} overflow-hidden`}>
           {nearestDeadlines.length === 0 ? (
@@ -289,6 +308,59 @@ export default function MenuView({
             </div>
           )}
         </div>
+      </section>
+
+      {/* 過去分のタスク。数は見せるが、いま追いかける超過とは一緒にしない。
+          いずれ埋める必要があるので、時間があるときに開けるよう一覧はたたんでおく */}
+      <section>
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
+          <SectionIcon name="calendar" tone="plain" />
+          <h3 className={sectionTitle}>過去分のタスク</h3>
+          <span className="text-sm tabular-nums text-stone-400">
+            {stats.backlogTaskCount}件（{stats.backlogProductCount}商品）
+          </span>
+          {backlogRows.length > 0 && (
+            <button
+              className={`ml-auto ${chip(showBacklog, "rounded-full", "sm")}`}
+              onClick={() => setShowBacklog((v) => !v)}
+            >
+              {showBacklog ? "たたむ" : "一覧を見る"}
+            </button>
+          )}
+        </div>
+        <p className="mb-4 px-1 text-sm leading-relaxed text-stone-500">
+          締め切りが{BACKLOG_MONTHS}か月より前に過ぎたタスクです。期限超過の数には入れていません。時間があるときに埋めていきます。
+        </p>
+        {showBacklog && (
+          <div className={`${surface} overflow-hidden`}>
+            {backlogRows.length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm leading-relaxed text-stone-400">
+                過去分のタスクはありません。
+              </p>
+            ) : (
+              <div className="divide-y divide-stone-100">
+                {backlogRows.map((r) => (
+                  <button
+                    key={r.product.id}
+                    onClick={() => openTasks(r.product.id)}
+                    className={`flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3.5 text-left transition hover:bg-stone-50 sm:px-6 ${focusRing}`}
+                  >
+                    <span className="h-7 w-1.5 shrink-0 rounded-full bg-stone-300" />
+                    <span className="min-w-[9rem] text-[15px] font-medium text-stone-900">
+                      {r.product.name}
+                    </span>
+                    <span className="text-sm text-stone-500">
+                      いちばん古い締め切り {formatJpDate(r.oldest.deadline)}（{-r.oldest.days}日前）
+                    </span>
+                    <span className={badge("neutral", "ml-auto shrink-0 tabular-nums")}>
+                      残り {r.remaining}件
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* 商品一覧 */}
