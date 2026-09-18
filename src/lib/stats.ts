@@ -163,6 +163,23 @@ export interface DeadlineEntry {
   days: number;
   checked: number;
   total: number;
+  /** 締め切りが「過去分」（今日から BACKLOG_MONTHS か月より前）かどうか */
+  backlog: boolean;
+}
+
+/**
+ * 「過去分」の線引き（2026年9月18日・松尾さんの指示）。
+ * 締め切りが今日から数えて2か月より前のものは、期限超過の数には入れず、
+ * 「過去分のタスク」として別に数える。いずれ埋める必要はあるので数は見せるが、
+ * いま追いかける超過とは一緒にしない。
+ */
+export const BACKLOG_MONTHS = 2;
+
+/** 締め切りが今日から BACKLOG_MONTHS か月より前なら true */
+export function isBacklogDeadline(deadline: Date): boolean {
+  const now = new Date();
+  const limit = new Date(now.getFullYear(), now.getMonth() - BACKLOG_MONTHS, now.getDate());
+  return deadline.getTime() < limit.getTime();
 }
 
 /** ダッシュボードで締め切りを追わなくなるまでの期間（発売日から） */
@@ -193,7 +210,16 @@ export function collectDeadlines(app: App): DeadlineEntry[] {
         /* 完了済みと、「今回は作らない」で中身が無くなった区切りは締め切りに出さない */
         if (total === 0 || checked === total) continue;
         const days = daysDiffFromToday(deadline) ?? 0;
-        entries.push({ product: p, group: g, milestone: m, deadline, days, checked, total });
+        entries.push({
+          product: p,
+          group: g,
+          milestone: m,
+          deadline,
+          days,
+          checked,
+          total,
+          backlog: isBacklogDeadline(deadline),
+        });
       }
     }
   }
@@ -211,11 +237,40 @@ export function nearestPerProduct(entries: DeadlineEntry[]): DeadlineEntry[] {
   return Array.from(seen.values()).sort((a, b) => a.days - b.days);
 }
 
+/** 商品ごとの「過去分」のまとめ（残り件数と、いちばん古い締め切り） */
+export interface BacklogRow {
+  product: Product;
+  remaining: number;
+  oldest: DeadlineEntry;
+}
+
+/** 過去分の締め切りを商品ごとにまとめる。残りが多い順 */
+export function backlogPerProduct(entries: DeadlineEntry[]): BacklogRow[] {
+  const map = new Map<string, BacklogRow>();
+  for (const e of entries) {
+    if (!e.backlog) continue;
+    const cur = map.get(e.product.id);
+    const remaining = e.total - e.checked;
+    if (!cur) {
+      map.set(e.product.id, { product: e.product, remaining, oldest: e });
+    } else {
+      cur.remaining += remaining;
+      if (e.days < cur.oldest.days) cur.oldest = e;
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.remaining - a.remaining);
+}
+
 export interface DashboardStats {
   productCount: number;
   avgInfoFill: number;
   avgTaskCompletion: number;
+  /** 期限超過（締め切りが今日から BACKLOG_MONTHS か月以内のものだけ） */
   overdueTaskCount: number;
+  /** 過去分（締め切りが BACKLOG_MONTHS か月より前）の未完了タスク数 */
+  backlogTaskCount: number;
+  /** 過去分を持つ商品の数 */
+  backlogProductCount: number;
 }
 
 export function computeDashboardStats(app: App, deadlines: DeadlineEntry[]): DashboardStats {
@@ -230,14 +285,20 @@ export function computeDashboardStats(app: App, deadlines: DeadlineEntry[]): Das
     taskChecked += ts.checked;
     taskTotal += ts.total;
   }
+  /* 期限超過は「直近2か月」だけ。それより前は過去分として別に数える */
   const overdueTaskCount = deadlines
-    .filter((e) => e.days < 0)
+    .filter((e) => e.days < 0 && !e.backlog)
     .reduce((sum, e) => sum + (e.total - e.checked), 0);
+  const backlogEntries = deadlines.filter((e) => e.backlog);
+  const backlogTaskCount = backlogEntries.reduce((sum, e) => sum + (e.total - e.checked), 0);
+  const backlogProductCount = new Set(backlogEntries.map((e) => e.product.id)).size;
 
   return {
     productCount: products.length,
     avgInfoFill: products.length ? Math.round(infoSum / products.length) : 0,
     avgTaskCompletion: taskTotal ? Math.round((taskChecked / taskTotal) * 100) : 0,
     overdueTaskCount,
+    backlogTaskCount,
+    backlogProductCount,
   };
 }
