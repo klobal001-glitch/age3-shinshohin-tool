@@ -5,6 +5,7 @@ import {
   StoreId,
   StorePrice,
   STORE_IDS,
+  storeMoney,
   ProductRun,
   TaskYearArchive,
   VisualLinkGroup,
@@ -343,6 +344,15 @@ function normalizeStorePrices(raw: unknown): Partial<Record<StoreId, StorePrice>
 export function formatYen(value: number | null): string {
   if (value === null) return "";
   return `¥${value.toLocaleString("ja-JP")}`;
+}
+
+/**
+ * 表示用フォーマット（店ごと）。海外の店は現地の記号で出す。
+ * 店を渡さないときは標準価格＝円。
+ */
+export function formatPrice(value: number | null, store?: StoreId | null): string {
+  if (value === null) return "";
+  return `${storeMoney(store).symbol}${value.toLocaleString("ja-JP")}`;
 }
 
 /**
