@@ -15,18 +15,21 @@ export function PriceInput({
   value,
   placeholder,
   muted,
+  /** お金の記号。海外の店は ฿ など。省略すると円 */
+  symbol = "¥",
   onChange,
 }: {
   id?: string;
   value: number | null;
   placeholder?: string;
   muted?: boolean;
+  symbol?: string;
   onChange: (v: number | null) => void;
 }) {
   return (
     <div className="relative">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400">
-        ¥
+        {symbol}
       </span>
       <input
         id={id}
