@@ -31,10 +31,10 @@ export const GENRE_LABELS: Record<NonNullable<Genre>, string> = {
  * 例外を持たなければ今までと同じ1つの価格で済む。
  * ------------------------------------------------------------------ */
 
-export type StoreId = "ginza" | "harajuku" | "asakusa" | "hida" | "kama";
+export type StoreId = "ginza" | "harajuku" | "asakusa" | "hida" | "kama" | "bangkok";
 
-/** 画面に出す順番。北から南ではなく、直営4店→嘉麻の順 */
-export const STORE_IDS: StoreId[] = ["ginza", "harajuku", "asakusa", "hida", "kama"];
+/** 画面に出す順番。北から南ではなく、直営4店→嘉麻→海外の順 */
+export const STORE_IDS: StoreId[] = ["ginza", "harajuku", "asakusa", "hida", "kama", "bangkok"];
 
 export const STORE_LABELS: Record<StoreId, string> = {
     ginza: "銀座",
@@ -42,7 +42,38 @@ export const STORE_LABELS: Record<StoreId, string> = {
     asakusa: "浅草",
     hida: "飛騨高山",
     kama: "嘉麻",
+    bangkok: "バンコク",
 };
+
+/* ------------------------------------------------------------------ *
+ * お金の単位
+ *
+ * 海外の店は現地のお金で入れる。円に直して入れると、現地の値札と数字が
+ * 合わなくなり、見た人が迷うため。
+ * 2026年9月、タイティー抹茶ブリュレを「タイでだけ売る」と決めたときに足した。
+ * ------------------------------------------------------------------ */
+
+export interface StoreMoney {
+    /** 入力欄の左に出す記号 */
+    symbol: string;
+    /** 空欄のときに薄く出す例 */
+    sample: string;
+    /** Uber Eats 価格の欄を出すか */
+    hasUber: boolean;
+}
+
+/** 日本の店。円で入れて、Uber価格は元価格の1.4倍 */
+export const YEN: StoreMoney = { symbol: "¥", sample: "950", hasUber: true };
+
+/** 円以外で入れる店だけ書く。書いていない店は円 */
+export const STORE_MONEY: Partial<Record<StoreId, StoreMoney>> = {
+    bangkok: { symbol: "฿", sample: "250", hasUber: false },
+};
+
+/** その店のお金の単位。標準価格（店の指定なし）は円 */
+export function storeMoney(store: StoreId | null | undefined): StoreMoney {
+    return (store && STORE_MONEY[store]) || YEN;
+}
 
 /** 標準価格と違う店の価格1件ぶん */
 export interface StorePrice {
