@@ -9,6 +9,7 @@ import {
   UBER_RATE,
   autoUberPrice,
   effectiveUberPrice,
+  formatPrice,
   formatYen,
   ingredientsProgress,
   isBlankIngredientRow,
@@ -21,10 +22,20 @@ import {
   isStorePriceFilled,
   patchStorePrice,
   removeStorePrice,
+  emptyStorePrice,
   resolveStorePrice,
   storePriceEntries,
 } from "@/lib/productInfo";
-import { GENRE_LABELS, ProductInfo, STORE_IDS, STORE_LABELS, StoreId } from "@/lib/types";
+import {
+  GENRE_LABELS,
+  ProductInfo,
+  STORE_IDS,
+  STORE_LABELS,
+  StoreId,
+  StoreMoney,
+  YEN,
+  storeMoney,
+} from "@/lib/types";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
@@ -371,6 +382,7 @@ function PriceBlock({
   notSold,
   notSoldLabel,
   notSoldNote,
+  money = YEN,
   onBase,
   onUber,
   onNotSold,
@@ -389,6 +401,8 @@ function PriceBlock({
   /** 「取り扱いなし」の言い方。標準価格と店舗別で文が変わる */
   notSoldLabel: string;
   notSoldNote: string;
+  /** お金の単位。海外の店は現地の記号で入れ、Uber価格の欄も出さない */
+  money?: StoreMoney;
   onBase: (v: number | null) => void;
   onUber: (v: number | null) => void;
   onNotSold: (v: boolean) => void;
@@ -397,6 +411,7 @@ function PriceBlock({
 }) {
   const auto = autoUberPrice(base);
   const isManual = uber !== null;
+  const fmt = (v: number | null) => (v === null ? "" : `${money.symbol}${v.toLocaleString("ja-JP")}`);
 
   return (
     <div className="rounded-xl bg-stone-50 p-3">
@@ -417,7 +432,13 @@ function PriceBlock({
             {notSoldNote}
           </div>
         ) : (
-          <PriceInput id={id} value={base} placeholder="950" onChange={onBase} />
+          <PriceInput
+            id={id}
+            value={base}
+            placeholder={money.sample}
+            symbol={money.symbol}
+            onChange={onBase}
+          />
         )}
         {note && <p className="mt-1 text-xs text-stone-400">{note}</p>}
       </Field>
@@ -431,7 +452,8 @@ function PriceBlock({
         {notSoldLabel}
       </label>
       {/* 取り扱いがないなら Uber 価格も出さない。入れた価格は消さずに残す */}
-      <div className={`mt-3 ${notSold ? "hidden" : ""}`}>
+      {/* Uber Eats を使っていない店（海外など）は、欄そのものを出さない */}
+      <div className={`mt-3 ${notSold || !money.hasUber ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center gap-2">
           <label className="block text-sm font-medium text-stone-600">
             └ Uber Eats 価格（税込）
@@ -463,7 +485,7 @@ function PriceBlock({
         />
         <p className="mt-1 text-xs text-stone-400">
           {isManual
-            ? `自動計算なら ${auto === null ? "―" : formatYen(auto)} です。`
+            ? `自動計算なら ${auto === null ? "―" : fmt(auto)} です。`
             : "元価格を変えると自動で更新されます。直接入力すると手入力に切り替わります。"}
         </p>
       </div>
@@ -503,6 +525,7 @@ function StorePriceBlock({
       notSold={value.notSold}
       notSoldLabel="この店舗では取り扱いなし"
       notSoldNote="この店舗では取り扱いません"
+      money={storeMoney(store)}
       onBase={(v) => set({ price: v })}
       onUber={(v) => set({ uber: v })}
       onNotSold={(v) => set({ notSold: v })}
@@ -535,7 +558,9 @@ function AddStorePrice({
 
   return (
     <div className="mt-3 rounded-xl bg-stone-50 p-3">
-      <p className="mb-2 text-sm text-stone-600">標準と価格が違う店を選んでください</p>
+      <p className="mb-2 text-sm text-stone-600">
+        標準と値段が違う店を選んでください（海外の店もここから足せます）
+      </p>
       <div className="flex flex-wrap gap-2">
         {stores.map((id) => (
           <button
@@ -548,13 +573,17 @@ function AddStorePrice({
             }}
           >
             ＋ {STORE_LABELS[id]}
+            {storeMoney(id).symbol !== YEN.symbol && `（${storeMoney(id).symbol}）`}
           </button>
         ))}
         <button type="button" className={btn("quiet")} onClick={() => setOpen(false)}>
           やめる
         </button>
       </div>
-      <p className={`mt-2 ${muted}`}>足した直後は標準価格が入っています。違う金額に直してください。</p>
+      <p className={`mt-2 ${muted}`}>
+        足した直後は標準価格が入っています。違う金額に直してください。
+        海外の店は空で足すので、現地の金額をそのまま入れてください。
+      </p>
     </div>
   );
 }
@@ -903,11 +932,12 @@ export default function ProductSheetView({
       /* 標準と違う店だけ、店舗名を付けて並べる（例外が無ければ標準価格の2行だけ） */
       ...storePriceEntries(info).flatMap(({ store, value }) => [
         `販売価格（${STORE_LABELS[store]}）：${
-          value.notSold ? "取り扱いなし" : formatYen(value.price) || "―"
+          value.notSold ? "取り扱いなし" : formatPrice(value.price, store) || "―"
         }`,
-        ...(value.notSold
+        /* Uber Eats を使っていない店（海外など）は、書き出しにも出さない */
+        ...(value.notSold || !storeMoney(store).hasUber
           ? []
-          : [`　└ Uber：${formatYen(effectiveUberPrice(value.uber, value.price)) || "―"}`]),
+          : [`　└ Uber：${formatPrice(effectiveUberPrice(value.uber, value.price), store) || "―"}`]),
       ]),
       "",
       "■材料",
@@ -1196,7 +1226,17 @@ export default function ProductSheetView({
           <AddStorePrice
             stores={addableStores}
             onAdd={(store) =>
-              patch({ priceByStore: patchStorePrice(info, store, resolveStorePrice(info, store)) })
+              patch({
+                priceByStore: patchStorePrice(
+                  info,
+                  store,
+                  /* 円以外で入れる店に標準価格を写すと、桁が合わないまま残ってしまう。
+                     海外の店は空で足して、現地の金額を入れてもらう */
+                  storeMoney(store).symbol === YEN.symbol
+                    ? resolveStorePrice(info, store)
+                    : emptyStorePrice()
+                ),
+              })
             }
           />
         )}
