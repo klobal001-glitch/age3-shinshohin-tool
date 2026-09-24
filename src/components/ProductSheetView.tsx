@@ -12,6 +12,7 @@ import {
   formatPrice,
   formatYen,
   ingredientsProgress,
+  emptyIngredientRow,
   isBlankIngredientRow,
   isRequiredVisualKey,
   optionalProgress,
@@ -38,6 +39,7 @@ import {
 } from "@/lib/types";
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
+import { IngredientPhoto, removeProductPhoto } from "./IngredientPhoto";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
@@ -736,11 +738,14 @@ export default function ProductSheetView({
     patch({ ingredients: next });
   };
 
-  const addIngredient = () =>
-    patch({ ingredients: [...info.ingredients, { nameJa: "", nameEn: "", amount: "", specs: [] }] });
+  const addIngredient = () => patch({ ingredients: [...info.ingredients, emptyIngredientRow()] });
 
-  const removeIngredient = (idx: number) =>
+  const removeIngredient = (idx: number) => {
+    /* 行ごと消すときは、その行の写真も置き場から片付ける */
+    const photoPath = info.ingredients[idx]?.photoPath;
+    if (photoPath) void removeProductPhoto(photoPath);
     patch({ ingredients: info.ingredients.filter((_, i) => i !== idx) });
+  };
 
   const blankIngredientCount = info.ingredients.filter(isBlankIngredientRow).length;
 
@@ -749,7 +754,7 @@ export default function ProductSheetView({
     const kept = info.ingredients.filter((row) => !isBlankIngredientRow(row));
     const rows = [...kept];
     while (rows.length < DEFAULT_INGREDIENT_ROWS) {
-      rows.push({ nameJa: "", nameEn: "", amount: "", specs: [] });
+      rows.push(emptyIngredientRow());
     }
     patch({ ingredients: rows });
   };
@@ -1270,6 +1275,9 @@ export default function ProductSheetView({
       >
         <p className="text-xs text-stone-400">
           品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。
+          写真は行ごとに1枚、右の
+          <span className="mx-1">📷</span>
+          を押して選べます（スマホならその場で撮れます）。
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Tab</kbd>
           で右のセル、最後の行で
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Enter</kbd>
@@ -1278,7 +1286,7 @@ export default function ProductSheetView({
 
         {/* スマホでは1行＝1枚のカードに積み替える（見た目の指定は globals.css の .ing-table） */}
         <div className="-mx-2 px-2 md:overflow-x-auto">
-          <table className="ing-table w-full border-collapse text-sm md:min-w-[680px]">
+          <table className="ing-table w-full border-collapse text-sm md:min-w-[760px]">
             <thead>
               <tr className="text-left text-xs font-medium text-stone-400">
                 <th className="w-8 pb-1" />
@@ -1286,6 +1294,7 @@ export default function ProductSheetView({
                 <th className="px-0.5 pb-1">品名（英語）</th>
                 <th className="w-24 px-0.5 pb-1">分量</th>
                 <th className="px-0.5 pb-1">詳細スペック（任意）</th>
+                <th className="w-20 px-0.5 pb-1">写真</th>
                 <th className="w-8 pb-1" />
               </tr>
             </thead>
@@ -1356,6 +1365,14 @@ export default function ProductSheetView({
                         }}
                       />
                     ))}
+                  </td>
+                  <td className="px-0.5 py-1" data-label="写真">
+                    <IngredientPhoto
+                      productId={selectedProduct.id}
+                      index={idx}
+                      row={row}
+                      onChange={(change) => updateIngredient(idx, change)}
+                    />
                   </td>
                   <td className="ing-del py-1 pl-1 text-center">
                     <button
