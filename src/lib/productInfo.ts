@@ -89,6 +89,11 @@ export function naVisualCount(info: ProductInfo): number {
 /** 新しい商品を作ったときに最初から用意しておく材料の行数。 */
 export const DEFAULT_INGREDIENT_ROWS = 5;
 
+/** まっさらな材料の行 */
+export function emptyIngredientRow(): IngredientRow {
+  return { nameJa: "", nameEn: "", amount: "", specs: [], photoUrl: "", photoPath: "" };
+}
+
 export function createDefaultProductInfo(): ProductInfo {
   const visualDownloads: VisualLinkGroup[] = VISUAL_DOWNLOAD_DEFS.map((d) => ({
     key: d.key,
@@ -113,12 +118,7 @@ export function createDefaultProductInfo(): ProductInfo {
     priceBaseUber: null,
     priceBaseNotSold: false,
     priceByStore: {},
-    ingredients: Array.from({ length: DEFAULT_INGREDIENT_ROWS }, () => ({
-      nameJa: "",
-      nameEn: "",
-      amount: "",
-      specs: [] as string[],
-    })),
+    ingredients: Array.from({ length: DEFAULT_INGREDIENT_ROWS }, () => emptyIngredientRow()),
     howToVideoUrl: "",
     recipeImages: [],
     recipeNotes: "",
@@ -381,12 +381,13 @@ function normalizeVisualGroups(groups: unknown): VisualLinkGroup[] {
   });
 }
 
-/** 品名・分量・詳細スペックがすべて空の行か */
+/** 品名・分量・詳細スペック・写真がすべて空の行か */
 export function isBlankIngredientRow(row: IngredientRow): boolean {
   return (
     !row.nameJa.trim() &&
     !row.nameEn.trim() &&
     !row.amount.trim() &&
+    !row.photoUrl.trim() &&
     row.specs.every((s) => !s.trim())
   );
 }
@@ -405,6 +406,8 @@ export function normalizeIngredientRows(rows: unknown[]): IngredientRow[] {
       nameEn: row.nameEn ?? "",
       amount: row.amount ?? "",
       specs: Array.isArray(row.specs) ? row.specs : [],
+      photoUrl: typeof row.photoUrl === "string" ? row.photoUrl : "",
+      photoPath: typeof row.photoPath === "string" ? row.photoPath : "",
     };
   });
 
@@ -412,7 +415,7 @@ export function normalizeIngredientRows(rows: unknown[]): IngredientRow[] {
     cleaned.pop();
   }
   while (cleaned.length < DEFAULT_INGREDIENT_ROWS) {
-    cleaned.push({ nameJa: "", nameEn: "", amount: "", specs: [] });
+    cleaned.push(emptyIngredientRow());
   }
   return cleaned;
 }
