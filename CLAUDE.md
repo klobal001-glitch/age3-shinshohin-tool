@@ -30,6 +30,7 @@
 | `src/components/PrepTaskView.tsx` | 準備タスク（締め切りは発売月から自動計算） |
 | `src/components/VisualGalleryView.tsx` `VisualViewer.tsx` | ビジュアル一覧と全画面ビューア |
 | `src/hooks/useAppData.ts` | Supabase の読み書き。入力は600ms止まったらまとめて保存 |
+| `src/components/IngredientPhoto.tsx` | 材料1行ぶんの写真。選ぶ・縮める・送る・消すを全部ここに入れている |
 | `src/lib/productInfo.ts` | 入力率の数え方・価格の自動計算（Uber = 元価格 ×1.4） |
 | `src/lib/prepTasks.ts` `src/lib/deadline.ts` | タスク定義と締め切りルール |
 
@@ -62,6 +63,25 @@
   **会長・専務に共有済みの出張企画資料は見直し前の内容のまま。**
 - 配色は資料に合わせた紺(#1f3350)＋ティール(#2f8f9d)。新商品ツールの配色には手を入れないよう、
   この画面の色はクラスに直接書いている（globals.css は共有）。
+
+
+## 写真の置き場（2026年9月24日）
+
+材料の行に貼る写真は、Supabase Storage の **`genba-photos`** の中の `product/` に入れている。
+商品データベース専用の置き場を作るには Supabase の管理画面に入る必要があるが、
+**デスクトップアプリの中のブラウザは Supabase にログインしていない**ため作れなかった。
+現場チェックの置き場に間借りしている状態。
+
+- 専用の置き場（例 `product-photos`）ができたら、`IngredientPhoto.tsx` の先頭2行
+  （`PHOTO_BUCKET` と `PRODUCT_PREFIX`）を変えるだけでよい。過去の写真は移すこと。
+- 置き場の中の道: `product/<商品ID>/ing<行番号>-<日時>-<乱数>.jpg`
+- 送る前に長辺1400pxのJPEGに縮めている。スマホの数MBの写真をそのまま置かないため。
+- 一覧に出す小さい画像は Supabase の画像変換（`/render/image/public/`）を使う。
+  HEIC など変換できない画像は400が返るので、元のアドレスに戻す作りにしてある。
+- 写真を消す／差し替えると、古い写真は置き場からも消す（使わない写真を残さない）。
+
+**アドレス（URL）を貼らせない。** パソコンに慣れていない人でも入れられるよう、
+枠を押して選ぶ／枠へドラッグ／枠の上で貼り付け、の3つを受ける作りにしている。
 
 ## 使っている人と機械（2026年9月16日に教わった）
 
