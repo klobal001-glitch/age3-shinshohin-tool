@@ -26,8 +26,6 @@ export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[
   { key: "laminate_kanto", label: "レジ用ラミネートA5 関東＋飛騨高山用", size: "210 × 148mm" },
   { key: "laminate_kama", label: "レジ用ラミネートA5 嘉麻用", size: "210 × 148mm" },
   { key: "airregi", label: "エアレジ 商品画像", size: "" },
-  { key: "menu_fold", label: "二つ折り手元メニュー", size: "" },
-  { key: "flyer", label: "各店チラシ", size: "" },
 ];
 
 /**
@@ -356,7 +354,7 @@ export function formatPrice(value: number | null, store?: StoreId | null): strin
 }
 
 /**
- * ビジュアルの15項目をそろえる。
+ * ビジュアルの各項目をそろえる。
  * 定義が増えたときに足りないグループを空リンクで補い、順番も定義どおりに直す。
  * 現行の年と過去の年で同じ処理を使う。
  */
