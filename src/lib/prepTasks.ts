@@ -215,22 +215,6 @@ export const TASK_GROUPS: TaskGroup[] = [
         label: "前月20日まで",
         rule: monthsBefore(1, 20),
         tasks: [
-          {
-            id: "menu_fold",
-            label: "二つ折り手元メニュー", note: "自動入力欄へ",
-            children: [
-              { id: "make", label: "制作" },
-              { id: "submit", label: "入稿" },
-            ],
-          },
-          {
-            id: "flyer",
-            label: "各店チラシ", note: "自動入力欄へ",
-            children: [
-              { id: "make", label: "制作" },
-              { id: "submit", label: "入稿" },
-            ],
-          },
           { id: "laminate_ship", label: "レジ用ラミネートA5 → 発送（5店舗）" },
           { id: "uber_image", label: "Uber Eats 商品画像", note: "自動入力欄へ" },
           { id: "confirm_office", label: "ビジュアル（レジ・ウーバー・業者用）＋文章を全て事務に投げたか確認" },
