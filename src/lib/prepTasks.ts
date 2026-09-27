@@ -193,6 +193,7 @@ export const TASK_GROUPS: TaskGroup[] = [
           { id: "laminate_kanto", label: "レジ用ラミネートA5 関東＋飛騨高山用", note: "自動入力欄へ" },
           { id: "laminate_kama", label: "レジ用ラミネートA5 嘉麻用", note: "自動入力欄へ" },
           { id: "airregi_image", label: "エアレジ 商品画像", note: "自動入力欄へ" },
+          { id: "uber_image", label: "Uber Eats 商品画像", note: "自動入力欄へ" },
           { id: "x_caption", label: "X（旧Twitter）文章", note: "自動入力欄へ" },
           { id: "threads_caption", label: "Threads 文章", note: "自動入力欄へ" },
           { id: "ec_slider_pc", label: "ECスライダー PC", note: "自動入力欄へ" },
@@ -216,7 +217,6 @@ export const TASK_GROUPS: TaskGroup[] = [
         rule: monthsBefore(1, 20),
         tasks: [
           { id: "laminate_ship", label: "レジ用ラミネートA5 → 発送（5店舗）" },
-          { id: "uber_image", label: "Uber Eats 商品画像", note: "自動入力欄へ" },
           { id: "confirm_office", label: "ビジュアル（レジ・ウーバー・業者用）＋文章を全て事務に投げたか確認" },
           { id: "confirm_kama_staff", label: "ビジュアル（Instagram・X・スレッズ）＋文章を全て嘉麻スタッフに投げたか確認" },
         ],
