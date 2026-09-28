@@ -234,6 +234,7 @@ export const TASK_GROUPS: TaskGroup[] = [
         rule: monthsBefore(1, 20),
         tasks: [
           { id: "press_draft", label: "プレスリリース作成" },
+          { id: "fax_draft", label: "メディアリストへFAX原稿", note: "A4で2〜3枚" },
           { id: "press_review", label: "原稿確認・修正" },
           { id: "press_final", label: "配信内容 最終確認（オーナーOK確認）" },
         ],
