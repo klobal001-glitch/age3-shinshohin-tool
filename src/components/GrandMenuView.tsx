@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import { useGrandMenu } from "@/hooks/useGrandMenu";
 import {
@@ -12,6 +12,8 @@ import {
   sortIssues,
 } from "@/lib/grandMenu";
 import { todayKey } from "@/lib/saleStatus";
+import { isImageUrl, toThumbnailUrl } from "@/lib/imageUrl";
+import { uploadProductPhoto } from "@/components/IngredientPhoto";
 import { badge, btn, field, focusRing, h3, muted } from "@/lib/ui";
 
 /**
@@ -70,9 +72,71 @@ function Field({
 }
 
 
-/** 画像かどうか。画像なら絵で出し、それ以外はリンクとして出す */
-function isImage(url: string) {
-  return /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url.trim());
+/**
+ * 貼られたURLから写真を選ぶ／ドラッグして入れるボタン。
+ *
+ * Dropbox や Google ドライブの共有リンクは、そのままでは画像ではなく
+ * 「ページ」のアドレスなので、絵として出せず割れたマークになる。
+ * URLを扱わずに済むよう、写真そのものを送れる入口をいちばん上に置く。
+ */
+function FlyerAddPhoto({
+  issueId,
+  vol,
+  onAdd,
+}: {
+  issueId: string;
+  vol: string;
+  onAdd: (urls: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const accept = async (files: FileList | null) => {
+    const picked = Array.from(files ?? []).filter((f) => f.type.startsWith("image/"));
+    if (picked.length === 0) return;
+    setError("");
+    setBusy(true);
+    try {
+      const urls: string[] = [];
+      for (const f of picked) {
+        const saved = await uploadProductPhoto(`grandmenu-${issueId}`, vol || "flyer", f);
+        urls.push(saved.url);
+      }
+      onAdd(urls);
+    } catch (e) {
+      console.error(e);
+      setError("送れませんでした。もう一度お試しください");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          void accept(e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        disabled={busy}
+        className={btn("secondary")}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? "送信中…" : "📷 画像を選ぶ"}
+      </button>
+      <span className={muted}>スマホならその場で撮れます。まとめて選べます。</span>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
+  );
 }
 
 /**
@@ -91,6 +155,10 @@ function FlyerViewer({
   onClose: () => void;
   onMove: (i: number) => void;
 }) {
+  /* この面の画像が出せなかったか。面を移ったら見直す */
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [index]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -114,13 +182,33 @@ function FlyerViewer({
       role="dialog"
       aria-label="チラシを大きく見る"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={list[index]}
-        alt=""
-        className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {broken ? (
+        <div
+          className="rounded-xl bg-white px-6 py-8 text-center text-sm leading-relaxed text-stone-600 shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          この画像は、このアドレスからは出せません。
+          <br />
+          下のボタンで置き場所を開いてください。
+          <a
+            href={list[index]}
+            target="_blank"
+            rel="noreferrer"
+            className={`${btn("secondary")} mt-4 inline-flex`}
+          >
+            置き場所を開く
+          </a>
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={toThumbnailUrl(list[index])}
+          alt=""
+          className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+          onError={() => setBroken(true)}
+        />
+      )}
       <button
         type="button"
         onClick={onClose}
@@ -175,10 +263,13 @@ function FlyerImages({
   onOpen: (i: number) => void;
   onRemove: (i: number) => void;
 }) {
+  /* 出せなかった画像。割れたマークのまま置かず、言葉に変える */
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
+
   if (links.length === 0) {
     return (
       <p className="rounded-xl bg-stone-100 px-4 py-6 text-center text-xs leading-relaxed text-stone-500">
-        まだ1枚も入っていません。下の欄に画像のURLを貼って Enter を押すと、ここに絵で並びます。
+        まだ1枚も入っていません。上の「画像を選ぶ」から入れてください。
       </p>
     );
   }
@@ -192,12 +283,19 @@ function FlyerImages({
             className={`block w-full overflow-hidden rounded-lg bg-stone-100 ${focusRing}`}
             title="大きく見る"
           >
-            {isImage(url) ? (
+            {isImageUrl(url) && !failed[url] ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={url} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" />
+              <img
+                src={toThumbnailUrl(url)}
+                alt=""
+                loading="lazy"
+                className="aspect-[3/4] w-full object-cover"
+                onError={() => setFailed((prev) => ({ ...prev, [url]: true }))}
+              />
             ) : (
-              <span className="flex aspect-[3/4] w-full items-center justify-center p-2 text-center text-xs text-stone-500">
-                リンク
+              <span className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-1 p-2 text-center text-xs leading-tight text-stone-500">
+                <Icon name="close" className="h-4 w-4 text-stone-300" />
+                {failed[url] ? "絵を出せません（押すと開きます）" : "リンク"}
               </span>
             )}
           </button>
@@ -340,6 +438,11 @@ export default function GrandMenuView() {
                     <span className="block text-xs font-medium text-stone-500">
                       チラシの画像（押すと大きく見られます）
                     </span>
+                    <FlyerAddPhoto
+                      issueId={row.id}
+                      vol={d.vol}
+                      onAdd={(urls) => update(row.id, { links: [...d.links, ...urls] })}
+                    />
                     <FlyerImages
                       links={d.links}
                       onOpen={(i) => setViewer({ id: row.id, index: i })}
@@ -350,7 +453,7 @@ export default function GrandMenuView() {
                     />
                     <input
                       className={field}
-                      placeholder="画像やデータのURLを貼って Enter"
+                      placeholder="または、置き場所のURLを貼って Enter（PDFなど）"
                       onKeyDown={(e) => {
                         if (e.key !== "Enter") return;
                         e.preventDefault();
