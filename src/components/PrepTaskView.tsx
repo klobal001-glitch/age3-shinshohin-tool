@@ -50,7 +50,9 @@ function TaskLabel({ task, className = "" }: { task: TaskItem; className?: strin
       {task.label}
       {task.note && (
         <span className="ml-1.5 whitespace-nowrap align-middle text-xs font-normal text-stone-400">
-          🔗 {task.note}
+          {/* 「自動入力欄へ」は情報シートの欄を指すので目印を付ける。
+              それ以外（枚数のめやすなど）はただの注記なので、目印を付けない */}
+          {task.note.includes("自動入力欄") ? `🔗 ${task.note}` : task.note}
         </span>
       )}
     </span>
