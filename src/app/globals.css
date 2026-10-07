@@ -133,6 +133,12 @@ h3 {
    後ろの画面まで刷られると紙が無駄になるので、シートだけを残す。
    （シートは画面の外側＝body直下に出しているので、app-shell を消しても残る） */
 @media print {
+    /* A4・たて。余白はここで決めるので、紙そのものには余白を付けない */
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+
     body.submit-open .app-shell {
         display: none !important;
     }
@@ -148,8 +154,8 @@ h3 {
         max-width: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        /* 紙の端で文字が切れないよう、左右に少し余白を残す */
-        padding: 4mm 8mm !important;
+        /* 余白は @page で取ってあるので、ここでは付けない */
+        padding: 0 !important;
     }
 }
 
@@ -231,4 +237,37 @@ h3 {
 /* ホーム画面から開いたときに、下端のホームバーと重ならないようにする */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 「A4・1枚に収める」で刷るとき、いったん小さく詰めて組み直すための指定。
+   画面の見た目は変えたくないので、印刷の直前にだけ .compact を付け外しする
+   （IngredientSubmitSheet.tsx の printSheet）。 */
+.submit-paper.compact .ing-head,
+.submit-paper.compact .ing-row {
+    grid-template-columns: 20px 96px 108px 56px 1fr !important;
+    gap: 8px !important;
+}
+
+.submit-paper.compact .ing-row {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+
+.submit-paper.compact .ing-photo {
+    width: 96px !important;
+    height: 96px !important;
+}
+
+.submit-paper.compact .ing-photo-note {
+    width: 96px !important;
+}
+
+.submit-paper.compact .ing-spec {
+    font-size: 10px !important;
+    line-height: 1.5 !important;
+}
+
+.submit-paper.compact .sheet-cover {
+    width: 112px !important;
+    height: 112px !important;
 }
