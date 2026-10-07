@@ -53,7 +53,7 @@ function AppShell() {
   const openSwitcher = () => setSwitcherOpen(true);
 
   return (
-    <div className="flex min-h-screen bg-canvas md:h-screen md:overflow-hidden">
+    <div className="app-shell flex min-h-screen bg-canvas md:h-screen md:overflow-hidden">
       <Sidebar app={app} activeTab={tab} onChangeTab={setTab} />
       <div className="flex min-w-0 flex-1 flex-col md:overflow-y-auto">
         <div className="md:hidden">
