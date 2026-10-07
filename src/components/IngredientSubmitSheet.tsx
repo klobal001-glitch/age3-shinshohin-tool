@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ProductInfo } from "@/lib/types";
 import { isBlankIngredientRow } from "@/lib/productInfo";
@@ -151,6 +151,70 @@ export function IngredientSubmitSheet({
   const [lang, setLang] = useState<"both" | "ja" | "en">("both");
   const showJa = lang !== "en";
   const showEn = lang !== "ja";
+  /** A4・1枚に収めて刷るか */
+  const [onePage, setOnePage] = useState(true);
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * 印刷する。
+   *
+   * 「1枚に収める」が入っているときは、いちどA4の幅で組み直して高さを測り、
+   * はみ出るぶんだけ全体を縮めてから刷る。紙が何枚にも分かれるのを防ぐため。
+   * （A4 = 210×297mm。余白10mmを引いた中身の大きさを px に直した値）
+   */
+  const printSheet = () => {
+    const paper = paperRef.current;
+    if (!paper || !onePage) {
+      window.print();
+      return;
+    }
+    const PAGE_W = 718; // 190mm
+    const PAGE_H = 1048; // 277mm
+    const keep = { width: paper.style.width, maxWidth: paper.style.maxWidth, zoom: paper.style.zoom };
+    /* 画面の見た目は変えずに、刷るときだけ小さく詰めて組み直す（globals.css の .compact） */
+    paper.classList.add("compact");
+
+    /**
+     * 縮尺 z で刷ったときの高さ（mm→px）。
+     * 幅を PAGE_W / z で組んでから z 倍に縮めるので、刷り上がりの幅はいつも紙いっぱいになる。
+     * 単純に縮めるだけだと右側が余って文字が無駄に小さくなるため、こうしている。
+     */
+    const heightAt = (z: number) => {
+      const w = PAGE_W / z;
+      paper.style.width = `${w}px`;
+      paper.style.maxWidth = `${w}px`;
+      paper.style.zoom = "1";
+      return paper.scrollHeight * z;
+    };
+
+    /* 1枚に収まるいちばん大きい縮尺を、はさみうちで探す */
+    let best = 0.3;
+    if (heightAt(1) <= PAGE_H) {
+      best = 1;
+    } else {
+      let lo = 0.3;
+      let hi = 1;
+      for (let i = 0; i < 7; i++) {
+        const mid = (lo + hi) / 2;
+        if (heightAt(mid) <= PAGE_H) {
+          best = mid;
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+    }
+    paper.style.width = `${PAGE_W / best}px`;
+    paper.style.maxWidth = `${PAGE_W / best}px`;
+    paper.style.zoom = String(best);
+    window.print();
+    window.setTimeout(() => {
+      paper.classList.remove("compact");
+      paper.style.width = keep.width;
+      paper.style.maxWidth = keep.maxWidth;
+      paper.style.zoom = keep.zoom;
+    }, 300);
+  };
 
   useEffect(() => {
     document.body.classList.add("submit-open");
@@ -194,12 +258,24 @@ export function IngredientSubmitSheet({
 
   return createPortal(
     <div className="submit-sheet fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 p-3 sm:p-6">
-      <div className="submit-paper mx-auto w-full max-w-5xl rounded-2xl bg-white p-5 shadow-xl sm:p-8">
+      <div
+        ref={paperRef}
+        className="submit-paper mx-auto w-full max-w-5xl rounded-2xl bg-white p-5 shadow-xl sm:p-8"
+      >
         {/* 上の操作。紙には出さない */}
         <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
-          <button type="button" className={btn("primary")} onClick={() => window.print()}>
+          <button type="button" className={btn("primary")} onClick={printSheet}>
             🖨 印刷・PDFで保存
           </button>
+          <label className="flex items-center gap-1.5 text-sm text-stone-600">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-amber-600"
+              checked={onePage}
+              onChange={(e) => setOnePage(e.target.checked)}
+            />
+            A4・1枚に収める
+          </label>
           <button type="button" className={btn("secondary")} onClick={copyText}>
             📋 文字をコピー
           </button>
@@ -236,7 +312,7 @@ export function IngredientSubmitSheet({
             <img
               src={toThumbnailUrl(card.url)}
               alt=""
-              className={`h-32 w-32 shrink-0 rounded-xl border border-stone-200 bg-white md:h-56 md:w-56 ${
+              className={`sheet-cover h-32 w-32 shrink-0 rounded-xl border border-stone-200 bg-white md:h-56 md:w-56 ${
                 isFullBleed(card) ? "object-cover" : "object-contain p-1"
               }`}
             />
@@ -263,7 +339,7 @@ export function IngredientSubmitSheet({
         ) : (
           <div className="space-y-3">
             {/* 見出し。画面が広いときだけ出す */}
-            <div className="hidden gap-3 border-b border-stone-300 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[24px_152px_140px_64px_1fr]">
+            <div className="ing-head hidden gap-3 border-b border-stone-300 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[24px_152px_140px_64px_1fr]">
               <span className="md:border-r md:border-stone-200/70 md:pr-3" />
               <span className="md:border-r md:border-stone-200/70 md:pr-3">{lang === "en" ? "Photo" : "写真"}</span>
               <span className="md:border-r md:border-stone-200/70 md:pr-3">{lang === "en" ? "Item" : "品名"}</span>
@@ -271,32 +347,37 @@ export function IngredientSubmitSheet({
               <span>{lang === "en" ? "Details" : "詳細スペック"}</span>
             </div>
 
-            {list.map((r, i) => (
+            {list.map((r, i) => {
+              const hasSpec = r.specs.some((x) => x.trim());
+              return (
               <div
                 key={i}
-                className="grid grid-cols-[124px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[24px_152px_140px_64px_1fr] md:items-stretch md:gap-3 md:rounded-none md:border-0 md:border-b md:border-stone-200 md:p-0 md:pb-4 md:pt-3"
+                className="ing-row grid grid-cols-[124px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[24px_152px_140px_64px_1fr] md:items-stretch md:gap-3 md:rounded-none md:border-0 md:border-b md:border-stone-200 md:p-0 md:pb-4 md:pt-3"
               >
                 <span className="col-span-2 text-xs tabular-nums text-stone-400 md:col-span-1 md:border-r md:border-stone-200/70 md:pr-3">
                   {i + 1}
                 </span>
 
                 <div className="md:border-r md:border-stone-200/70 md:pr-3">
+                  {/* 詳しい説明が無い材料は、場所を取らないよう写真を小さくする */}
                   {r.photoUrl ? (
                     /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={photoThumbUrl(r.photoUrl, 480, "contain")}
                       alt=""
-                      className="h-[124px] w-[124px] rounded-lg border border-stone-200 bg-white object-contain p-1 md:h-[152px] md:w-[152px]"
+                      className={`ing-photo rounded-lg border border-stone-200 bg-white object-contain p-1 ${
+                        hasSpec ? "h-[124px] w-[124px] md:h-[152px] md:w-[152px]" : "h-[80px] w-[80px] md:h-[96px] md:w-[96px]"
+                      }`}
                     />
                   ) : (
-                    <span className="flex h-[124px] w-[124px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[152px] md:w-[152px]">
+                    <span className="ing-photo flex h-[80px] w-[80px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[96px] md:w-[96px]">
                       写真なし
                     </span>
                   )}
                   {/* 中身は同じでも袋や瓶の見た目は変わる。買う人が迷わないよう必ず添える */}
                   {r.photoUrl && (
-                    <div className="mt-1 w-[124px] md:w-[152px]">
+                    <div className={`ing-photo-note mt-1 ${hasSpec ? "w-[124px] md:w-[152px]" : "w-[80px] md:w-[96px]"}`}>
                       {showJa && (
                         <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_JA}</p>
                       )}
@@ -357,7 +438,7 @@ export function IngredientSubmitSheet({
                                     日本語
                                   </p>
                                 )}
-                                <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                                <p className="ing-spec whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
                                   {pair.ja}
                                 </p>
                               </div>
@@ -369,13 +450,13 @@ export function IngredientSubmitSheet({
                                     English
                                   </p>
                                 )}
-                                <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                                <p className="ing-spec whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
                                   {pair.en}
                                 </p>
                               </div>
                             )}
                             {fallback && (
-                              <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                              <p className="ing-spec whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
                                 {fallback}
                               </p>
                             )}
@@ -385,7 +466,8 @@ export function IngredientSubmitSheet({
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
