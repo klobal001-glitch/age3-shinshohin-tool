@@ -194,7 +194,7 @@ export function IngredientSubmitSheet({
 
   return createPortal(
     <div className="submit-sheet fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 p-3 sm:p-6">
-      <div className="submit-paper mx-auto w-full max-w-4xl rounded-2xl bg-white p-5 shadow-xl sm:p-8">
+      <div className="submit-paper mx-auto w-full max-w-5xl rounded-2xl bg-white p-5 shadow-xl sm:p-8">
         {/* 上の操作。紙には出さない */}
         <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
           <button type="button" className={btn("primary")} onClick={() => window.print()}>
@@ -263,24 +263,24 @@ export function IngredientSubmitSheet({
         ) : (
           <div className="space-y-3">
             {/* 見出し。画面が広いときだけ出す */}
-            <div className="hidden gap-4 border-b border-stone-200 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[28px_152px_1fr_84px_1.5fr]">
-              <span />
-              <span>{lang === "en" ? "Photo" : "写真"}</span>
-              <span>{lang === "en" ? "Item" : "品名"}</span>
-              <span>{lang === "en" ? "Amount" : "分量"}</span>
+            <div className="hidden gap-3 border-b border-stone-300 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[24px_152px_140px_64px_1fr]">
+              <span className="md:border-r md:border-stone-200/70 md:pr-3" />
+              <span className="md:border-r md:border-stone-200/70 md:pr-3">{lang === "en" ? "Photo" : "写真"}</span>
+              <span className="md:border-r md:border-stone-200/70 md:pr-3">{lang === "en" ? "Item" : "品名"}</span>
+              <span className="md:border-r md:border-stone-200/70 md:pr-3">{lang === "en" ? "Amount" : "分量"}</span>
               <span>{lang === "en" ? "Details" : "詳細スペック"}</span>
             </div>
 
             {list.map((r, i) => (
               <div
                 key={i}
-                className="grid grid-cols-[124px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[28px_152px_1fr_84px_1.5fr] md:gap-4 md:rounded-none md:border-0 md:border-b md:border-stone-100 md:p-0 md:pb-4"
+                className="grid grid-cols-[124px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[24px_152px_140px_64px_1fr] md:items-stretch md:gap-3 md:rounded-none md:border-0 md:border-b md:border-stone-200 md:p-0 md:pb-4 md:pt-3"
               >
-                <span className="col-span-2 text-xs tabular-nums text-stone-400 md:col-span-1 md:pt-1">
+                <span className="col-span-2 text-xs tabular-nums text-stone-400 md:col-span-1 md:border-r md:border-stone-200/70 md:pr-3">
                   {i + 1}
                 </span>
 
-                <div>
+                <div className="md:border-r md:border-stone-200/70 md:pr-3">
                   {r.photoUrl ? (
                     /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -307,7 +307,7 @@ export function IngredientSubmitSheet({
                   )}
                 </div>
 
-                <div className="min-w-0">
+                <div className="min-w-0 md:border-r md:border-stone-200/70 md:pr-3">
                   {showJa && (
                     <p className="text-[15px] font-semibold leading-snug text-stone-900">{r.nameJa}</p>
                   )}
@@ -331,7 +331,7 @@ export function IngredientSubmitSheet({
                   </p>
                 </div>
 
-                <p className="hidden text-sm font-semibold tabular-nums text-amber-800 md:block md:pt-0.5">
+                <p className="hidden text-sm font-semibold tabular-nums text-amber-800 md:block md:border-r md:border-stone-200/70 md:pr-3">
                   {r.amount}
                 </p>
 
