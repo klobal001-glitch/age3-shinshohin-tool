@@ -157,6 +157,14 @@ h3 {
         /* 余白は @page で取ってあるので、ここでは付けない */
         padding: 0 !important;
     }
+
+    /* 2枚になるとき、材料1行が紙の切れ目でちょん切れないようにする */
+    body.submit-open .ing-row,
+    body.submit-open .ing-head,
+    body.submit-open .sheet-title {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
 }
 
 /* ───────── スマホ（〜767px）での調整 ───────── */
@@ -305,8 +313,8 @@ h3 {
 }
 
 .submit-paper.compact .ing-spec {
-    font-size: 10px !important;
-    line-height: 1.5 !important;
+    font-size: 11px !important;
+    line-height: 1.55 !important;
 }
 
 .submit-paper.compact .sheet-cover {
