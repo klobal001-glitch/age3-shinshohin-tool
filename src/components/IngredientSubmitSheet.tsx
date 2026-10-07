@@ -263,7 +263,7 @@ export function IngredientSubmitSheet({
         className="submit-paper mx-auto w-full max-w-5xl rounded-2xl bg-white p-5 shadow-xl sm:p-8"
       >
         {/* 上の操作。紙には出さない */}
-        <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
+        <div className="sheet-controls mb-5 flex flex-wrap items-center gap-2 print:hidden">
           <button type="button" className={btn("primary")} onClick={printSheet}>
             🖨 印刷・PDFで保存
           </button>
@@ -367,17 +367,19 @@ export function IngredientSubmitSheet({
                       src={photoThumbUrl(r.photoUrl, 480, "contain")}
                       alt=""
                       className={`ing-photo rounded-lg border border-stone-200 bg-white object-contain p-1 ${
-                        hasSpec ? "h-[124px] w-[124px] md:h-[152px] md:w-[152px]" : "h-[80px] w-[80px] md:h-[96px] md:w-[96px]"
+                        hasSpec
+                          ? "h-[124px] w-[124px] md:h-[152px] md:w-[152px]"
+                          : "ing-photo-sm h-[80px] w-[80px] md:h-[96px] md:w-[96px]"
                       }`}
                     />
                   ) : (
-                    <span className="ing-photo flex h-[80px] w-[80px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[96px] md:w-[96px]">
+                    <span className="ing-photo ing-photo-sm flex h-[80px] w-[80px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[96px] md:w-[96px]">
                       写真なし
                     </span>
                   )}
                   {/* 中身は同じでも袋や瓶の見た目は変わる。買う人が迷わないよう必ず添える */}
                   {r.photoUrl && (
-                    <div className={`ing-photo-note mt-1 ${hasSpec ? "w-[124px] md:w-[152px]" : "w-[80px] md:w-[96px]"}`}>
+                    <div className={`ing-photo-note mt-1 ${hasSpec ? "w-[124px] md:w-[152px]" : "is-small w-[80px] md:w-[96px]"}`}>
                       {showJa && (
                         <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_JA}</p>
                       )}
@@ -407,12 +409,12 @@ export function IngredientSubmitSheet({
                     <p className="text-[15px] font-semibold leading-snug text-stone-900">{r.nameJa}</p>
                   )}
                   {/* 画面が狭いときは分量を品名の下に出す（横に並べると文字が潰れるため） */}
-                  <p className="mt-1 text-sm font-semibold tabular-nums text-amber-800 md:hidden">
+                  <p className="ing-amount-sp mt-1 text-sm font-semibold tabular-nums text-amber-800 md:hidden">
                     {r.amount}
                   </p>
                 </div>
 
-                <p className="hidden text-sm font-semibold tabular-nums text-amber-800 md:block md:border-r md:border-stone-200/70 md:pr-3">
+                <p className="ing-amount hidden text-sm font-semibold tabular-nums text-amber-800 md:block md:border-r md:border-stone-200/70 md:pr-3">
                   {r.amount}
                 </p>
 
