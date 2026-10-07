@@ -148,8 +148,8 @@ h3 {
         max-width: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
-        /* 紙の端で行番号が切れないよう、わずかに余白を残す */
-        padding: 4mm !important;
+        /* 紙の端で文字が切れないよう、左右に少し余白を残す */
+        padding: 4mm 8mm !important;
     }
 }
 
