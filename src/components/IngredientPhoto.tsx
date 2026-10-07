@@ -117,11 +117,19 @@ export async function removeProductPhoto(path: string): Promise<void> {
  * 原寸のまま並べると端末が重くなるので、Supabase の画像変換で小さく作り直したものを渡す。
  * 変換できない画像（HEIC など）は 400 が返るので、呼び出し側で元のアドレスに戻せるようにする。
  */
-export function photoThumbUrl(url: string, size: number): string {
+export function photoThumbUrl(
+  url: string,
+  size: number,
+  /**
+   * cover   = 枠いっぱいに出す（はみ出た分は切る）
+   * contain = 切らずに全部入れる。パッケージの文字まで見せたいときはこちら
+   */
+  fit: "cover" | "contain" = "contain"
+): string {
   const marker = "/storage/v1/object/public/";
   if (!url.includes(marker)) return url;
   const base = url.split("?")[0].replace(marker, "/storage/v1/render/image/public/");
-  return `${base}?width=${size}&height=${size}&resize=cover&quality=70`;
+  return `${base}?width=${size}&height=${size}&resize=${fit}&quality=80`;
 }
 
 /* ------------------------------------------------------------------ *
@@ -234,9 +242,9 @@ export function IngredientPhoto({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={rawThumb ? row.photoUrl : photoThumbUrl(row.photoUrl, 160)}
+              src={rawThumb ? row.photoUrl : photoThumbUrl(row.photoUrl, 200)}
               alt=""
-              className="h-full w-full object-cover"
+              className="h-full w-full bg-white object-contain p-0.5"
               onError={() => setRawThumb(true)}
             />
           </button>
