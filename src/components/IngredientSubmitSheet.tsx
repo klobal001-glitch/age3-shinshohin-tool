@@ -151,33 +151,37 @@ export function IngredientSubmitSheet({
   const [lang, setLang] = useState<"both" | "ja" | "en">("both");
   const showJa = lang !== "en";
   const showEn = lang !== "ja";
-  /** A4・1枚に収めて刷るか */
-  const [onePage, setOnePage] = useState(true);
   const paperRef = useRef<HTMLDivElement>(null);
 
   /**
    * 印刷する。
    *
-   * 「1枚に収める」が入っているときは、いちどA4の幅で組み直して高さを測り、
-   * はみ出るぶんだけ全体を縮めてから刷る。紙が何枚にも分かれるのを防ぐため。
+   * 中身の量を見て、A4で1枚に収めるか2枚にするかを自動で決める。
+   * 1枚に押し込むために文字が読めなくなるのは本末転倒なので、
+   * 縮める下限（MIN_SCALE）を決めてあり、それより小さくはしない。
+   * 下限でも1枚に入らないときは2枚にする。行の途中で改ページしない指定は globals.css 側。
    * （A4 = 210×297mm。余白10mmを引いた中身の大きさを px に直した値）
    */
   const printSheet = () => {
     const paper = paperRef.current;
-    if (!paper || !onePage) {
+    if (!paper) {
       window.print();
       return;
     }
     const PAGE_W = 718; // 190mm
     const PAGE_H = 1048; // 277mm
+    /* これ以上小さくすると紙の上で読めない（説明文がおよそ7ポイントになる大きさ） */
+    const MIN_SCALE = 0.85;
+    /* 2枚に収まったと見なす高さ。改ページの余りがあるので2枚ぶんより少し小さく見る */
+    const TWO_PAGES = PAGE_H * 1.9;
     const keep = { width: paper.style.width, maxWidth: paper.style.maxWidth, zoom: paper.style.zoom };
-    /* 画面の見た目は変えずに、刷るときだけ小さく詰めて組み直す（globals.css の .compact） */
+    /* 画面の見た目は変えずに、刷るときだけ少し詰めて組み直す（globals.css の .compact） */
     paper.classList.add("compact");
 
     /**
-     * 縮尺 z で刷ったときの高さ（mm→px）。
+     * 縮尺 z で刷ったときの高さ。
      * 幅を PAGE_W / z で組んでから z 倍に縮めるので、刷り上がりの幅はいつも紙いっぱいになる。
-     * 単純に縮めるだけだと右側が余って文字が無駄に小さくなるため、こうしている。
+     * 単純に縮めるだけだと右側が余って、文字だけが無駄に小さくなる。
      */
     const heightAt = (z: number) => {
       const w = PAGE_W / z;
@@ -187,23 +191,30 @@ export function IngredientSubmitSheet({
       return paper.scrollHeight * z;
     };
 
-    /* 1枚に収まるいちばん大きい縮尺を、はさみうちで探す */
-    let best = 0.3;
-    if (heightAt(1) <= PAGE_H) {
-      best = 1;
-    } else {
-      let lo = 0.3;
+    const full = heightAt(1);
+
+    /** limit の高さに収まる、いちばん大きい縮尺。下限でも収まらなければ 0 */
+    const fit = (limit: number) => {
+      if (full <= limit) return 1;
+      if (heightAt(MIN_SCALE) > limit) return 0;
+      let lo = MIN_SCALE;
       let hi = 1;
-      for (let i = 0; i < 7; i++) {
+      let found = MIN_SCALE;
+      for (let i = 0; i < 8; i++) {
         const mid = (lo + hi) / 2;
-        if (heightAt(mid) <= PAGE_H) {
-          best = mid;
+        if (heightAt(mid) <= limit) {
+          found = mid;
           lo = mid;
         } else {
           hi = mid;
         }
       }
-    }
+      return found;
+    };
+
+    /* まず1枚、無理なら2枚、それでも無理ならいちばん小さい大きさで刷る */
+    const best = fit(PAGE_H) || fit(TWO_PAGES) || MIN_SCALE;
+
     paper.style.width = `${PAGE_W / best}px`;
     paper.style.maxWidth = `${PAGE_W / best}px`;
     paper.style.zoom = String(best);
@@ -267,15 +278,6 @@ export function IngredientSubmitSheet({
           <button type="button" className={btn("primary")} onClick={printSheet}>
             🖨 印刷・PDFで保存
           </button>
-          <label className="flex items-center gap-1.5 text-sm text-stone-600">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-amber-600"
-              checked={onePage}
-              onChange={(e) => setOnePage(e.target.checked)}
-            />
-            A4・1枚に収める
-          </label>
           <button type="button" className={btn("secondary")} onClick={copyText}>
             📋 文字をコピー
           </button>
@@ -306,7 +308,7 @@ export function IngredientSubmitSheet({
         </div>
 
         {/* 見出し。完成品の絵を添えて、何の材料かを一目で分かるようにする */}
-        <div className="mb-5 flex items-center gap-4 border-b border-stone-200 pb-4">
+        <div className="sheet-title mb-5 flex items-center gap-4 border-b border-stone-200 pb-4">
           {card && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
