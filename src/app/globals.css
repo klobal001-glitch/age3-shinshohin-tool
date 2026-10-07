@@ -317,6 +317,20 @@ h3 {
     line-height: 1.55 !important;
 }
 
+/* 日本語と英語の両方を出すときは、紙では横に並べる。
+   縦に積むと紙が倍に増えてしまうため。片方だけのときは自動で1列になる。 */
+.submit-paper.compact .ing-spec-pair {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 1fr !important;
+    gap: 14px !important;
+    align-items: start !important;
+}
+
+.submit-paper.compact .ing-spec-pair > * {
+    margin-top: 0 !important;
+}
+
 .submit-paper.compact .sheet-cover {
     width: 112px !important;
     height: 112px !important;
