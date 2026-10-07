@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ProductInfo } from "@/lib/types";
 import { isBlankIngredientRow } from "@/lib/productInfo";
@@ -90,6 +90,37 @@ export function formatSpecText(raw: string): string {
     .trim();
 }
 
+/** 英語のかたまりが始まる目印 */
+const EN_HEAD = /(?<![（(\w])\s*(Product Name|Label Name|Manufacturer|Ingredients)\s*:/;
+
+/**
+ * スペックの文章を、日本語のかたまりと英語のかたまりに分ける。
+ *
+ * 入力は1つの欄に日本語と英語をまとめて貼ってあり、間に「---」が入っていることが多い。
+ * 提出先が国内か海外かで要るほうが違うので、出すときに分けられるようにする。
+ */
+export function splitSpecByLanguage(raw: string): { ja: string; en: string } {
+  const t = raw.replace(/\r/g, " ").trim();
+  if (!t) return { ja: "", en: "" };
+
+  /* 「---」があれば、そこが境目 */
+  const parts = t.split(/\s*-{3,}\s*/);
+  if (parts.length >= 2) {
+    return { ja: formatSpecText(parts[0]), en: formatSpecText(parts.slice(1).join(" ")) };
+  }
+
+  /* 無ければ、英語の見出しが始まるところで分ける */
+  const at = t.search(EN_HEAD);
+  if (at > 0) return { ja: formatSpecText(t.slice(0, at)), en: formatSpecText(t.slice(at)) };
+  if (at === 0) return { ja: "", en: formatSpecText(t) };
+
+  return { ja: formatSpecText(t), en: "" };
+}
+
+/** 画像のそばに添える注意書き */
+const PACKAGE_NOTE_JA = "※パッケージは変更になる場合がございます。";
+const PACKAGE_NOTE_EN = "*Packaging may change without notice.";
+
 /**
  * 材料の「提出シート」。
  *
@@ -100,6 +131,7 @@ export function formatSpecText(raw: string): string {
  * - いちばん上に完成品の絵を出す（何の商品の材料かが一目で分かる）
  * - 材料の写真は切り取らない。パッケージの文字まで見えないと、買う人が迷うため
  * - スペックの文章は見出しごとに折り返す（`formatSpecText`）
+ * - 日本語と英語は分けて出せる（国内に出すか、海外に出すかで要るほうが違う）
  *
  * 画面の後ろ側は刷らない（globals.css の `body.submit-open` を参照）。
  */
@@ -115,6 +147,10 @@ export function IngredientSubmitSheet({
   /* 空の行は渡さない */
   const list = useMemo(() => info.ingredients.filter((r) => !isBlankIngredientRow(r)), [info.ingredients]);
   const card = useMemo(() => pickProductThumb(info), [info]);
+  /** どちらの言語で出すか。both = 両方並べる */
+  const [lang, setLang] = useState<"both" | "ja" | "en">("both");
+  const showJa = lang !== "en";
+  const showEn = lang !== "ja";
 
   useEffect(() => {
     document.body.classList.add("submit-open");
@@ -135,11 +171,16 @@ export function IngredientSubmitSheet({
     const lines = list.map((r, i) => {
       const spec = r.specs
         .filter((s) => s.trim())
-        .map((s) => formatSpecText(s))
+        .map((s) => {
+          const pair = splitSpecByLanguage(s);
+          return [showJa ? pair.ja : "", showEn ? pair.en : ""].filter(Boolean).join("\n\n");
+        })
         .join("\n");
-      return [`${i + 1}. ${r.nameJa}${r.nameEn ? `（${r.nameEn}）` : ""}　${r.amount}`, spec]
+      const name = [showJa ? r.nameJa : "", showEn && r.nameEn ? r.nameEn : ""]
         .filter(Boolean)
-        .join("\n");
+        .join(" / ");
+      const note = showJa ? PACKAGE_NOTE_JA : PACKAGE_NOTE_EN;
+      return [`${i + 1}. ${name}　${r.amount}`, spec, note].filter(Boolean).join("\n");
     });
     try {
       await navigator.clipboard.writeText(`【${productName}】材料\n\n${lines.join("\n\n")}`);
@@ -162,6 +203,27 @@ export function IngredientSubmitSheet({
           <button type="button" className={btn("secondary")} onClick={copyText}>
             📋 文字をコピー
           </button>
+          {/* 出す言語。国内に渡すか海外に渡すかで、要るほうだけにできる */}
+          <div className="flex items-center gap-1 rounded-full bg-stone-100 p-1">
+            {(
+              [
+                ["both", "両方"],
+                ["ja", "日本語"],
+                ["en", "English"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                  lang === key ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                }`}
+                onClick={() => setLang(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button type="button" className={`${btn("quiet")} ml-auto`} onClick={onClose}>
             閉じる
           </button>
@@ -180,55 +242,89 @@ export function IngredientSubmitSheet({
             />
           )}
           <div className="min-w-0">
-            <h2 className="text-2xl font-semibold tracking-tight text-stone-900">{productName}</h2>
-            {info.nameEn && <p className="mt-1 text-sm text-stone-500">{info.nameEn}</p>}
+            <h2 className="text-2xl font-semibold tracking-tight text-stone-900">
+              {showJa || !info.nameEn ? productName : info.nameEn}
+            </h2>
+            {showEn && info.nameEn && showJa && (
+              <p className="mt-1 text-sm text-stone-500">{info.nameEn}</p>
+            )}
             <p className="mt-2 text-xs text-stone-400">
-              材料シート（提出用）　{today}　全{list.length}品
+              {lang === "en"
+                ? `Ingredient sheet　${today}　${list.length} items`
+                : `材料シート（提出用）　${today}　全${list.length}品`}
             </p>
           </div>
         </div>
 
         {list.length === 0 ? (
           <p className="rounded-xl bg-stone-100 px-4 py-8 text-center text-sm text-stone-500">
-            材料がまだ入っていません。
+            {lang === "en" ? "No ingredients yet." : "材料がまだ入っていません。"}
           </p>
         ) : (
           <div className="space-y-3">
             {/* 見出し。画面が広いときだけ出す */}
-            <div className="hidden gap-4 border-b border-stone-200 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[28px_112px_1fr_84px_1.6fr]">
+            <div className="hidden gap-4 border-b border-stone-200 pb-1 text-xs font-medium text-stone-400 md:grid md:grid-cols-[28px_152px_1fr_84px_1.5fr]">
               <span />
-              <span>写真</span>
-              <span>品名</span>
-              <span>分量</span>
-              <span>詳細スペック</span>
+              <span>{lang === "en" ? "Photo" : "写真"}</span>
+              <span>{lang === "en" ? "Item" : "品名"}</span>
+              <span>{lang === "en" ? "Amount" : "分量"}</span>
+              <span>{lang === "en" ? "Details" : "詳細スペック"}</span>
             </div>
 
             {list.map((r, i) => (
               <div
                 key={i}
-                className="grid grid-cols-[88px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[28px_112px_1fr_84px_1.6fr] md:gap-4 md:rounded-none md:border-0 md:border-b md:border-stone-100 md:p-0 md:pb-3"
+                className="grid grid-cols-[124px_1fr] items-start gap-3 rounded-xl border border-stone-200 p-3 md:grid-cols-[28px_152px_1fr_84px_1.5fr] md:gap-4 md:rounded-none md:border-0 md:border-b md:border-stone-100 md:p-0 md:pb-4"
               >
                 <span className="col-span-2 text-xs tabular-nums text-stone-400 md:col-span-1 md:pt-1">
                   {i + 1}
                 </span>
 
-                {r.photoUrl ? (
-                  /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={photoThumbUrl(r.photoUrl, 320)}
-                    alt=""
-                    className="h-[88px] w-[88px] rounded-lg border border-stone-200 bg-white object-contain p-1 md:h-28 md:w-28"
-                  />
-                ) : (
-                  <span className="flex h-[88px] w-[88px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-28 md:w-28">
-                    写真なし
-                  </span>
-                )}
+                <div>
+                  {r.photoUrl ? (
+                    /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={photoThumbUrl(r.photoUrl, 480, "contain")}
+                      alt=""
+                      className="h-[124px] w-[124px] rounded-lg border border-stone-200 bg-white object-contain p-1 md:h-[152px] md:w-[152px]"
+                    />
+                  ) : (
+                    <span className="flex h-[124px] w-[124px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[152px] md:w-[152px]">
+                      写真なし
+                    </span>
+                  )}
+                  {/* 中身は同じでも袋や瓶の見た目は変わる。買う人が迷わないよう必ず添える */}
+                  {r.photoUrl && (
+                    <div className="mt-1 w-[124px] md:w-[152px]">
+                      {showJa && (
+                        <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_JA}</p>
+                      )}
+                      {showEn && (
+                        <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_EN}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold leading-snug text-stone-900">{r.nameJa}</p>
-                  {r.nameEn && <p className="text-xs leading-snug text-stone-500">{r.nameEn}</p>}
+                  {showJa && (
+                    <p className="text-[15px] font-semibold leading-snug text-stone-900">{r.nameJa}</p>
+                  )}
+                  {showEn && r.nameEn && (
+                    <p
+                      className={
+                        showJa
+                          ? "text-xs leading-snug text-stone-500"
+                          : "text-[15px] font-semibold leading-snug text-stone-900"
+                      }
+                    >
+                      {r.nameEn}
+                    </p>
+                  )}
+                  {!showJa && !r.nameEn && (
+                    <p className="text-[15px] font-semibold leading-snug text-stone-900">{r.nameJa}</p>
+                  )}
                   {/* 画面が狭いときは分量を品名の下に出す（横に並べると文字が潰れるため） */}
                   <p className="mt-1 text-sm font-semibold tabular-nums text-amber-800 md:hidden">
                     {r.amount}
@@ -239,20 +335,53 @@ export function IngredientSubmitSheet({
                   {r.amount}
                 </p>
 
-                <div className="col-span-2 min-w-0 md:col-span-1">
+                <div className="col-span-2 min-w-0 space-y-2 md:col-span-1">
                   {r.specs.filter((s) => s.trim()).length === 0 ? (
                     <span className="text-xs text-stone-300">—</span>
                   ) : (
                     r.specs
                       .filter((s) => s.trim())
-                      .map((s, si) => (
-                        <p
-                          key={si}
-                          className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600"
-                        >
-                          {formatSpecText(s)}
-                        </p>
-                      ))
+                      .map((s, si) => {
+                        const pair = splitSpecByLanguage(s);
+                        /* 選んだ言語のほうが書かれていないときは、書いてあるほうを出す
+                           （何も出ないと「スペックが無い」と読み違えるため） */
+                        const jaBlock = showJa && pair.ja;
+                        const enBlock = showEn && pair.en;
+                        const fallback = !jaBlock && !enBlock ? pair.ja || pair.en : "";
+                        return (
+                          <div key={si} className="space-y-2">
+                            {jaBlock && (
+                              <div>
+                                {enBlock && (
+                                  <p className="mb-0.5 text-[10px] font-semibold text-stone-400">
+                                    日本語
+                                  </p>
+                                )}
+                                <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                                  {pair.ja}
+                                </p>
+                              </div>
+                            )}
+                            {enBlock && (
+                              <div>
+                                {jaBlock && (
+                                  <p className="mb-0.5 text-[10px] font-semibold text-stone-400">
+                                    English
+                                  </p>
+                                )}
+                                <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                                  {pair.en}
+                                </p>
+                              </div>
+                            )}
+                            {fallback && (
+                              <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-stone-600">
+                                {fallback}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
                   )}
                 </div>
               </div>
