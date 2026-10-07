@@ -40,6 +40,7 @@ import {
 import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { IngredientPhoto, removeProductPhoto } from "./IngredientPhoto";
+import { IngredientSubmitSheet } from "./IngredientSubmitSheet";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
@@ -615,6 +616,8 @@ export default function ProductSheetView({
   const [copyMsg, setCopyMsg] = useState("");
   /** 入力済みの項目を隠して、残っている必須項目だけを出す */
   const [onlyEmpty, setOnlyEmpty] = useState(false);
+  /** 材料の提出シートを開いているか */
+  const [submitOpen, setSubmitOpen] = useState(false);
   /**
    * ビジュアルで見ている過去の年。null なら一番新しい年。
    * 商品を切り替えたときに前の商品の年が残らないよう、商品IDも一緒に持つ。
@@ -1405,6 +1408,13 @@ export default function ProductSheetView({
               空の行を消す（{blankIngredientsRemovable}行）
             </button>
           )}
+          {/* 入力用の表のままでは人に渡せないので、渡す形に並べ直して出す */}
+          <button
+            className="ml-auto rounded-lg border border-stone-800 bg-stone-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-900"
+            onClick={() => setSubmitOpen(true)}
+          >
+            📄 提出シート
+          </button>
         </div>
       </Section>
 
@@ -1624,6 +1634,15 @@ export default function ProductSheetView({
       <p className="rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-stone-500">
         ※これは「1商品に必要な情報一式」を集めるための入力式の下書きシートです。入力内容は共有データベースに自動保存され、「コピー用に書き出し」でスプレッドシートやメールに貼れます。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
+
+      {submitOpen && (
+        <IngredientSubmitSheet
+          productName={info.nameJa || selectedProduct.name}
+          productNameEn={info.nameEn}
+          rows={info.ingredients}
+          onClose={() => setSubmitOpen(false)}
+        />
+      )}
     </div>
   );
 }
