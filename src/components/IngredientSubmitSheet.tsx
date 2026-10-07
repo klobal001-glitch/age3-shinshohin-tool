@@ -236,7 +236,7 @@ export function IngredientSubmitSheet({
             <img
               src={toThumbnailUrl(card.url)}
               alt=""
-              className={`h-24 w-24 shrink-0 rounded-xl border border-stone-200 bg-white ${
+              className={`h-32 w-32 shrink-0 rounded-xl border border-stone-200 bg-white md:h-56 md:w-56 ${
                 isFullBleed(card) ? "object-cover" : "object-contain p-1"
               }`}
             />
