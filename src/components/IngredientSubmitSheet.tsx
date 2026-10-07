@@ -434,7 +434,7 @@ export function IngredientSubmitSheet({
                         const enBlock = showEn && pair.en;
                         const fallback = !jaBlock && !enBlock ? pair.ja || pair.en : "";
                         return (
-                          <div key={si} className="space-y-2">
+                          <div key={si} className="ing-spec-pair space-y-2">
                             {jaBlock && (
                               <div>
                                 {enBlock && (
