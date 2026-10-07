@@ -129,6 +129,30 @@ h3 {
     }
 }
 
+/* 材料の「提出シート」を紙・PDFで出すとき。
+   後ろの画面まで刷られると紙が無駄になるので、シートだけを残す。
+   （シートは画面の外側＝body直下に出しているので、app-shell を消しても残る） */
+@media print {
+    body.submit-open .app-shell {
+        display: none !important;
+    }
+
+    body.submit-open .submit-sheet {
+        position: static !important;
+        overflow: visible !important;
+        background: #fff !important;
+        padding: 0 !important;
+    }
+
+    body.submit-open .submit-paper {
+        max-width: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        /* 紙の端で行番号が切れないよう、わずかに余白を残す */
+        padding: 4mm !important;
+    }
+}
+
 /* ───────── スマホ（〜767px）での調整 ───────── */
 @media (max-width: 767px) {
     /* iOS Safari は文字が16px未満の入力欄をタップすると画面を勝手に拡大する。
