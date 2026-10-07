@@ -1638,8 +1638,7 @@ export default function ProductSheetView({
       {submitOpen && (
         <IngredientSubmitSheet
           productName={info.nameJa || selectedProduct.name}
-          productNameEn={info.nameEn}
-          rows={info.ingredients}
+          info={info}
           onClose={() => setSubmitOpen(false)}
         />
       )}
