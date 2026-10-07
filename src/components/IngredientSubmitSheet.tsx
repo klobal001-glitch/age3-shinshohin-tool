@@ -379,9 +379,10 @@ export function IngredientSubmitSheet({
                       写真なし
                     </span>
                   )}
-                  {/* 中身は同じでも袋や瓶の見た目は変わる。買う人が迷わないよう必ず添える */}
-                  {r.photoUrl && (
-                    <div className={`ing-photo-note mt-1 ${hasSpec ? "w-[124px] md:w-[152px]" : "is-small w-[80px] md:w-[96px]"}`}>
+                  {/* 中身は同じでも袋や瓶の見た目は変わるので、買う人が迷わないよう添える。
+                      ただし詳細スペックが無い材料（揚げパンなど、仕入れの袋物ではないもの）には出さない */}
+                  {r.photoUrl && hasSpec && (
+                    <div className="ing-photo-note mt-1 w-[124px] md:w-[152px]">
                       {showJa && (
                         <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_JA}</p>
                       )}
