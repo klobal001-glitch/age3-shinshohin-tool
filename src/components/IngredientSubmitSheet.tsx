@@ -228,6 +228,16 @@ export function splitSpecByLanguage(raw: string): { ja: string; en: string } {
 const PACKAGE_NOTE_JA = "※パッケージは変更になる場合がございます。";
 const PACKAGE_NOTE_EN = "*Packaging may change without notice.";
 
+/** 社外秘の表示。受け取った店がそのまま外へ回さないよう、紙にもはっきり出す */
+const SECRET_TITLE_JA = "社外秘";
+const SECRET_TITLE_EN = "CONFIDENTIAL";
+const SECRET_BODY_JA =
+  "この資料は Age.3 の店舗・取引先に限ってお渡ししています。第三者への転送・複製・SNSへの掲載はご遠慮ください。";
+const SECRET_BODY_EN =
+  "Shared with Age.3 stores and partners only. Please do not forward, copy or post it.";
+const SECRET_FOOT_JA = "社外秘　転送・複製禁止";
+const SECRET_FOOT_EN = "CONFIDENTIAL — Do not forward or copy";
+
 /**
  * 材料の「提出シート」。
  *
@@ -276,7 +286,8 @@ export function IngredientSubmitSheet({
       return;
     }
     const PAGE_W = 718; // 190mm
-    const PAGE_H = 1048; // 277mm
+    /* 297mm から上下の余白（10mm + 14mm）を引いたぶん。下の余白は「社外秘」の表示に使う */
+    const PAGE_H = 1028; // 273mm
     /* これ以上小さくすると紙の上で読めない（説明文がおよそ7ポイントになる大きさ） */
     const MIN_SCALE = 0.85;
     /* 2枚に収まったと見なす高さ。改ページの余りがあるので2枚ぶんより少し小さく見る */
@@ -366,7 +377,15 @@ export function IngredientSubmitSheet({
       return [`${i + 1}. ${name}　${amount}`, spec, note].filter(Boolean).join("\n");
     });
     try {
-      await navigator.clipboard.writeText(`【${productName}】材料\n\n${lines.join("\n\n")}`);
+      const head = [
+        showJa ? `【${SECRET_TITLE_JA}】${SECRET_BODY_JA}` : "",
+        showEn ? `[${SECRET_TITLE_EN}] ${SECRET_BODY_EN}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      await navigator.clipboard.writeText(
+        `${head}\n\n【${productName}】材料\n\n${lines.join("\n\n")}`,
+      );
       alert("文字をコピーしました");
     } catch {
       alert("コピーできませんでした");
@@ -416,6 +435,16 @@ export function IngredientSubmitSheet({
         </div>
 
         {/* 見出し。完成品の絵を添えて、何の材料かを一目で分かるようにする */}
+        {/* 社外秘の帯。いちばん上に置いて、渡された人がすぐ気づくようにする */}
+        <div className="secret-band mb-4 rounded-lg border-2 border-red-600 bg-red-50 px-3 py-2">
+          <p className="text-sm font-bold tracking-wide text-red-700">
+            {showJa ? `【${SECRET_TITLE_JA}】` : ""}
+            {showEn ? (showJa ? ` ${SECRET_TITLE_EN}` : SECRET_TITLE_EN) : ""}
+          </p>
+          {showJa && <p className="mt-0.5 text-xs leading-snug text-red-700">{SECRET_BODY_JA}</p>}
+          {showEn && <p className="mt-0.5 text-xs leading-snug text-red-700">{SECRET_BODY_EN}</p>}
+        </div>
+
         <div className="sheet-title mb-5 flex items-center gap-4 border-b border-stone-200 pb-4">
           {card && (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -599,6 +628,14 @@ export function IngredientSubmitSheet({
             })}
           </div>
         )}
+      </div>
+
+      {/* 紙に刷るときだけ、どのページの下にも出す。画面には出さない。
+          紙の外（submit-paper の外）に置いているので、縮小の影響を受けない */}
+      <div className="secret-foot" aria-hidden>
+        {showJa ? SECRET_FOOT_JA : ""}
+        {showJa && showEn ? "　/　" : ""}
+        {showEn ? SECRET_FOOT_EN : ""}
       </div>
     </div>,
     document.body
