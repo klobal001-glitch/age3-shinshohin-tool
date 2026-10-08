@@ -379,6 +379,7 @@ export function IngredientSubmitSheet({
 
             {list.map((r, i) => {
               const hasSpec = r.specs.some((x) => x.trim());
+              const photos = [r.photoUrl, r.photoUrl2].filter((x) => x && x.trim());
               return (
               <div
                 key={i}
@@ -389,19 +390,25 @@ export function IngredientSubmitSheet({
                 </span>
 
                 <div className="md:border-r md:border-stone-200/70 md:pr-3">
-                  {/* 詳しい説明が無い材料は、場所を取らないよう写真を小さくする */}
-                  {r.photoUrl ? (
-                    /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={photoThumbUrl(r.photoUrl, 480, "contain")}
-                      alt=""
-                      className={`ing-photo rounded-lg border border-stone-200 bg-white object-contain p-1 ${
-                        hasSpec
-                          ? "h-[124px] w-[124px] md:h-[152px] md:w-[152px]"
-                          : "ing-photo-sm h-[80px] w-[80px] md:h-[96px] md:w-[96px]"
-                      }`}
-                    />
+                  {/* 写真は1行に2枚まで（袋の表と裏など）。縦に並べる。
+                      詳しい説明が無い材料は、場所を取らないよう小さくする */}
+                  {photos.length > 0 ? (
+                    <div className="space-y-1">
+                      {photos.map((src, pi) => (
+                        /* 切り取らずに全体を出す。パッケージの文字まで見えないと買うときに迷う */
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          key={pi}
+                          src={photoThumbUrl(src, 480, "contain")}
+                          alt=""
+                          className={`ing-photo rounded-lg border border-stone-200 bg-white object-contain p-1 ${
+                            hasSpec
+                              ? "h-[124px] w-[124px] md:h-[152px] md:w-[152px]"
+                              : "ing-photo-sm h-[80px] w-[80px] md:h-[96px] md:w-[96px]"
+                          }`}
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <span className="ing-photo ing-photo-sm flex h-[80px] w-[80px] items-center justify-center rounded-lg border border-dashed border-stone-200 text-[10px] text-stone-300 md:h-[96px] md:w-[96px]">
                       写真なし
@@ -409,7 +416,7 @@ export function IngredientSubmitSheet({
                   )}
                   {/* 中身は同じでも袋や瓶の見た目は変わるので、買う人が迷わないよう添える。
                       ただし詳細スペックが無い材料（揚げパンなど、仕入れの袋物ではないもの）には出さない */}
-                  {r.photoUrl && hasSpec && (
+                  {photos.length > 0 && hasSpec && (
                     <div className="ing-photo-note mt-1 w-[124px] md:w-[152px]">
                       {showJa && (
                         <p className="text-[9px] leading-tight text-stone-400">{PACKAGE_NOTE_JA}</p>
