@@ -137,7 +137,8 @@ export function photoThumbUrl(
  * ------------------------------------------------------------------ */
 
 /**
- * 材料1行ぶんの写真。1行に1枚。
+ * 材料1行ぶんの写真。1行に2枚まで入れられる（袋の表と裏など）。
+ * slot で1枚目か2枚目かを指定する。
  *
  * パソコンに慣れていない人でも入れられるよう、次の3つをどれでも受ける。
  * - 枠を押して、スマホの写真／カメラから選ぶ（スマホでは「写真を撮る」も出る）
@@ -150,13 +151,22 @@ export function IngredientPhoto({
   productId,
   index,
   row,
+  slot = 1,
   onChange,
 }: {
   productId: string;
   index: number;
   row: IngredientRow;
+  /** 1 = 1枚目、2 = 2枚目 */
+  slot?: 1 | 2;
   onChange: (change: Partial<IngredientRow>) => void;
 }) {
+  /* 2枚目は photoUrl2 / photoPath2 に入れる。1枚目のデータはそのままなので、
+     これまでに入れてある写真はそのまま残る */
+  const url = slot === 2 ? row.photoUrl2 : row.photoUrl;
+  const path = slot === 2 ? row.photoPath2 : row.photoPath;
+  const write = (u: string, p: string): Partial<IngredientRow> =>
+    slot === 2 ? { photoUrl2: u, photoPath2: p } : { photoUrl: u, photoPath: p };
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
@@ -174,9 +184,9 @@ export function IngredientPhoto({
     setBusy(true);
     try {
       /* 差し替えのときは、前の写真を置き場から消しておく（使わない写真を残さない） */
-      const previous = row.photoPath;
-      const saved = await uploadProductPhoto(productId, `ing${index + 1}`, file);
-      onChange({ photoUrl: saved.url, photoPath: saved.path });
+      const previous = path;
+      const saved = await uploadProductPhoto(productId, `ing${index + 1}-${slot}`, file);
+      onChange(write(saved.url, saved.path));
       setRawThumb(false);
       if (previous) void removeProductPhoto(previous);
     } catch (e) {
@@ -188,8 +198,8 @@ export function IngredientPhoto({
   };
 
   const clear = () => {
-    const previous = row.photoPath;
-    onChange({ photoUrl: "", photoPath: "" });
+    const previous = path;
+    onChange(write("", ""));
     setError("");
     if (previous) void removeProductPhoto(previous);
   };
@@ -228,11 +238,11 @@ export function IngredientPhoto({
         }}
       />
 
-      {row.photoUrl ? (
+      {url ? (
         <div className="relative">
           <button
             type="button"
-            title="押すと写真を入れ替えます"
+            title={slot === 2 ? "押すと2枚目の写真を入れ替えます" : "押すと写真を入れ替えます"}
             disabled={busy}
             className={`block h-16 w-16 overflow-hidden rounded-lg border border-stone-200 bg-stone-50 transition hover:border-amber-400 ${
               over ? "border-amber-500 ring-2 ring-amber-200" : ""
@@ -242,7 +252,7 @@ export function IngredientPhoto({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={rawThumb ? row.photoUrl : photoThumbUrl(row.photoUrl, 200)}
+              src={rawThumb ? url : photoThumbUrl(url, 200)}
               alt=""
               className="h-full w-full bg-white object-contain p-0.5"
               onError={() => setRawThumb(true)}
@@ -281,7 +291,7 @@ export function IngredientPhoto({
               <span aria-hidden className="text-base leading-none">
                 📷
               </span>
-              <span>写真</span>
+              <span>{slot === 2 ? "2枚目" : "写真"}</span>
             </>
           )}
         </button>
