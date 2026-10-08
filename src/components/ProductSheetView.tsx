@@ -744,9 +744,10 @@ export default function ProductSheetView({
   const addIngredient = () => patch({ ingredients: [...info.ingredients, emptyIngredientRow()] });
 
   const removeIngredient = (idx: number) => {
-    /* 行ごと消すときは、その行の写真も置き場から片付ける */
-    const photoPath = info.ingredients[idx]?.photoPath;
-    if (photoPath) void removeProductPhoto(photoPath);
+    /* 行ごと消すときは、その行の写真（2枚とも）も置き場から片付ける */
+    const row = info.ingredients[idx];
+    if (row?.photoPath) void removeProductPhoto(row.photoPath);
+    if (row?.photoPath2) void removeProductPhoto(row.photoPath2);
     patch({ ingredients: info.ingredients.filter((_, i) => i !== idx) });
   };
 
@@ -1278,7 +1279,7 @@ export default function ProductSheetView({
       >
         <p className="text-xs text-stone-400">
           品目ごとに「品名・分量・詳細スペック（商品名/メーカー/原材料/アレルゲン等）」を入れます。
-          写真は行ごとに1枚、右の
+          写真は行ごとに2枚まで（袋の表と裏など）、右の
           <span className="mx-1">📷</span>
           を押して選べます（スマホならその場で撮れます）。
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Tab</kbd>
@@ -1297,7 +1298,7 @@ export default function ProductSheetView({
                 <th className="px-0.5 pb-1">品名（英語）</th>
                 <th className="w-24 px-0.5 pb-1">分量</th>
                 <th className="px-0.5 pb-1">詳細スペック（任意）</th>
-                <th className="w-20 px-0.5 pb-1">写真</th>
+                <th className="w-40 px-0.5 pb-1">写真（2枚まで）</th>
                 <th className="w-8 pb-1" />
               </tr>
             </thead>
@@ -1369,13 +1370,24 @@ export default function ProductSheetView({
                       />
                     ))}
                   </td>
-                  <td className="px-0.5 py-1" data-label="写真">
-                    <IngredientPhoto
-                      productId={selectedProduct.id}
-                      index={idx}
-                      row={row}
-                      onChange={(change) => updateIngredient(idx, change)}
-                    />
+                  <td className="px-0.5 py-1" data-label="写真（2枚まで）">
+                    {/* 袋の表と裏など、2枚まで入れられる */}
+                    <div className="flex items-start gap-2">
+                      <IngredientPhoto
+                        productId={selectedProduct.id}
+                        index={idx}
+                        row={row}
+                        slot={1}
+                        onChange={(change) => updateIngredient(idx, change)}
+                      />
+                      <IngredientPhoto
+                        productId={selectedProduct.id}
+                        index={idx}
+                        row={row}
+                        slot={2}
+                        onChange={(change) => updateIngredient(idx, change)}
+                      />
+                    </div>
                   </td>
                   <td className="ing-del py-1 pl-1 text-center">
                     <button
