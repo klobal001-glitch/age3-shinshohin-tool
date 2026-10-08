@@ -89,7 +89,16 @@ export const DEFAULT_INGREDIENT_ROWS = 5;
 
 /** まっさらな材料の行 */
 export function emptyIngredientRow(): IngredientRow {
-  return { nameJa: "", nameEn: "", amount: "", specs: [], photoUrl: "", photoPath: "" };
+  return {
+    nameJa: "",
+    nameEn: "",
+    amount: "",
+    specs: [],
+    photoUrl: "",
+    photoPath: "",
+    photoUrl2: "",
+    photoPath2: "",
+  };
 }
 
 export function createDefaultProductInfo(): ProductInfo {
@@ -386,6 +395,7 @@ export function isBlankIngredientRow(row: IngredientRow): boolean {
     !row.nameEn.trim() &&
     !row.amount.trim() &&
     !row.photoUrl.trim() &&
+    !row.photoUrl2.trim() &&
     row.specs.every((s) => !s.trim())
   );
 }
@@ -406,6 +416,8 @@ export function normalizeIngredientRows(rows: unknown[]): IngredientRow[] {
       specs: Array.isArray(row.specs) ? row.specs : [],
       photoUrl: typeof row.photoUrl === "string" ? row.photoUrl : "",
       photoPath: typeof row.photoPath === "string" ? row.photoPath : "",
+      photoUrl2: typeof row.photoUrl2 === "string" ? row.photoUrl2 : "",
+      photoPath2: typeof row.photoPath2 === "string" ? row.photoPath2 : "",
     };
   });
 
