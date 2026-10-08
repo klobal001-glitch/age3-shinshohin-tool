@@ -97,12 +97,14 @@ export interface IngredientRow {
     amount: string;
     specs: string[]; // 詳細スペック（任意・複数可）
     /**
-     * 材料の写真。1行に1枚。
+     * 材料の写真。1行に2枚まで（袋の表と裏など）。
      * url = 画面に出すときのアドレス、path = 消すときに使う保管場所の中の位置。
-     * 写真を入れていない行は両方とも空。
+     * 写真を入れていない行は空。2枚目だけ入れることはできる。
      */
     photoUrl: string;
     photoPath: string;
+    photoUrl2: string;
+    photoPath2: string;
 }
 
 /** 過去の年のビジュアル一式。参照用に取っておくだけで、必須の数には入らない */
