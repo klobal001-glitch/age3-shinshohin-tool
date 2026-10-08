@@ -136,7 +136,8 @@ h3 {
     /* A4・たて。余白はここで決めるので、紙そのものには余白を付けない */
     @page {
         size: A4;
-        margin: 10mm;
+        /* 下は、各ページに出す「社外秘」のぶんを少し広く取る */
+        margin: 10mm 10mm 14mm;
     }
 
     body.submit-open .app-shell {
@@ -156,6 +157,22 @@ h3 {
         box-shadow: none !important;
         /* 余白は @page で取ってあるので、ここでは付けない */
         padding: 0 !important;
+    }
+
+    /* 社外秘の表示。どのページの下にも出す（position: fixed は印刷すると各ページに出る） */
+    body.submit-open .secret-foot {
+        display: block !important;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding-top: 2px;
+        border-top: 1px solid #fecaca;
+        background: #fff;
+        text-align: center;
+        font-size: 9px;
+        letter-spacing: 0.04em;
+        color: #b91c1c;
     }
 
     /* 2枚になるとき、材料1行が紙の切れ目でちょん切れないようにする */
@@ -245,6 +262,11 @@ h3 {
 /* ホーム画面から開いたときに、下端のホームバーと重ならないようにする */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 社外秘の表示は紙だけ。画面では帯（.secret-band）があるので出さない */
+.secret-foot {
+    display: none;
 }
 
 /* 「A4・1枚に収める」で刷るとき、いったん小さく詰めて組み直すための指定。
