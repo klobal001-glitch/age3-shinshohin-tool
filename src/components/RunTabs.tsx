@@ -64,17 +64,21 @@ export default function RunTabs({
 
   const [action, setAction] = useState<Action>(null);
   const [text, setText] = useState("");
+  /* まだ回に分けていない商品で、いま入っている内容に付ける名前 */
+  const [prevText, setPrevText] = useState("");
   const [error, setError] = useState("");
 
   const close = () => {
     setAction(null);
     setText("");
+    setPrevText("");
     setError("");
   };
 
   const open = (next: Exclude<Action, null>) => {
     setAction(next);
     setText(next === "rename" ? viewingLabel : "");
+    setPrevText("");
     setError("");
   };
 
@@ -83,8 +87,8 @@ export default function RunTabs({
     info.runs.some((r) => r.label === name && r.label !== except);
 
   /** いまの回の中身を、控えの形にして取り出す */
-  const parkCurrent = (): ProductRun => ({
-    label: currentLabel,
+  const parkCurrent = (label = currentLabel): ProductRun => ({
+    label,
     releaseDate: info.releaseDate,
     endDate: info.endDate,
     ongoing: info.ongoing,
@@ -109,15 +113,23 @@ export default function RunTabs({
     close();
   };
 
-  /** 新しい回を始める。いまの内容は控えに残り、新しい回は空から始まる */
+  /**
+   * 新しい回を始める。いまの内容は控えに残り、新しい回は空から始まる。
+   *
+   * まだ一度も回に分けていない商品（再販が初めての商品）は、いま入っている内容にも
+   * 名前が要る。その場合は同じ画面で2つとも入れてもらう。
+   */
   const doAdd = () => {
     const next = text.trim();
-    if (!next) return setError("名前を入れてください（例: 2027 9月）。");
+    const prev = currentLabel || prevText.trim();
+    if (!prev) return setError("いままでの回の名前を入れてください（例: 2026 1月）。");
+    if (!next) return setError("新しく始める回の名前を入れてください（例: 2027 1月）。");
+    if (prev === next) return setError("いままでの回と新しい回に、同じ名前は付けられません。");
     if (nameTaken(next, "")) return setError(`「${next}」はすでにあります。`);
-    if (!currentLabel) return setError("いまの回に名前がありません。先に「✎ 名前」で名前を付けてください。");
+    if (nameTaken(prev, "")) return setError(`「${prev}」はすでにあります。`);
     app.updateInfo(id, {
       runLabel: next,
-      runs: [parkCurrent(), ...info.runs],
+      runs: [parkCurrent(prev), ...info.runs],
       releaseDate: "",
       endDate: "",
       ongoing: false,
@@ -274,17 +286,33 @@ export default function RunTabs({
           {action === "add" && (
             <>
               <p className="text-xs text-stone-700">
-                新しく始める回の名前を入れてください（例: 2027 9月）。
-                <br />
-                いまの 発売月・販売終了月・ビジュアル・チェック は「{currentLabel || "今の回"}」として
-                控えに残り、新しい回は空から始まります。品名・材料・価格・レシピ・紹介文はそのままです。
+                いまの 発売月・販売終了月・ビジュアル・チェック は控えに残り、
+                新しい回は空から始まります。品名・材料・価格・レシピ・紹介文はそのままです。
               </p>
+              {/* まだ回に分けていない商品は、いま入っている内容にも名前が要る */}
+              {!currentLabel && (
+                <>
+                  <p className="mt-2 text-xs font-medium text-stone-700">
+                    いま入っている内容（前に売った回）の名前
+                  </p>
+                  <input
+                    autoFocus
+                    value={prevText}
+                    placeholder="例: 2026 1月"
+                    onChange={(e) => setPrevText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && doAdd()}
+                    className="mt-1 w-full max-w-xs rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm"
+                  />
+                </>
+              )}
+              <p className="mt-2 text-xs font-medium text-stone-700">新しく始める回の名前</p>
               <input
-                autoFocus
+                autoFocus={!!currentLabel}
                 value={text}
+                placeholder="例: 2027 1月"
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && doAdd()}
-                className="mt-2 w-full max-w-xs rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm"
+                className="mt-1 w-full max-w-xs rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm"
               />
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" onClick={doAdd} className={`${okBtn} ${focusRing}`}>
