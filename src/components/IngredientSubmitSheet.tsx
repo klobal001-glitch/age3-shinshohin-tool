@@ -118,6 +118,85 @@ export function formatSpecText(raw: string): string {
     .trim();
 }
 
+/**
+ * 分量に出てくる日本語の単位。[1つのとき, 2つ以上のとき]
+ * 「枚」はチーズでもレタスでも使うので、無難に slice にしている。
+ */
+const AMOUNT_UNITS: Record<string, [string, string]> = {
+  人前: ["serving", "servings"],
+  食分: ["serving", "servings"],
+  切れ: ["slice", "slices"],
+  個: ["pc", "pcs"],
+  コ: ["pc", "pcs"],
+  本: ["pc", "pcs"],
+  枚: ["slice", "slices"],
+  玉: ["pc", "pcs"],
+  粒: ["grain", "grains"],
+  片: ["piece", "pieces"],
+  房: ["bunch", "bunches"],
+  束: ["bunch", "bunches"],
+  袋: ["bag", "bags"],
+  缶: ["can", "cans"],
+  瓶: ["bottle", "bottles"],
+  杯: ["cup", "cups"],
+  丁: ["block", "blocks"],
+  株: ["head", "heads"],
+  尾: ["pc", "pcs"],
+  匹: ["pc", "pcs"],
+  滴: ["drop", "drops"],
+};
+
+/**
+ * 分量（「3個」「1/2個」「40g」など）を英語の書き方に直す。
+ *
+ * 分量は文章ではなく「数字＋単位」なので、決まった言い換えで足りる。
+ * 元のデータは変えない。英語で出すときだけ通す。
+ */
+export function formatAmountEn(raw: string): string {
+  let t = (raw ?? "").trim();
+  if (!t) return "";
+
+  /* 全角の数字・記号を半角にそろえる */
+  t = t.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  t = t.replace(/／/g, "/").replace(/[～〜]/g, "~").replace(/×/g, " x ");
+
+  /* 言葉そのものを置き換えるもの */
+  t = t.replace(/適量|適宜|お好みで/g, "to taste");
+  t = t.replace(/ひとつまみ|一つまみ|少々/g, "a pinch");
+  t = t.replace(/程度|くらい|ぐらい/g, "");
+  t = t.replace(/約/g, "approx. ");
+
+  /* 「大さじ1」のように単位が前に来るもの */
+  t = t.replace(/大さじ\s*([\d/.]+)/g, "$1 tbsp");
+  t = t.replace(/小さじ\s*([\d/.]+)/g, "$1 tsp");
+  t = t.replace(/カップ\s*([\d/.]+)/g, "$1 cup");
+
+  /* 「3個」のように単位が後ろに来るもの。長い単位から先に当てる */
+  const units = Object.keys(AMOUNT_UNITS)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  t = t.replace(new RegExp(`([\\d/.]+)\\s*(${units})`, "g"), (_m, num: string, unit: string) => {
+    const [one, many] = AMOUNT_UNITS[unit];
+    const n = Number(num);
+    /* 「1/2」のような分数は Number にすると NaN になる。その場合は単数にする */
+    return `${num} ${Number.isFinite(n) && n > 1 ? many : one}`;
+  });
+
+  /* 数字だけ書いてあるときは個数とみなす（「3」→「3 pcs」） */
+  if (/^[\d/.]+$/.test(t)) {
+    const n = Number(t);
+    t = `${t} ${Number.isFinite(n) && n > 1 ? "pcs" : "pc"}`;
+  }
+
+  /* g・kg・ml などは数字との間を空ける。cc は ml、小文字の l は L にそろえる */
+  t = t.replace(/(\d)\s*(kg|mg|cc|ml|g|L|l)(?![A-Za-z])/g, (_m, d: string, u: string) => {
+    const unit = u === "cc" ? "ml" : u === "l" ? "L" : u;
+    return `${d} ${unit}`;
+  });
+
+  return t.replace(/\s+/g, " ").trim();
+}
+
 /** 英語のかたまりが始まる目印 */
 const EN_HEAD = /(?<![（(\w])\s*(Product Name|Label Name|Manufacturer|Ingredients)\s*:/;
 
@@ -283,7 +362,8 @@ export function IngredientSubmitSheet({
         .filter(Boolean)
         .join(" / ");
       const note = showJa ? PACKAGE_NOTE_JA : PACKAGE_NOTE_EN;
-      return [`${i + 1}. ${name}　${r.amount}`, spec, note].filter(Boolean).join("\n");
+      const amount = showJa ? r.amount : formatAmountEn(r.amount);
+      return [`${i + 1}. ${name}　${amount}`, spec, note].filter(Boolean).join("\n");
     });
     try {
       await navigator.clipboard.writeText(`【${productName}】材料\n\n${lines.join("\n\n")}`);
@@ -380,6 +460,8 @@ export function IngredientSubmitSheet({
             {list.map((r, i) => {
               const hasSpec = r.specs.some((x) => x.trim());
               const photos = [r.photoUrl, r.photoUrl2].filter((x) => x && x.trim());
+              /* 分量はマスターに英語欄が無いので、出すときに英語の書き方へ言い換える */
+              const amountEn = formatAmountEn(r.amount);
               return (
               <div
                 key={i}
@@ -448,12 +530,19 @@ export function IngredientSubmitSheet({
                   )}
                   {/* 画面が狭いときは分量を品名の下に出す（横に並べると文字が潰れるため） */}
                   <p className="ing-amount-sp mt-1 text-sm font-semibold tabular-nums text-amber-800 md:hidden">
-                    {r.amount}
+                    {showJa ? r.amount : amountEn}
+                    {showJa && showEn && amountEn && (
+                      <span className="ml-1 text-xs font-normal text-stone-500">（{amountEn}）</span>
+                    )}
                   </p>
                 </div>
 
                 <p className="ing-amount hidden text-sm font-semibold tabular-nums text-amber-800 md:block md:border-r md:border-stone-200/70 md:pr-3">
-                  {r.amount}
+                  {showJa ? r.amount : amountEn}
+                  {/* 両方のときは、日本語の下に英語を小さく添える */}
+                  {showJa && showEn && amountEn && (
+                    <span className="block text-xs font-normal text-stone-500">{amountEn}</span>
+                  )}
                 </p>
 
                 <div className="col-span-2 min-w-0 space-y-2 md:col-span-1">
