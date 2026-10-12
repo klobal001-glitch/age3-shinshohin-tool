@@ -139,6 +139,8 @@ export default function MenuView({
 }) {
   const { products, getInfo, getTaskState, setSelectedId } = app;
   const [productSort, setProductSort] = useState<"progress" | "name">("progress");
+  /* スマホには左のリスト（検索つき）が無いので、この画面の上に検索を置く */
+  const [query, setQuery] = useState("");
 
   const deadlines = useMemo(() => collectDeadlines(app), [app]);
   const stats = useMemo(() => computeDashboardStats(app, deadlines), [app, deadlines]);
@@ -173,6 +175,15 @@ export default function MenuView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, productSort]);
 
+  /* 検索に当たった商品。濁点の付き方の違い（NFD）でも当たるようにそろえる */
+  const hits = useMemo(() => {
+    const q = query.trim().normalize("NFC").toLowerCase();
+    if (!q) return [];
+    return products
+      .filter((p) => p.name.normalize("NFC").toLowerCase().includes(q))
+      .slice(0, 20);
+  }, [products, query]);
+
   const openProduct = (id: string) => {
     setSelectedId(id);
     onNavigate("sheet");
@@ -200,6 +211,79 @@ export default function MenuView({
           <span className="hidden md:inline">左のリストから商品を選ぶか、</span>
           下の一覧から商品を直接開けます。
         </p>
+
+        {/* 商品を探す。スマホだけに出す（パソコンは左のリストに検索がある） */}
+        <div className="mt-5 md:hidden">
+          <div className="relative">
+            <Icon
+              name="search"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
+            />
+            <input
+              /* type="search" にするとブラウザ標準の「×」が二重に出るので text にする */
+              type="text"
+              inputMode="search"
+              enterKeyHint="search"
+              className={`min-h-12 w-full rounded-2xl bg-white pl-11 pr-11 text-[15px] text-stone-900 shadow-sm placeholder:text-stone-400 ${focusRing}`}
+              placeholder="商品名で探す"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="検索をやめる"
+                onClick={() => setQuery("")}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-lg text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {query.trim() && (
+            <div className={`${surface} mt-3 overflow-hidden`}>
+              {hits.length === 0 ? (
+                <p className="px-5 py-8 text-center text-sm text-stone-400">
+                  「{query.trim()}」に当てはまる商品がありません。
+                </p>
+              ) : (
+                <div className="divide-y divide-stone-100">
+                  {hits.map((p) => {
+                    const info = getInfo(p.id);
+                    const status = saleStatus(info, today);
+                    const off = isInactive(status);
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => openProduct(p.id)}
+                        className={`flex min-h-14 w-full items-center gap-3 px-5 py-3 text-left transition hover:bg-stone-50 ${focusRing}`}
+                      >
+                        <span
+                          className={`min-w-0 flex-1 truncate text-[15px] font-medium ${
+                            off ? "text-stone-400" : "text-stone-900"
+                          }`}
+                        >
+                          {p.name}
+                        </span>
+                        {off ? (
+                          <span className={badge("neutral", "shrink-0")}>
+                            {SALE_STATUS_LABEL[status]}
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-sm tabular-nums text-stone-400">
+                            {infoFillRate(info, p.genre)}%
+                          </span>
+                        )}
+                        <Icon name="arrowRight" className="h-4 w-4 shrink-0 text-stone-300" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* いちばん急ぐ1件だけを大きく出す。数字の一覧を眺めても「次に何をするか」は分からないため */}
