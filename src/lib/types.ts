@@ -133,6 +133,37 @@ export interface ProductRun {
     ongoing: boolean;
     visuals: VisualLinkGroup[];
     taskState: Record<string, boolean>;
+    /**
+     * この回だけの 価格・材料・作り方・紹介文。
+     * 無い回は「この回ぶんの記録が残っていない」という意味で、画面では
+     * 今の回の内容を出しつつその旨を伝える。直した時点でここへ書き写される。
+     */
+    detail?: RunDetailData;
+    /** どの回から引き継いだか（引き継ぎ元の名前） */
+    copiedFrom?: string;
+    /** この回を作った日時 */
+    createdAt?: string;
+}
+
+/** 回ごとに持つ中身（期間・ビジュアル以外）。中身の作り方は lib/productRun.ts */
+export interface RunDetailData {
+    noAlcoholPork?: "mark" | "nomark" | null;
+    priceBase?: number | null;
+    priceBaseUber?: number | null;
+    priceBaseNotSold?: boolean;
+    priceByStore?: Partial<Record<StoreId, StorePrice>>;
+    ingredients?: IngredientRow[];
+    howToVideoUrl?: string;
+    recipeImages?: string[];
+    recipeNotes?: string;
+    descriptionJa?: string;
+    descriptionEn?: string;
+    instagramPost?: string;
+    igCaption?: string;
+    xCaption?: string;
+    threadsCaption?: string;
+    pressEmail?: string;
+    prTimesUrl?: string;
 }
 
 export interface VisualLinkGroup {
@@ -205,6 +236,8 @@ export interface ProductInfo {
   // task_state テーブルに入っている（数え方はすべてそちらだけを見る）。
   // runs は終わった回の控え。新しい順に並べる。
   runLabel: string; // 今の回の名前（例「2026 ハロウィン」）。空なら回で分けていない
+  /** 今の回を、どの回から引き継いで始めたか */
+  runCopiedFrom?: string;
   runs: ProductRun[];
 
   // 紹介文各種（SNS・PR）
