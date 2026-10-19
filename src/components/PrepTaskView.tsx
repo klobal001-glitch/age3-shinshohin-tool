@@ -660,11 +660,6 @@ export default function PrepTaskView({
     app.setRunTab(null);
   };
 
-  const patchDates = (release: string, end: string) => {
-    if (!selectedProduct || run.viewingPast) return;
-    app.updateInfo(selectedProduct.id, { releaseDate: release, endDate: end });
-  };
-
   const isLeafChecked = (groupId: string, milestoneId: string, task: TaskItem, childId?: string) => {
     /* 連動タスクは保存済みのチェックではなく、情報シートの値を見る */
     if (!childId && task.linkedField) return info ? isLinkedTaskDone(task, info) : false;
@@ -692,6 +687,11 @@ export default function PrepTaskView({
   const patchInfo = (patch: Partial<ProductInfo>) => {
     if (!selectedProduct || !info) return;
     app.updateInfo(selectedProduct.id, applyRunPatch(info, run.past ? run.past.label : null, patch));
+  };
+
+  /** 発売月・販売終了月を直す。選んでいる回の期間として保存する */
+  const patchDates = (release: string, end: string) => {
+    patchInfo({ releaseDate: release, endDate: end });
   };
 
   /** 連動タスクで選び直したとき。情報シート側（選んでいる回）に書き込む */
@@ -884,7 +884,6 @@ export default function PrepTaskView({
               <input
                 type="month"
                 className={`${field} w-auto`}
-                disabled={run.viewingPast}
                 value={releaseDate ? releaseDate.slice(0, 7) : ""}
                 onChange={(e) => patchDates(e.target.value ? `${e.target.value}-01` : "", endDate)}
               />
@@ -899,7 +898,6 @@ export default function PrepTaskView({
                 <input
                   type="month"
                   className={`${field} w-auto`}
-                  disabled={run.viewingPast}
                   value={endDate ? endDate.slice(0, 7) : ""}
                   onChange={(e) => patchDates(releaseDate, e.target.value ? `${e.target.value}-01` : "")}
                 />
