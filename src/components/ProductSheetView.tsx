@@ -1087,6 +1087,22 @@ export default function ProductSheetView({
         </details>
       </div>
 
+      {/* 販売の回の切り替え。どの区画を直すときも、いまどの回を見ているかが分かるように
+          いちばん上に置く（タスク画面と同じ場所・同じ見た目） */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 print:hidden">
+        <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
+        <RunTabs app={app} info={info} onAddRun={addRun} onRenameRun={renameRun} />
+      </div>
+
+      {viewingPast && (
+        <RunSourceNotice
+          label={run.viewingLabel}
+          current={run.currentLabel}
+          ownDetail={hasOwnDetail(selectedRun)}
+          copiedFrom={selectedRun?.copiedFrom}
+        />
+      )}
+
       <Section
         id="sheet-basic"
         active={activeSection === "sheet-basic"}
@@ -1479,21 +1495,6 @@ export default function ProductSheetView({
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Enter</kbd>
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
-
-        {/* 販売の回の切り替え。タスク画面と同じ場所・同じ見た目にそろえている */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="mr-0.5 text-xs text-stone-500">販売の回</span>
-          <RunTabs app={app} info={info} onAddRun={addRun} onRenameRun={renameRun} />
-        </div>
-
-        {viewingPast && (
-          <RunSourceNotice
-            label={run.viewingLabel}
-            current={run.currentLabel}
-            ownDetail={hasOwnDetail(selectedRun)}
-            copiedFrom={selectedRun?.copiedFrom}
-          />
-        )}
 
         {shownVisuals
           .filter((v) =>
