@@ -32,7 +32,8 @@ import {
   formatYen,
   patchStorePrice,
 } from "@/lib/productInfo";
-import RunTabs, { PastRunNotice, runView } from "./RunTabs";
+import RunTabs, { RunSourceNotice, runView } from "./RunTabs";
+import { applyRunPatch, hasOwnDetail } from "@/lib/productRun";
 
 /** 並べ替え・絞り込みボタンの共通スタイル。実体は @/lib/ui の chip */
 const ctrlCls = chip;
@@ -563,20 +564,29 @@ export default function PrepTaskView({
   const info = selectedProduct ? getInfo(selectedProduct.id) : null;
   const liveTaskState = selectedProduct ? getTaskState(selectedProduct.id) : {};
 
-  /* 販売の回。「今の回」は task_state 側で、締め切り・進捗の数え方はそちらだけを見る。
-     終わった回は情報シートの runs に控えとして置いてある（見るだけ） */
+  /* 販売の回。「今準備中の回」は task_state 側で、ホーム画面の締め切り・進捗の
+     数え方はそちらだけを見る。ほかの回は情報シートの runs に入っていて、
+     チェックも期間も回ごとに別々に持つ（どの回でも直せる） */
   const run = runView(app, info);
-  const viewingPastYear = run.viewingPast;
   const taskState = run.past ? run.past.taskState : liveTaskState;
-  /* 発売月・販売終了月は「回」ごとに変わる。過去の回を見ているときはその回の日付を使う */
+  /* 発売月・販売終了月は「回」ごとに変わる。選んでいる回の日付を使う */
   const releaseDate = run.past ? run.past.releaseDate : info?.releaseDate ?? "";
   const endDate = run.past ? run.past.endDate : info?.endDate ?? "";
   const ongoing = run.past ? run.past.ongoing : info?.ongoing ?? false;
 
-  /** 過去の年を見ているときは触らせない（数に入らないため） */
+  /** チェックを付け外しする。今準備中以外の回は、その回の控えへ書く */
   const toggle = (key: string) => {
-    if (viewingPastYear || !selectedProduct) return;
-    toggleTask(selectedProduct.id, key);
+    if (!selectedProduct) return;
+    if (!run.past || !info) {
+      toggleTask(selectedProduct.id, key);
+      return;
+    }
+    const label = run.past.label;
+    const nextState = { ...run.past.taskState, [key]: !run.past.taskState[key] };
+    if (!nextState[key]) delete nextState[key];
+    app.updateInfo(selectedProduct.id, {
+      runs: info.runs.map((r) => (r.label === label ? { ...r, taskState: nextState } : r)),
+    });
   };
 
   /** 回の名前を変える。移行してきた「2025」のような名前を「2025 通常」に直すため */
@@ -665,19 +675,29 @@ export default function PrepTaskView({
   const linkedValue = (task: TaskItem): string | null =>
     task.linkedField === "noAlcoholPork" ? (info?.noAlcoholPork ?? null) : null;
 
-  /** 価格の連動タスクから、情報シートへ書き込む */
-  const patchInfo = (patch: Partial<ProductInfo>) => {
-    if (!selectedProduct || viewingPastYear) return;
-    app.updateInfo(selectedProduct.id, patch);
+  /** チェックをまとめて書き換える。今準備中以外の回は、その回の控えへ書く */
+  const writeTasks = (next: Record<string, boolean>) => {
+    if (!selectedProduct) return;
+    if (!run.past || !info) {
+      setProductTasks(selectedProduct.id, next);
+      return;
+    }
+    const label = run.past.label;
+    app.updateInfo(selectedProduct.id, {
+      runs: info.runs.map((r) => (r.label === label ? { ...r, taskState: next } : r)),
+    });
   };
 
-  /** 連動タスクで選び直したとき。情報シート側に書き込む */
+  /** 価格の連動タスクから、情報シートへ書き込む（選んでいる回へ） */
+  const patchInfo = (patch: Partial<ProductInfo>) => {
+    if (!selectedProduct || !info) return;
+    app.updateInfo(selectedProduct.id, applyRunPatch(info, run.past ? run.past.label : null, patch));
+  };
+
+  /** 連動タスクで選び直したとき。情報シート側（選んでいる回）に書き込む */
   const chooseLinked = (task: TaskItem, value: string) => {
-    if (!selectedProduct || viewingPastYear) return;
     if (task.linkedField === "noAlcoholPork") {
-      app.updateInfo(selectedProduct.id, {
-        noAlcoholPork: value as ProductInfo["noAlcoholPork"],
-      });
+      patchInfo({ noAlcoholPork: value as ProductInfo["noAlcoholPork"] });
     }
   };
 
@@ -812,7 +832,12 @@ export default function PrepTaskView({
       </div>
 
       {run.viewingPast && (
-        <PastRunNotice label={run.viewingLabel} current={run.currentLabel} />
+        <RunSourceNotice
+          label={run.viewingLabel}
+          current={run.currentLabel}
+          ownDetail={hasOwnDetail(run.past)}
+          copiedFrom={run.past?.copiedFrom}
+        />
       )}
 
       <div className={`overflow-hidden ${card}`}>
@@ -1017,7 +1042,6 @@ export default function PrepTaskView({
             「今回は作らない」の印と、情報シートと連動するタスクは触らない */}
         <button
           className={btn("secondary")}
-          disabled={viewingPastYear}
           onClick={() => {
             if (
               !confirm(
@@ -1043,7 +1067,7 @@ export default function PrepTaskView({
                 }
               }
             }
-            setProductTasks(selectedProduct.id, next);
+            writeTasks(next);
           }}
         >
           <Icon name="check" className="h-4 w-4" />
@@ -1051,11 +1075,10 @@ export default function PrepTaskView({
         </button>
         <button
           className={btn("danger")}
-          disabled={viewingPastYear}
           onClick={() => {
-            if (confirm("この商品の進捗をリセットします。よろしいですか？")) {
-              resetProductTasks(selectedProduct.id);
-            }
+            if (!confirm(`「${run.viewingLabel || "今の回"}」の進捗をリセットします。よろしいですか？`)) return;
+            if (run.past) writeTasks({});
+            else resetProductTasks(selectedProduct.id);
           }}
         >
           この商品の進捗をリセット
