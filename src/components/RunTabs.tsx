@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppData } from "@/hooks/useAppData";
 import { ProductInfo, ProductRun } from "@/lib/types";
 import { createDefaultProductInfo } from "@/lib/productInfo";
+import { detailFrom, listRuns, listYears, periodLabel } from "@/lib/productRun";
 import { focusRing } from "@/lib/ui";
 
 /**
@@ -66,6 +67,8 @@ export default function RunTabs({
   const [text, setText] = useState("");
   /* まだ回に分けていない商品で、いま入っている内容に付ける名前 */
   const [prevText, setPrevText] = useState("");
+  /* 上の「年」で選んでいるもの。null はまだ押していない（見ている回の年を出す） */
+  const [pickedYear, setPickedYear] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const close = () => {
@@ -89,6 +92,10 @@ export default function RunTabs({
   /** いまの回の中身を、控えの形にして取り出す */
   const parkCurrent = (label = currentLabel): ProductRun => ({
     label,
+    /* 価格・材料・作り方・紹介文も、この回ぶんとして一緒に残す。
+       こうしておかないと、次の回で直したときに前の回の中身まで変わってしまう */
+    detail: detailFrom(info),
+    createdAt: new Date().toISOString(),
     releaseDate: info.releaseDate,
     endDate: info.endDate,
     ongoing: info.ongoing,
@@ -127,8 +134,13 @@ export default function RunTabs({
     if (prev === next) return setError("いままでの回と新しい回に、同じ名前は付けられません。");
     if (nameTaken(next, "")) return setError(`「${next}」はすでにあります。`);
     if (nameTaken(prev, "")) return setError(`「${prev}」はすでにあります。`);
+    /* 新しい回は、いまの 価格・材料・作り方・紹介文 をそのまま引き継いで始める。
+       前の回は控えへ回るときに自分ぶんの中身を持つので、
+       新しい回で直しても前の回には移らない。
+       期間・ビジュアル・チェックだけは空から（前の年の画像を使う事故を防ぐため） */
     app.updateInfo(id, {
       runLabel: next,
+      runCopiedFrom: prev,
       runs: [parkCurrent(prev), ...info.runs],
       releaseDate: "",
       endDate: "",
@@ -150,11 +162,15 @@ export default function RunTabs({
     nextRuns.splice(idx, 1, parkCurrent());
     app.updateInfo(id, {
       runLabel: pick.label,
+      runCopiedFrom: pick.copiedFrom,
       runs: nextRuns,
       releaseDate: pick.releaseDate,
       endDate: pick.endDate,
       ongoing: pick.ongoing,
       visualDownloads: pick.visuals,
+      /* 価格・材料・作り方・紹介文も一緒に入れ替える。
+         入れ替え忘れると、前の回の中身のまま別の回の名前になってしまう */
+      ...(pick.detail ?? {}),
     });
     app.setProductTasks(id, pick.taskState);
     app.setRunTab(null);
@@ -175,55 +191,108 @@ export default function RunTabs({
     if (!pick) return setError("その回が見つかりません。");
     app.updateInfo(id, {
       runLabel: pick.label,
+      runCopiedFrom: pick.copiedFrom,
       runs: info.runs.filter((_, i) => i !== idx),
       releaseDate: pick.releaseDate,
       endDate: pick.endDate,
       ongoing: pick.ongoing,
       visualDownloads: pick.visuals,
+      ...(pick.detail ?? {}),
     });
     app.setProductTasks(id, pick.taskState);
     app.setRunTab(null);
     close();
   };
 
+  /* 回の一覧と、そこに出てくる年。年をまたぐ回（2026年12月〜2027年1月）は
+     複製せず、2026 と 2027 のどちらを選んでも同じ回が出る */
+  const entries = listRuns(info);
+  const years = listYears(entries);
+  const viewingEntry = entries.find((e) => (e.current ? viewingCurrent : e.label === viewingLabel));
+  const shownYear =
+    pickedYear ?? (viewingEntry && viewingEntry.years[0]) ?? years[years.length - 1] ?? null;
+  const shownEntries =
+    shownYear === null ? entries : entries.filter((e) => e.years.includes(shownYear));
+  /* 期間が入っていなくて年が分からない回。年で絞ると出てこないので、件数だけ知らせる */
+  const noYearCount = entries.filter((e) => e.years.length === 0).length;
+
+  const pickRun = (e: (typeof entries)[number]) => {
+    close();
+    app.setRunTab(e.current ? null : { productId: id, label: e.label });
+  };
+
   return (
     <div className="flex w-full flex-wrap items-center gap-1.5 print:hidden">
       {hasRuns && (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              app.setRunTab(null);
-            }}
-            className={`rounded-lg border px-2.5 py-1 text-xs transition ${focusRing} ${
-              viewingCurrent
-                ? "border-amber-600 bg-amber-600 font-medium text-white"
-                : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
-            }`}
-          >
-            {currentLabel || "今の回"}
-            <span className={`ml-1.5 ${viewingCurrent ? "text-amber-100" : "text-stone-400"}`}>
-              今準備中
-            </span>
-          </button>
-          {info.runs.map((r) => (
-            <button
-              key={r.label}
-              type="button"
-              onClick={() => {
-                close();
-                app.setRunTab({ productId: id, label: r.label });
-              }}
-              className={`rounded-lg border px-2.5 py-1 text-xs transition ${focusRing} ${
-                viewingLabel === r.label
-                  ? "border-stone-600 bg-stone-600 font-medium text-white"
-                  : "border-stone-300 bg-white text-stone-500 hover:bg-stone-50"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+          {/* 上の段：年。2つ以上の年にまたがるときだけ出す */}
+          {years.length > 1 && (
+            <div className="flex w-full flex-wrap items-center gap-1.5">
+              <span className="mr-0.5 text-xs text-stone-500">年</span>
+              {years.map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setPickedYear(y)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition ${focusRing} ${
+                    shownYear === y
+                      ? "border-stone-800 bg-stone-800 font-semibold text-white"
+                      : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+                  }`}
+                >
+                  {y}年
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPickedYear(null)}
+                className={`rounded-lg border px-2.5 py-1 text-xs transition ${focusRing} ${
+                  shownYear === null
+                    ? "border-stone-800 bg-stone-800 font-semibold text-white"
+                    : "border-stone-300 bg-white text-stone-500 hover:bg-stone-50"
+                }`}
+              >
+                すべて
+              </button>
+              {noYearCount > 0 && shownYear !== null && (
+                <span className="text-xs text-stone-400">
+                  （期間が未入力の回 {noYearCount}件は「すべて」に出ます）
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* 下の段：その年の販売回 */}
+          {shownEntries.map((e) => {
+            const on = e.current ? viewingCurrent : viewingLabel === e.label;
+            return (
+              <button
+                key={(e.current ? "cur:" : "run:") + e.label}
+                type="button"
+                onClick={() => pickRun(e)}
+                className={`rounded-lg border px-2.5 py-1 text-left text-xs transition ${focusRing} ${
+                  on
+                    ? e.current
+                      ? "border-amber-600 bg-amber-600 font-medium text-white"
+                      : "border-stone-600 bg-stone-600 font-medium text-white"
+                    : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
+                }`}
+              >
+                <span className="block max-w-[18rem] truncate">{e.label || "今の回"}</span>
+                <span
+                  className={`block text-[11px] ${
+                    on ? "text-white/75" : "text-stone-400"
+                  }`}
+                >
+                  {periodLabel(e)}
+                  {e.current && "・今準備中"}
+                </span>
+              </button>
+            );
+          })}
+          {shownEntries.length === 0 && (
+            <span className="text-xs text-stone-400">この年の回はありません。</span>
+          )}
         </>
       )}
 
@@ -411,13 +480,45 @@ export default function RunTabs({
 }
 
 /** 今準備中でない回を見ているときの注意書き。シートでもタスクでも同じ文にする */
+/** 旧い呼び名。古い画面がまだ使っていても動くように残してある */
 export function PastRunNotice({ label, current }: { label: string; current: string }) {
+  return <RunSourceNotice label={label} current={current} ownDetail />;
+}
+
+/**
+ * 今準備中ではない回を見ているときの案内。
+ * 直せる（回ごとに別々に持つ）ことと、その回ぶんの記録があるかどうかを伝える。
+ */
+export function RunSourceNotice({
+  label,
+  current,
+  ownDetail,
+  copiedFrom,
+}: {
+  label: string;
+  current: string;
+  /** この回ぶんの 価格・材料・作り方・紹介文 が記録されているか */
+  ownDetail: boolean;
+  /** 引き継ぎ元の回の名前 */
+  copiedFrom?: string;
+}) {
   return (
-    <p className="rounded-lg border border-stone-300 bg-stone-200/60 px-3 py-2 text-xs text-stone-700">
-      <span className="font-medium">{label}</span>{" "}
-      は、いま準備中の回ではありません。見るだけで、直せません。
-      直すときは「↺ 今準備中にする」を押してください。
-      締め切りの数・進捗・入力率は「{current || "今の回"}」を見ています。
-    </p>
+    <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-stone-700">
+      <p>
+        いま見ているのは <span className="font-medium">{label}</span> です。
+        この回ぶんとして直せます（直しても、ほかの回には移りません）。
+        {copiedFrom && <>　引き継ぎ元：{copiedFrom}</>}
+      </p>
+      {!ownDetail && (
+        <p className="mt-1 text-amber-800">
+          この回の 価格・材料・作り方・紹介文 は、記録が残っていません。
+          いまは「{current || "今の回"}」の内容を参考として出しています。
+          どれかを直すと、その時点の内容がこの回へ書き写され、以後はこの回だけのものになります。
+        </p>
+      )}
+      <p className="mt-1 text-stone-500">
+        ホーム画面の締め切り・進捗・入力率は「{current || "今の回"}」を見ています。
+      </p>
+    </div>
   );
 }
