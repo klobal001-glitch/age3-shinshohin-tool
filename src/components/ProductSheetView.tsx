@@ -44,7 +44,8 @@ import { IngredientSubmitSheet } from "./IngredientSubmitSheet";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
-import RunTabs, { PastRunNotice, runView } from "./RunTabs";
+import RunTabs, { RunSourceNotice, runView } from "./RunTabs";
+import { applyRunPatch, hasOwnDetail, runFieldsOf } from "@/lib/productRun";
 import { badge, btn, chip, focusRing, h3, muted } from "@/lib/ui";
 
 /** 入力シートの区切り。番号付きの見出し帯で「島」の境目をはっきりさせる */
@@ -629,7 +630,20 @@ export default function ProductSheetView({
     return <ProductPicker app={app} onOpenSwitcher={onOpenSwitcher} />;
   }
 
-  const info = getInfo(selectedProduct.id);
+  /* 商品そのものの中身。ホーム画面の締め切り・進捗は、こちら（＝今準備中の回）だけを見る */
+  const baseInfo = getInfo(selectedProduct.id);
+  /* いま選んでいる回。null なら今準備中の回 */
+  const selectedRunLabel =
+    app.runTab && app.runTab.productId === selectedProduct.id && app.runTab.label !== (baseInfo.runLabel || "")
+      ? app.runTab.label
+      : null;
+  const selectedRun = selectedRunLabel
+    ? baseInfo.runs.find((r) => r.label === selectedRunLabel) ?? null
+    : null;
+  /* 画面に出す中身は、選んでいる回のもの。回ごとの記録が無い回は今の回の内容を見せる */
+  const info: typeof baseInfo = selectedRun
+    ? { ...baseInfo, ...runFieldsOf(baseInfo, selectedRun) }
+    : baseInfo;
   const genre = selectedProduct.genre;
   /* 販売終了・廃盤の商品は、上部の帯と進捗バーをグレーにして一目で分かるようにする */
   const status = saleStatus(info);
@@ -638,20 +652,13 @@ export default function ProductSheetView({
   const opt = optionalProgress(info, genre);
   const ing = ingredientsProgress(info);
 
-  const viewingPastRun =
-    !!app.runTab &&
-    app.runTab.productId === selectedProduct.id &&
-    app.runTab.label !== (info.runLabel || "");
-
+  /**
+   * 直しをどこへ書くかを振り分ける。
+   * 今の回なら商品の本体へ、ほかの回を選んでいるならその回へ。
+   * 品名など商品で1つのものは、どの回を見ていても本体へ入る。
+   */
   const patch = (p: Partial<typeof info>) => {
-    /* 終わった回を見ているときは、回ごとに変わるもの（発売日・終了日・ビジュアル）は直せない。
-       品名・材料・価格・レシピ・紹介文は商品で1つなので、そのまま直せる */
-    if (
-      viewingPastRun &&
-      ("releaseDate" in p || "endDate" in p || "ongoing" in p || "visualDownloads" in p)
-    )
-      return;
-    updateInfo(selectedProduct.id, p);
+    updateInfo(selectedProduct.id, applyRunPatch(baseInfo, selectedRunLabel, p));
   };
 
   /* ---------------- 必須項目の一覧（点の表示と「次の未入力へ」で使う） --------------- */
@@ -801,14 +808,13 @@ export default function ProductSheetView({
    */
   const run = runView(app, info);
 
-  /* 「販売の回」で切り替える。回ごとに変わるのは 発売月・販売終了月・ビジュアル・タスク。
-     品名・材料・価格・レシピ・紹介文は商品で1つ（ものは同じなので） */
-  const shownVisuals = run.past ? run.past.visuals : info.visualDownloads;
-  const viewingPast = run.viewingPast;
+  /* 「販売の回」で切り替える。期間・価格・材料・作り方・ビジュアル・紹介文・タスクは
+     すべて回ごとに別々に持てる。品名だけは商品で1つ（名前を変えるときは別商品を作る） */
+  const shownVisuals = info.visualDownloads;
+  /* 今準備中ではない回を見ているか。直せないという意味ではなく、表示の注意書きに使う */
+  const viewingPast = !!selectedRun;
 
   const updateVisual = (key: string, links: string[]) => {
-    /* 終わった回は見るだけ */
-    if (viewingPast) return;
     patch({
       visualDownloads: info.visualDownloads.map((v) => (v.key === key ? { ...v, links } : v)),
     });
@@ -821,10 +827,8 @@ export default function ProductSheetView({
    * 残り続けて進捗が実態と合わなかった。押すと分母から外れる。
    * 逆にバナナブリュレのようにシーズンから移ってきて全部そろっている商品は、
    * 「あります」に戻すとジャンルの既定を無視して必須に数える。
-   * 過去の年を見ているときは触らせない（数に入らないため）。
    */
   const toggleVisualNa = (key: string, required: boolean) => {
-    if (viewingPast) return;
     patch({
       visualDownloads: info.visualDownloads.map((v) =>
         v.key === key ? { ...v, na: required } : v
@@ -1156,8 +1160,7 @@ export default function ProductSheetView({
                 id="f-releaseDate"
                 type="date"
                 className={inputCls}
-                disabled={viewingPast}
-                value={run.past ? run.past.releaseDate : info.releaseDate}
+                value={info.releaseDate}
                 onChange={(e) => patch({ releaseDate: e.target.value })}
               />
             </Field>
@@ -1165,7 +1168,7 @@ export default function ProductSheetView({
           {showOptional() && (
             <Field label="販売終了日">
               {/* 日付の欄を先に置いて、左の「発売日」と高さを揃える */}
-              {(run.past ? run.past.ongoing : info.ongoing) ? (
+              {info.ongoing ? (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   継続販売中 — 販売終了日は設定しません
                 </div>
@@ -1173,8 +1176,7 @@ export default function ProductSheetView({
                 <input
                   type="date"
                   className={inputCls}
-                  disabled={viewingPast}
-                  value={run.past ? run.past.endDate : info.endDate}
+                  value={info.endDate}
                   onChange={(e) => patch({ endDate: e.target.value })}
                 />
               )}
@@ -1182,8 +1184,7 @@ export default function ProductSheetView({
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-amber-600"
-                  disabled={viewingPast}
-                  checked={run.past ? run.past.ongoing : info.ongoing}
+                  checked={info.ongoing}
                   onChange={(e) =>
                     patch({ ongoing: e.target.checked, endDate: e.target.checked ? "" : info.endDate })
                   }
@@ -1485,7 +1486,14 @@ export default function ProductSheetView({
           <RunTabs app={app} info={info} onAddRun={addRun} onRenameRun={renameRun} />
         </div>
 
-        {viewingPast && <PastRunNotice label={run.viewingLabel} current={run.currentLabel} />}
+        {viewingPast && (
+          <RunSourceNotice
+            label={run.viewingLabel}
+            current={run.currentLabel}
+            ownDetail={hasOwnDetail(selectedRun)}
+            copiedFrom={selectedRun?.copiedFrom}
+          />
+        )}
 
         {shownVisuals
           .filter((v) =>
@@ -1507,11 +1515,11 @@ export default function ProductSheetView({
               }`}
             >
               <div className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-medium text-stone-600">
-                <Dot filled={visualFilledOf(v.links)} optional={viewingPast || !required} />
+                <Dot filled={visualFilledOf(v.links)} optional={!required} />
                 <span className={isNa ? "text-stone-400" : ""}>{v.label}</span>
                 {v.size && <span className="text-xs font-normal text-stone-400">（{v.size}）</span>}
                 {isNa && <span className={badge("neutral", "ml-0.5")}>ありません</span>}
-                {/* 過去の年は数に入らないので、切り替えは出さない */}
+                {/* 必須の数え方は今準備中の回だけを見るので、切り替えもそこだけ */}
                 {!viewingPast && (
                   <button
                     type="button"
@@ -1540,7 +1548,7 @@ export default function ProductSheetView({
                 />
               ))}
               <input
-                id={viewingPast ? undefined : `f-visual-${v.key}`}
+                id={`f-visual-${v.key}`}
                 className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
                 placeholder="URLを貼って Enter（複数まとめて貼ってもOK）"
                 aria-label={`${v.label}のリンクを追加`}
