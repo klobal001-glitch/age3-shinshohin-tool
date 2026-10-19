@@ -1,5 +1,6 @@
 "use client";
 
+import BackupPanel from "@/components/BackupPanel";
 import { card, h3, muted } from "@/lib/ui";
 
 export default function HelpView() {
@@ -77,6 +78,7 @@ export default function HelpView() {
           「販売終了月」の月末が締め切りになります。
         </p>
       </div>
+      <BackupPanel />
       <p className={`rounded-lg bg-amber-50 p-3 ${muted}`}>
         ※本ツールは社内の準備業務を管理するための下書き・目安です。掲示・入稿・配信・展開の前に、必ずご自身と上長の目でご確認ください。
       </p>
