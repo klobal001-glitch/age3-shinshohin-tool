@@ -500,14 +500,22 @@ export function normalizeProductInfo(raw: unknown): ProductInfo {
   merged.runLabel = typeof r.runLabel === "string" ? r.runLabel : "";
   merged.runs = (Array.isArray(merged.runs) ? merged.runs : [])
     .filter((x): x is ProductRun => !!x && typeof x.label === "string")
-    .map((x) => ({
-      label: x.label,
-      releaseDate: typeof x.releaseDate === "string" ? x.releaseDate : "",
-      endDate: typeof x.endDate === "string" ? x.endDate : "",
-      ongoing: !!x.ongoing,
-      visuals: normalizeVisualGroups(x.visuals),
-      taskState: x.taskState && typeof x.taskState === "object" ? x.taskState : {},
-    }));
+    .map((x) => {
+      const run: ProductRun = {
+        label: x.label,
+        releaseDate: typeof x.releaseDate === "string" ? x.releaseDate : "",
+        endDate: typeof x.endDate === "string" ? x.endDate : "",
+        ongoing: !!x.ongoing,
+        visuals: normalizeVisualGroups(x.visuals),
+        taskState: x.taskState && typeof x.taskState === "object" ? x.taskState : {},
+      };
+      /* 回ごとの中身・引き継ぎ元・作った日は、あるときだけ持ち越す。
+         ここで拾い忘れると次の保存で消えてしまうので、項目を増やしたら必ず足すこと */
+      if (x.detail && typeof x.detail === "object") run.detail = x.detail;
+      if (typeof x.copiedFrom === "string") run.copiedFrom = x.copiedFrom;
+      if (typeof x.createdAt === "string") run.createdAt = x.createdAt;
+      return run;
+    });
   if (merged.runs.length === 0) {
     const labels: string[] = [];
     for (const a of merged.taskArchives) if (!labels.includes(a.year)) labels.push(a.year);
