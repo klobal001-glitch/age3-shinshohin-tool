@@ -6,7 +6,7 @@ import ProductThumb from "@/components/ProductThumb";
 import { ProductInfo } from "@/lib/types";
 import { focusRing } from "@/lib/ui";
 
-export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
+export type TabKey = "menu" | "monthly" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
 
 /**
  * このヘッダーはスマホ専用（PCでは左のサイドバーを使う）。
@@ -18,6 +18,8 @@ export type TabKey = "menu" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
  * 2026年9月に、こげ茶の帯をやめて地と同じ明るい面にした。
  * 帯が濃いと画面の上下が黒く縁取られて、中身が窮屈に見えていたため。
  */
+/* 下端のタブは6つまで。7つにすると「ビジュアル」の文字が枠からはみ出して読めない
+   （390pxで1つあたり55px）。月別はホーム画面のいちばん上と、パソコンの左のリストから開く */
 const TABS: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "menu", icon: "home", label: "ホーム" },
   { key: "sheet", icon: "sheet", label: "シート" },
@@ -29,6 +31,7 @@ const TABS: { key: TabKey; icon: IconName; label: string }[] = [
 
 const SUBTITLES: Record<TabKey, string> = {
   menu: "揚げサンド 直営店で共有",
+  monthly: "月別の新商品：掲示と共有",
   sheet: "商品情報シート：空欄を埋めていく",
   tasks: "準備タスク：発売月から締め切りを自動計算",
   gallery: "ビジュアル一覧（Instagram 1枚目）",
@@ -52,7 +55,11 @@ export default function Header({
 }) {
   /* ホームと使い方は商品に紐づかないので、商品名は出さない */
   const showProduct =
-    Boolean(productName) && activeTab !== "menu" && activeTab !== "help" && activeTab !== "flyer";
+    Boolean(productName) &&
+    activeTab !== "menu" &&
+    activeTab !== "monthly" &&
+    activeTab !== "help" &&
+    activeTab !== "flyer";
 
   return (
     <>
