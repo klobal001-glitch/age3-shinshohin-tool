@@ -14,6 +14,7 @@ import { btn, focusRing, rowSelect } from "@/lib/ui";
 /* ラベルはスマホ下端のタブと同じ言葉にして、どちらで使っても迷わないようにする */
 const NAV: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "menu", icon: "home", label: "ホーム" },
+  { key: "monthly", icon: "month", label: "月別" },
   { key: "sheet", icon: "sheet", label: "シート" },
   { key: "tasks", icon: "task", label: "タスク" },
   { key: "gallery", icon: "gallery", label: "ビジュアル" },

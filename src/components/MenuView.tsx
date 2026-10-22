@@ -212,6 +212,23 @@ export default function MenuView({
           下の一覧から商品を直接開けます。
         </p>
 
+        {/* 月別の新商品へ。毎月20日ごろの共有で使うので、いちばん目に入る場所に置く。
+            スマホの下端のタブは6つで埋まっているため、入口はこことパソコンの左のリスト */}
+        <button
+          type="button"
+          onClick={() => onNavigate("monthly")}
+          className={`${surface} mt-5 flex min-h-16 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-stone-50 ${focusRing}`}
+        >
+          <Icon name="month" className="h-6 w-6 shrink-0 text-amber-700" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-stone-900">月別の新商品</span>
+            <span className="mt-0.5 block text-sm text-stone-500">
+              翌月・翌々月をまとめて見る／店頭掲示のA4・リーダー共有
+            </span>
+          </span>
+          <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-stone-400" />
+        </button>
+
         {/* 商品を探す。スマホだけに出す（パソコンは左のリストに検索がある） */}
         <div className="mt-5 md:hidden">
           <div className="relative">
