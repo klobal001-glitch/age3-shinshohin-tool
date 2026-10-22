@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Header, { TabKey } from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MenuView from "@/components/MenuView";
+import MonthlyView from "@/components/MonthlyView";
 import ProductSheetView from "@/components/ProductSheetView";
 import PrepTaskView from "@/components/PrepTaskView";
 import VisualGalleryView from "@/components/VisualGalleryView";
@@ -43,10 +44,12 @@ function AppShell() {
   }, [selectedId]);
 
   /* 商品を切り替えたら、見ている「販売の回」は今の回に戻す。
-     前の商品の回を見たまま次の商品を開くと、何を見ているか分からなくなるため */
+     前の商品の回を見たまま次の商品を開くと、何を見ているか分からなくなるため。
+     ただし、月別の一覧から「その回を開く」で来たときは、その回を残す
+     （商品と回を同時に指定しているので、ここで消すと今の回に戻ってしまう） */
   const setRunTab = app.setRunTab;
   useEffect(() => {
-    setRunTab(null);
+    setRunTab((cur) => (cur && cur.productId === selectedId ? cur : null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
@@ -68,6 +71,7 @@ function AppShell() {
         {/* スマホは下端のタブに隠れないよう、本文の下に余白を足す */}
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-6 md:pb-6">
           {tab === "menu" && <MenuView app={app} onNavigate={setTab} />}
+          {tab === "monthly" && <MonthlyView app={app} onNavigate={setTab} />}
           {tab === "sheet" && <ProductSheetView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "tasks" && <PrepTaskView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "gallery" && <VisualGalleryView app={app} onNavigate={setTab} />}

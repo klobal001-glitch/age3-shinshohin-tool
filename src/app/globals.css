@@ -184,6 +184,55 @@ h3 {
     }
 }
 
+@media print {
+    /* 店頭掲示（A4たて1枚）と、リーダー共有のまとめを刷るとき。
+       紙は @page の余白（左右10mm・上10mm・下14mm）の内側いっぱい＝190mm×273mm。
+       掲示の紙は 718px × 1024px（96dpi で 190mm × 271mm）に固定してあるので、
+       縮めなくても必ず1枚に収まる。 */
+    body.poster-open .app-shell,
+    body.share-open .app-shell {
+        display: none !important;
+    }
+
+    body.poster-open .poster-sheet,
+    body.share-open .share-sheet {
+        position: static !important;
+        overflow: visible !important;
+        background: #fff !important;
+        padding: 0 !important;
+    }
+
+    /* 画面では横幅に合わせて縮めて見せているが、紙では等倍に戻す */
+    body.poster-open .poster-scale {
+        zoom: 1 !important;
+        width: auto !important;
+    }
+
+    body.poster-open .poster-paper {
+        box-shadow: none !important;
+        /* 印刷設定で「背景のグラフィック」を切っていても、地の色を出す */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        overflow: hidden;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* 1商品ぶんが紙の切れ目でちょん切れないようにする */
+    body.poster-open .poster-cell,
+    body.share-open .share-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    body.share-open .share-paper {
+        max-width: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+}
+
 /* ───────── スマホ（〜767px）での調整 ───────── */
 @media (max-width: 767px) {
     /* iOS Safari は文字が16px未満の入力欄をタップすると画面を勝手に拡大する。
