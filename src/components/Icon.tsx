@@ -23,6 +23,7 @@ export type IconName =
   | "external"
   | "link"
   | "calendar"
+  | "month"
   | "alert"
   | "check";
 
@@ -94,6 +95,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <rect x="3.6" y="5.4" width="16.8" height="15" rx="2.2" />
       <path d="M3.6 10.2h16.8M8.4 3.4v4M15.6 3.4v4" />
+    </>
+  ),
+  /* 月別。日付のます目を点で表して、グランドメニューの calendar と見分ける */
+  month: (
+    <>
+      <rect x="3.6" y="5.4" width="16.8" height="15" rx="2.2" />
+      <path d="M3.6 10.2h16.8M8.4 3.4v4M15.6 3.4v4" />
+      <path d="M7.6 13.6h.01M12 13.6h.01M16.4 13.6h.01M7.6 17h.01M12 17h.01" />
     </>
   ),
   alert: (
