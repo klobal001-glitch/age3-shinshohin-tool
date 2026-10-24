@@ -31,7 +31,7 @@ const TABS: { key: TabKey; icon: IconName; label: string }[] = [
 
 const SUBTITLES: Record<TabKey, string> = {
   menu: "揚げサンド 直営店で共有",
-  monthly: "月別の新商品：掲示と共有",
+  monthly: "販売スケジュール：店頭A4・海外共有",
   sheet: "商品情報シート：空欄を埋めていく",
   tasks: "準備タスク：発売月から締め切りを自動計算",
   gallery: "ビジュアル一覧（Instagram 1枚目）",

@@ -25,7 +25,8 @@ export type IconName =
   | "calendar"
   | "month"
   | "alert"
-  | "check";
+  | "check"
+  | "share";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -112,6 +113,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   check: <path d="m4.8 12.6 4.8 4.8 9.6-10.8" />,
+  /* 送る・渡す。箱から上へ出ていく矢印 */
+  share: (
+    <>
+      <path d="M12 15.5V4.2" />
+      <path d="m7.8 8.4 4.2-4.2 4.2 4.2" />
+      <path d="M5 13.5v4.8a1.7 1.7 0 0 0 1.7 1.7h10.6a1.7 1.7 0 0 0 1.7-1.7v-4.8" />
+    </>
+  ),
 };
 
 export default function Icon({

@@ -212,7 +212,7 @@ export default function MenuView({
           下の一覧から商品を直接開けます。
         </p>
 
-        {/* 月別の新商品へ。毎月20日ごろの共有で使うので、いちばん目に入る場所に置く。
+        {/* 販売スケジュールへ。毎月20日ごろの共有で使うので、いちばん目に入る場所に置く。
             スマホの下端のタブは6つで埋まっているため、入口はこことパソコンの左のリスト */}
         <button
           type="button"
@@ -221,9 +221,9 @@ export default function MenuView({
         >
           <Icon name="month" className="h-6 w-6 shrink-0 text-amber-700" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold text-stone-900">月別の新商品</span>
+            <span className="block text-[15px] font-semibold text-stone-900">販売スケジュール</span>
             <span className="mt-0.5 block text-sm text-stone-500">
-              翌月・翌々月をまとめて見る／店頭掲示のA4・リーダー共有
+              月ごとの商品を見る／店頭のA4・海外チームへの資料・リーダー共有
             </span>
           </span>
           <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-stone-400" />

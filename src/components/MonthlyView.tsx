@@ -9,6 +9,7 @@ import {
   MonthEntry,
   collectMonth,
   collectYears,
+  continuedText,
   entryKey,
   hasPeriod,
   hasPrice,
@@ -28,14 +29,18 @@ import {
 } from "@/lib/monthly";
 import MonthlyPoster, { POSTER_MAX } from "@/components/MonthlyPoster";
 import MonthlyShareSheet from "@/components/MonthlyShareSheet";
+import ScheduleSheet from "@/components/ScheduleSheet";
 import Icon from "@/components/Icon";
 import { TabKey } from "@/components/Header";
-import { badge, btn, card, cardHead, chip, eyebrow, focusRing, h2, h3, muted } from "@/lib/ui";
+import { badge, btn, card, cardHead, chip, focusRing, h2, h3, muted } from "@/lib/ui";
 
 /* ------------------------------------------------------------------ *
- * 月別の新商品一覧
+ * 月別の商品一覧
  *
- * 毎月20日ごろ、翌月・翌々月の商品をリーダーへ共有するための画面。
+ * 選んだ月に**売っている商品**を1つの一覧に出す。
+ * その月に発売が始まるものも、前の月から続いているものも、同じ一覧に並ぶ。
+ * 見分けは「今月発売」「◯月から継続」の印で付ける。
+ *
  * 開いた直後は**翌月**を出す。1つ押せば翌々月に移れる。
  *
  * 出している内容は、すべていまデータベースに入っているもの。
@@ -56,11 +61,14 @@ export default function MonthlyView({
 
   const [year, setYear] = useState(next1.year);
   const [month, setMonth] = useState(next1.month);
-  const [mode, setMode] = useState<"start" | "onsale">("start");
   /** 掲示に出す商品。商品データベースには書かず、この端末にだけ覚える */
   const [picks, setPicks] = useLocalStorageState<Record<string, string[]>>("poster_picks", {});
   const [posterOpen, setPosterOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  /** 海外チームへ送る商品予定（複数月） */
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  /** 社内の準備状況は、ふだんは閉じておく（この画面の主役ではない） */
+  const [prepOpen, setPrepOpen] = useState(false);
   const [openPrep, setOpenPrep] = useState<string | null>(null);
   const [showNoPeriod, setShowNoPeriod] = useState(false);
 
@@ -82,11 +90,13 @@ export default function MonthlyView({
     return [...new Set(list)].sort((a, b) => a - b);
   }, [src, next1.year, next2.year]);
 
+  /** 選んだ月に売っている商品（発売開始も継続も同じ一覧） */
   const all = useMemo(() => collectMonth(src, year, month), [src, year, month]);
+  /** 内部の準備状況は「この月に発売を始める商品」だけが対象 */
   const starts = useMemo(() => all.filter((e) => e.startsThisMonth), [all]);
-  const onSale = useMemo(() => all.filter((e) => e.onSaleThisMonth), [all]);
 
-  /** その年の月ごとの「発売開始」件数。月ボタンの下に出す */
+  /** 月ボタンの下に出す数。**その月に発売を始める商品の数**（毎月ほぼ同じになる
+      「販売中の総数」を出しても、どの月に何かあるのか分からないため） */
   const countByMonth = useMemo(
     () => MONTHS.map((m) => collectMonth(src, year, m).filter((e) => e.startsThisMonth).length),
     [src, year]
@@ -101,9 +111,14 @@ export default function MonthlyView({
     setPicks({ ...picks, [key]: next });
   };
 
-  const readyList = starts.filter(posterReady);
-  const posterEntries = starts.filter(isPicked);
-  const needCheck = starts.filter((e) => missingForPoster(e).length > 0);
+  /* 掲示に出せる／出せないの区別も、一覧と同じ「その月に売っている商品」で見る */
+  const readyList = all.filter(posterReady);
+  const posterEntries = all.filter(isPicked);
+  const needCheck = all.filter((e) => missingForPoster(e).length > 0);
+  /** 一括チェックは「この月に発売を始める、内容がそろっている商品」だけ。
+      通年の商品まで一度に入れると、1枚に載る数をすぐ超えてしまう。
+      続いている商品を貼りたいときは、一覧で1つずつチェックしてもらう */
+  const newReady = readyList.filter((e) => e.startsThisMonth);
   const noPeriod = useMemo(() => productsWithoutPeriod(src), [src]);
 
   /** リーダー共有は「翌月＋翌々月に発売開始するもの」 */
@@ -131,8 +146,6 @@ export default function MonthlyView({
     onNavigate(tab);
   };
 
-  const list = mode === "start" ? starts : onSale;
-
   return (
     <div className="space-y-6">
       <div>
@@ -145,10 +158,9 @@ export default function MonthlyView({
           <Icon name="chevronRight" className="h-4 w-4 rotate-180" />
           ホームへ戻る
         </button>
-        <h1 className={h2}>月別の新商品</h1>
+        <h1 className={h2}>販売スケジュール</h1>
         <p className={`mt-1 ${muted}`}>
-          毎月20日ごろに、翌月・翌々月の商品をリーダーへ共有するための画面です。
-          出している内容は、いま商品データベースに入っているものだけです（空欄は「未入力」と出ます）。
+          月ごとに、売っている商品を見られます。店頭のA4と、海外チームへ送る資料もここから作れます。
         </p>
       </div>
 
@@ -180,14 +192,20 @@ export default function MonthlyView({
                     : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >
-                <span className="text-sm font-medium tabular-nums">{m}</span>
-                <span className={`text-xs tabular-nums ${on ? "text-white/80" : "text-stone-400"}`}>
+                <span className="text-base font-bold tabular-nums leading-none">{m}</span>
+                <span
+                  className={`mt-0.5 text-[11px] tabular-nums ${on ? "text-white/80" : "text-stone-400"}`}
+                >
                   {n > 0 ? `${n}件` : "—"}
                 </span>
               </button>
             );
           })}
         </div>
+
+        <p className="mt-2 pl-10 text-xs text-stone-400">
+          数字は、その月に発売を始める商品の数です。
+        </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="w-8 shrink-0 text-xs text-stone-500" />
@@ -214,89 +232,50 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* 発売開始 / 販売中 の切り替え。2つを混ぜない */}
+      {/* その月に売っている商品。発売開始も継続も1つの一覧 */}
       <div className={`${card} overflow-hidden`}>
-        <div className="grid grid-cols-2 gap-px bg-stone-200">
-          {([
-            { k: "start" as const, t: "この月に発売開始", s: "新商品", n: starts.length },
-            { k: "onsale" as const, t: "この月に販売中", s: "継続販売も含む", n: onSale.length },
-          ]).map((o) => {
-            const on = mode === o.k;
-            return (
-              <button
-                key={o.k}
-                type="button"
-                onClick={() => setMode(o.k)}
-                aria-pressed={on}
-                className={`flex min-h-16 flex-col items-center justify-center gap-0.5 px-2 py-3 transition ${focusRing} ${
-                  on ? "bg-amber-700 text-white" : "bg-white text-stone-600 hover:bg-stone-50"
-                }`}
-              >
-                <span className="text-sm font-semibold">{o.t}</span>
-                <span className={`text-xs ${on ? "text-white/80" : "text-stone-400"}`}>
-                  {o.s}・{o.n}件
-                </span>
-              </button>
-            );
-          })}
+        <div className={`${cardHead} flex-wrap`}>
+          <h2 className="flex items-baseline gap-2 tracking-tight">
+            <span className="text-[22px] font-bold tabular-nums text-stone-900 sm:text-[26px]">
+              {year}年{month}月
+            </span>
+            <span className="text-sm font-medium text-stone-500">に販売する商品</span>
+          </h2>
+          <span className="ml-auto shrink-0 text-sm text-stone-500">
+            <strong className="text-lg font-bold tabular-nums text-stone-800">{all.length}</strong>
+            件
+          </span>
         </div>
 
         <div className="p-4 sm:p-5">
-          <h2 className={h3}>
-            {ymLabel(year, month)}
-            {mode === "start" ? "に発売開始する新商品" : "に販売中の商品"}
-            <span className="ml-2 text-sm font-normal tabular-nums text-stone-500">
-              {list.length}件
-            </span>
-          </h2>
+          <p className={muted}>
+            販売期間が{ymLabel(year, month)}と重なる商品です。
+          </p>
 
-          {mode === "start" && (
-            <p className={`mt-1 ${muted}`}>
-              この月に販売が始まるものだけです。前の月から続けて売っている商品は、
-              右の「この月に販売中」に出ます。
-            </p>
-          )}
-          {mode === "onsale" && (
-            <p className={`mt-1 ${muted}`}>
-              この月に店頭にある商品です（前の月から続いているもの・継続販売中のものを含む）。
-              この月に発売が始まるものには「今月発売」と付けています。
-            </p>
-          )}
-
-          {list.length === 0 ? (
+          {all.length === 0 ? (
             <p className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-stone-500">
-              この月に当てはまる商品は登録されていません。
+              この月に販売する商品は登録されていません。
             </p>
-          ) : mode === "onsale" ? (
-            <ul className="mt-4 space-y-3">
-              {list.map((e) => (
-                <EntryCard
-                  key={entryKey(e) + e.releaseDate}
-                  e={e}
-                  showPick={false}
-                  picked={false}
-                  onPick={() => undefined}
-                  onOpen={(tab) => openDetail(e, tab)}
-                />
-              ))}
-            </ul>
           ) : (
             /* 掲示に出せるものと、まだ決まっていないものを混ぜない */
             <>
               <Group
                 title="内容がそろっている"
-                note="写真・商品名・販売期間・価格がすべて入っています。"
+                note="写真・商品名・販売期間・価格が入っています。"
                 items={readyList}
                 empty="そろっている商品はまだありません。"
+                year={year}
+                foldOngoing
                 isPicked={isPicked}
                 togglePick={togglePick}
                 openDetail={openDetail}
               />
               <Group
                 title="未確定・未入力あり"
-                note="空欄や仮の名前が残っています。掲示に出すかどうかは、内容を確かめてご自身で決めてください。"
+                note="空欄や仮の名前が残っています。出すかどうかはご自身で決めてください。"
                 items={needCheck}
                 empty="ありません。"
+                year={year}
                 isPicked={isPicked}
                 togglePick={togglePick}
                 openDetail={openDetail}
@@ -306,31 +285,29 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* 掲示と共有 */}
+      {/* つくる：店頭A4 ／ 海外チームへ ／ リーダー共有 */}
       <div className={`${card} overflow-hidden`}>
         <div className={cardHead}>
-          <h2 className={h3}>掲示・共有</h2>
+          <h2 className={h3}>つくる</h2>
         </div>
-        <div className="space-y-5 p-4 sm:p-5">
-          <div>
-            <div className={eyebrow}>店頭に貼る（1か月につき1枚）</div>
+        <div className="divide-y divide-stone-100">
+          {/* 店頭に貼るA4（価格あり） */}
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h3 className="text-[15px] font-bold text-stone-900">店頭に貼る</h3>
+              <span className="text-xs text-stone-500">A4たて1枚・価格あり</span>
+            </div>
             <p className={`mt-1 ${muted}`}>
-              A4たて1枚のPDFにします。載せるのは 写真・商品名・販売期間・価格 だけで、
-              社内の準備状況・担当・原価・仕入は入りません。
-              <strong className="text-stone-700">
-                　どれを貼るかはご自身で選んでください。
-              </strong>
-              アプリは「公開してよい商品」を勝手に決めません。
+              貼る商品はご自身で選んでください。作ったあとの画面から、同じ内容を画像にしてLINEで送れます。
             </p>
-
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 className={btn("secondary")}
-                disabled={readyList.length === 0}
-                onClick={() => setPicks({ ...picks, [key]: readyList.map(entryKey) })}
+                disabled={newReady.length === 0}
+                onClick={() => setPicks({ ...picks, [key]: newReady.map(entryKey) })}
               >
-                そろっている{readyList.length}件にチェック
+                今月発売をえらぶ（{newReady.length}）
               </button>
               <button
                 type="button"
@@ -340,8 +317,12 @@ export default function MonthlyView({
               >
                 すべて外す
               </button>
-              <span className="text-sm tabular-nums text-stone-600">
-                選択 {posterEntries.length}件
+              <span className="text-sm text-stone-600">
+                選択{" "}
+                <strong className="text-base font-bold tabular-nums text-stone-900">
+                  {posterEntries.length}
+                </strong>
+                件
               </span>
               <button
                 type="button"
@@ -349,31 +330,50 @@ export default function MonthlyView({
                 disabled={posterEntries.length === 0}
                 onClick={() => setPosterOpen(true)}
               >
-                {ymLabel(year, month)}のA4掲示を作る
+                A4をつくる
               </button>
             </div>
-
             {posterEntries.length > POSTER_MAX && (
               <p className="mt-2 text-sm font-medium text-red-600">
-                1枚に載せられるのは{POSTER_MAX}件までです。{posterEntries.length}
-                件選ばれているので、チェックを減らしてください。
+                1枚に載るのは{POSTER_MAX}件までです。チェックを減らしてください。
               </p>
             )}
           </div>
 
-          <div className="border-t border-stone-100 pt-4">
-            <div className={eyebrow}>リーダーグループへ共有（翌月＋翌々月）</div>
+          {/* 海外チームへ送る商品予定（価格なし・複数月） */}
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h3 className="text-[15px] font-bold text-stone-900">海外チームへ送る</h3>
+              <span className="text-xs text-stone-500">商品予定・複数月えらべます</span>
+              <span className={badge("neutral", "ml-2")}>価格は載せません</span>
+            </div>
             <p className={`mt-1 ${muted}`}>
-              {ymLabel(next1.year, next1.month)}（{shareMonths[0].entries.length}件）と
-              {ymLabel(next2.year, next2.month)}（{shareMonths[1].entries.length}件）を
-              1つにまとめます。スマホで読める形です。送信はしません。
+              月を選び、入れる商品を1件ずつ選んで、PDFにします。はじめは1件も入っていません。
             </p>
+            <button
+              type="button"
+              className={btn("secondary", "mt-3")}
+              onClick={() => setScheduleOpen(true)}
+            >
+              資料をつくる
+            </button>
+          </div>
+
+          {/* リーダーへ共有 */}
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h3 className="text-[15px] font-bold text-stone-900">リーダーへ共有</h3>
+              <span className="text-xs text-stone-500">
+                {ymLabel(next1.year, next1.month)}＋{ymLabel(next2.year, next2.month)}
+              </span>
+            </div>
+            <p className={`mt-1 ${muted}`}>スマホで読める形にまとめます。送信はしません。</p>
             <button
               type="button"
               className={btn("secondary", "mt-3")}
               onClick={() => setShareOpen(true)}
             >
-              共有プレビューを開く
+              共有を見る
             </button>
           </div>
         </div>
@@ -391,8 +391,7 @@ export default function MonthlyView({
         </div>
         <div className="space-y-3 p-4 sm:p-5">
           <p className={muted}>
-            {ymLabel(year, month)}に発売開始する商品のうち、掲示に出すための材料がそろっていないものです。
-            そろっていない理由は、いまデータベースが空欄のところです。
+            掲示に出すための材料がそろっていない商品です。
           </p>
           {needCheck.length === 0 ? (
             <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
@@ -447,24 +446,31 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* 内部の準備状況 */}
+      {/* 社内の準備状況。この画面の主役ではないので、ふだんは閉じておく */}
       <div className={`${card} overflow-hidden`}>
-        <div className={cardHead}>
-          <h2 className={h3}>内部の準備状況</h2>
+        <button
+          type="button"
+          onClick={() => setPrepOpen((v) => !v)}
+          className={`flex w-full items-center gap-2.5 px-5 py-4 text-left sm:px-6 ${focusRing}`}
+        >
+          <Icon
+            name={prepOpen ? "chevronDown" : "chevronRight"}
+            className="h-4 w-4 shrink-0 text-stone-400"
+          />
+          <h2 className={h3}>社内の準備状況</h2>
           <span className={badge("neutral", "ml-auto")}>共有物には入りません</span>
-        </div>
-        <div className="space-y-3 p-4 sm:p-5">
+        </button>
+        {prepOpen && (
+        <div className="space-y-3 border-t border-stone-100 p-4 sm:p-5">
           <p className={muted}>
-            この月に発売開始する商品の、社内の進み具合です。
-            担当者はデータベースに項目がないため、すべて「未指定」と出しています。
-            かっこ内は役割の目安で、実際の担当を決めるものではありません。
-            期限は<strong className="text-stone-700">発売月から計算した目安</strong>
-            で、ご自身で決めた期限ではありません。
-            チェックが付いていないものが、必ずしも終わっていないとは限りません。
+            この月に<strong className="text-stone-700">発売を始める</strong>商品の進み具合です。
+            担当はデータベースに項目がないため、すべて「未指定」と出しています（かっこ内は役割の目安）。
+            期限は<strong className="text-stone-700">発売月から計算した目安</strong>で、
+            ご自身で決めた期限ではありません。
           </p>
 
           {starts.length === 0 ? (
-            <p className="text-sm text-stone-500">この月に発売開始する商品はありません。</p>
+            <p className="text-sm text-stone-500">この月に発売を始める商品はありません。</p>
           ) : (
             <ul className="space-y-2">
               {starts.map((e) => {
@@ -578,6 +584,7 @@ export default function MonthlyView({
             </ul>
           )}
         </div>
+        )}
       </div>
 
       {posterOpen && (
@@ -591,16 +598,28 @@ export default function MonthlyView({
       {shareOpen && (
         <MonthlyShareSheet months={shareMonths} onClose={() => setShareOpen(false)} />
       )}
+      {scheduleOpen && (
+        <ScheduleSheet
+          app={app}
+          years={years}
+          startYear={year}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
     </div>
   );
 }
 
-/* 「そろっている」「未確定・未入力あり」の2つに分けて並べる */
+/* 「そろっている」「未確定・未入力あり」の2つに分けて並べる。
+   通年・継続販売の商品は毎月ずっと同じ顔ぶれなので、たたんで下に置く
+   （数には入れたままで、開けばいつでも掲示に選べる） */
 function Group({
   title,
   note,
   items,
   empty,
+  year,
+  foldOngoing = false,
   isPicked,
   togglePick,
   openDetail,
@@ -609,32 +628,63 @@ function Group({
   note: string;
   items: MonthEntry[];
   empty: string;
+  year: number;
+  foldOngoing?: boolean;
   isPicked: (e: MonthEntry) => boolean;
   togglePick: (e: MonthEntry) => void;
   openDetail: (e: MonthEntry, tab: TabKey) => void;
 }) {
+  const [openAll, setOpenAll] = useState(false);
+  /* 通年・継続販売（この月に始まったわけではないもの）をたたむ */
+  const folded = foldOngoing ? items.filter((e) => e.ongoing && !e.startsThisMonth) : [];
+  const front = items.filter((e) => !folded.includes(e));
+  const row = (e: MonthEntry) => (
+    <EntryCard
+      key={entryKey(e) + e.releaseDate}
+      e={e}
+      year={year}
+      showPick
+      picked={isPicked(e)}
+      onPick={() => togglePick(e)}
+      onOpen={(tab) => openDetail(e, tab)}
+    />
+  );
+
   return (
     <section className="mt-5">
       <h3 className="text-sm font-semibold text-stone-800">
         {title}
-        <span className="ml-2 font-normal tabular-nums text-stone-500">{items.length}件</span>
+        <span className="ml-2 font-normal text-stone-500">
+          <strong className="font-bold tabular-nums text-stone-700">{items.length}</strong>件
+        </span>
       </h3>
       <p className={`mt-0.5 ${muted}`}>{note}</p>
       {items.length === 0 ? (
         <p className="mt-2 rounded-xl bg-stone-50 p-3 text-sm text-stone-500">{empty}</p>
       ) : (
-        <ul className="mt-2 space-y-3">
-          {items.map((e) => (
-            <EntryCard
-              key={entryKey(e) + e.releaseDate}
-              e={e}
-              showPick
-              picked={isPicked(e)}
-              onPick={() => togglePick(e)}
-              onOpen={(tab) => openDetail(e, tab)}
-            />
-          ))}
-        </ul>
+        <>
+          {front.length > 0 && <ul className="mt-2.5 space-y-3.5">{front.map(row)}</ul>}
+          {folded.length > 0 && (
+            <>
+              <button
+                type="button"
+                className={`${btn("quiet")} mt-2 px-0`}
+                onClick={() => setOpenAll((v) => !v)}
+              >
+                <Icon name={openAll ? "chevronDown" : "chevronRight"} className="h-4 w-4" />
+                通年・継続販売の商品（{folded.length}件）
+              </button>
+              {openAll ? (
+                <ul className="mt-2.5 space-y-3.5">{folded.map(row)}</ul>
+              ) : (
+                <p className="mt-1 rounded-xl bg-stone-50 p-3 text-sm text-stone-500">
+                  終わりを決めずに、ずっと売っている商品です。この月も売っています。
+                  掲示に出したいときは、ここを開いてチェックしてください。
+                </p>
+              )}
+            </>
+          )}
+        </>
       )}
     </section>
   );
@@ -644,12 +694,15 @@ function Group({
 
 function EntryCard({
   e,
+  year,
   showPick,
   picked,
   onPick,
   onOpen,
 }: {
   e: MonthEntry;
+  /** いま見ている年。継続の印に年を出すかどうかの判断に使う */
+  year: number;
   showPick: boolean;
   picked: boolean;
   onPick: () => void;
@@ -657,67 +710,98 @@ function EntryCard({
 }) {
   const note = labelNote(e.runLabel);
   const miss = missingForPoster(e);
+  const price = priceText(e.fields);
+  const ok = hasPrice(e.fields);
+  /* 「銀座 ¥1,200／嘉麻 ¥900」のように店ごとに並ぶときは、大きくすると折り返して読みにくい。
+     ひとつの値のときだけ大きく出す */
+  const bigPrice = ok && /^[¥฿][\d,]+$/.test(price);
 
   return (
-    <li className="rounded-xl bg-stone-50 p-3">
-      <div className="flex gap-3">
+    <li className="rounded-xl bg-stone-50 p-4 sm:p-5">
+      <div className="flex gap-4">
         <MonthlyPhoto
           image={e.image}
-          className="h-20 w-20 shrink-0 rounded-lg bg-white object-contain p-1"
+          className="h-24 w-24 shrink-0 rounded-xl bg-white object-contain p-1.5 sm:h-28 sm:w-28"
           fontSize={11}
         />
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-sm font-semibold text-stone-900">{e.product.name}</span>
-            {e.startsThisMonth && <span className={badge("accent")}>今月発売</span>}
-            {e.ongoing && <span className={badge("neutral")}>継続販売</span>}
-            {note.confirmed && <span className={badge("good")}>本人確定（データの表記）</span>}
-            {isTentativeName(e.product.name) && (
-              <span className={badge("warn")}>商品名が仮</span>
+          {/* 1段目：この月での扱い。今月発売はオレンジで塗り、継続は白い印にして区別する */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {e.startsThisMonth ? (
+              <span className="inline-flex items-center rounded-full bg-amber-700 px-2.5 py-1 text-xs font-semibold text-white">
+                今月発売
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-stone-600 ring-1 ring-inset ring-stone-200">
+                {continuedText(e, year)}
+              </span>
             )}
+            {note.confirmed && <span className={badge("good")}>本人確定（データの表記）</span>}
+            {isTentativeName(e.product.name) && <span className={badge("warn")}>商品名が仮</span>}
           </div>
 
-          <dl className="mt-1.5 space-y-0.5 text-sm">
-            <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-stone-500">販売期間</dt>
-              <dd className={hasPeriod(e) ? "text-stone-800" : "font-medium text-amber-700"}>
+          {/* 2段目：商品名。この一覧でいちばん大きい文字 */}
+          <h4 className="mt-1.5 text-[17px] font-bold leading-snug tracking-tight text-stone-900 sm:text-xl">
+            {e.product.name}
+          </h4>
+
+          {/* 3段目：数字。販売期間と価格は、ひと目で読めるよう太く大きく */}
+          <div className="mt-2 space-y-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="shrink-0 text-xs text-stone-400 sm:w-14">販売期間</span>
+              <span
+                className={`text-[15px] font-semibold tabular-nums ${
+                  hasPeriod(e) ? "text-stone-800" : "text-amber-700"
+                }`}
+              >
                 {periodText(e)}
                 {!hasPeriod(e) && "（未入力）"}
-              </dd>
+              </span>
             </div>
-            <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-stone-500">価格</dt>
-              <dd
-                className={
-                  hasPrice(e.fields) ? "tabular-nums text-stone-800" : "font-medium text-amber-700"
-                }
-              >
-                {priceText(e.fields)}
-                {hasPrice(e.fields) ? "（税込）" : "（未入力）"}
-              </dd>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="shrink-0 text-xs text-stone-400 sm:w-14">価格</span>
+              {bigPrice ? (
+                <span className="text-[22px] font-bold leading-tight tabular-nums text-stone-900 sm:text-[26px]">
+                  {price}
+                  <span className="ml-1 text-xs font-normal text-stone-400">（税込）</span>
+                </span>
+              ) : (
+                <span
+                  className={`text-[15px] font-semibold tabular-nums ${
+                    ok ? "text-stone-800" : "text-amber-700"
+                  }`}
+                >
+                  {price}
+                  {ok ? "（税込）" : "（未入力）"}
+                </span>
+              )}
             </div>
-            <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-stone-500">対象店舗</dt>
-              <dd className="text-stone-800">{storeText(e.fields)}</dd>
+          </div>
+
+          {/* 4段目：補足。読む順をはっきりさせるため、ここから先は小さく薄く */}
+          <dl className="mt-2.5 space-y-0.5 text-xs leading-relaxed text-stone-400">
+            <div className="flex flex-wrap gap-x-2">
+              <dt className="shrink-0 sm:w-14">対象店舗</dt>
+              <dd className="text-stone-500">{storeText(e.fields)}</dd>
             </div>
             {e.runLabel && (
-              <div className="flex gap-2">
-                <dt className="w-16 shrink-0 text-stone-500">販売の回</dt>
-                <dd className="text-stone-600">{e.runLabel}</dd>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="shrink-0 sm:w-14">販売の回</dt>
+                <dd className="min-w-0">{e.runLabel}</dd>
               </div>
             )}
           </dl>
 
           {e.imageFromOtherRun && (
-            <p className="mt-1.5 text-xs text-amber-700">
+            <p className="mt-2 text-xs text-amber-700">
               この回のビジュアルは未登録のため、前の回の画像を出しています。
             </p>
           )}
         </div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-stone-200 pt-2.5">
         {showPick && (
           <label
             className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm md:min-h-0 ${
