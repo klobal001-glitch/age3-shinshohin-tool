@@ -65,12 +65,19 @@
     --shadow-md: 0 4px 14px rgb(26 23 19 / 0.07), 0 1px 3px rgb(26 23 19 / 0.05);
     --shadow-lg: 0 16px 40px rgb(26 23 19 / 0.13), 0 3px 8px rgb(26 23 19 / 0.06);
 
-    /* ── 文字。Arial をやめ、OS標準の書体（Mac は SF Pro ＋ ヒラギノ）を使う。
-         Web フォントを読みに行かないので、表示が遅れてガタつくこともない ── */
+    /* ── 文字。OS標準の書体を使う（Webフォントを読みに行かないので、
+         表示が遅れてガタつくことがない）。
+
+         2026年10月24日、**ヒラギノ角ゴを先頭にした**（松尾さんの指定）。
+         以前は -apple-system が先頭だったので、数字と英字は SF Pro、
+         かなと漢字はヒラギノ、と1行の中で2つの書体が混ざっていた。
+         「2026年11月」のように数字と漢字が隣り合うと、太さも幅も揃わず不揃いに見える。
+         ヒラギノを先頭にすると、数字も漢字も同じ書体で揃う。
+         Mac 以外では 游ゴシック → メイリオ の順に下りる ── */
     --font-sans:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
-        "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui,
-        sans-serif;
+        "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+        "Noto Sans CJK JP", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui,
+        -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 html {
