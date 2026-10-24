@@ -15,17 +15,21 @@ import { isLinkedTaskDone, isTaskSkipped } from "./stats";
 import { computeDeadline, daysDiffFromToday } from "./deadline";
 
 /* ------------------------------------------------------------------ *
- * 月別の新商品一覧
+ * 月別の商品一覧
  *
- * 毎月20日ごろに、翌月・翌々月の商品をリーダーへ共有する。そのための
- * 「その月ぶんの商品」を、いまデータベースに入っている内容だけから組み立てる。
+ * 選んだ月に**売っている商品**を、いまデータベースに入っている内容だけから
+ * 組み立てる。毎月20日ごろのリーダー共有と、店頭掲示のA4に使う。
  *
  * 決めごと
  * - **表示のために期間や価格を足さない・直さない。** 空欄は空欄のまま
  *   「未入力」と出す。推測で埋めると、掲示物に嘘が載る。
- * - 「この月に発売開始」と「この月に販売中」は別もの。混ぜない。
- * - 年をまたぐ回（2026年12月〜2027年1月）は、発売開始は2026年12月だけ、
- *   販売中は2026年12月と2027年1月の両方に出る。
+ * - **一覧は1つ。**「販売期間がその月と重なる商品」をぜんぶ出す。
+ *   その月に発売が始まるものには「今月発売」、前の月から続いているものには
+ *   「◯月から継続」と付けて見分ける（年をまたぐときは年も出す）。
+ * - 年をまたぐ回（2026年12月〜2027年1月）は、2026年12月は「今月発売」、
+ *   2027年1月は「2026年12月から継続」として、**どちらの月にも1枚ずつ**出る。
+ * - 同じ商品が同じ月に2枚出ないようにする（回が重なっているときは1つにまとめる）。
+ * - 期間が入っていない商品は、どの月にも出さない（**勝手に期間を決めない**）。
  * - 廃盤の商品は出さない。
  * ------------------------------------------------------------------ */
 
@@ -78,8 +82,10 @@ export interface MonthEntry {
   imageFromOtherRun: boolean;
   /** この月に発売開始するか */
   startsThisMonth: boolean;
-  /** この月に売っているか（継続販売中を含む） */
+  /** この月に売っているか（継続販売中を含む）。一覧に出るものは必ず true */
   onSaleThisMonth: boolean;
+  /** 前の月から続いているときの、売り始めた年月。今月発売なら null */
+  continuedFrom: { year: number; month: number } | null;
 }
 
 /** 回ごとの価格でも resolveStorePrice と同じ考え方で引く */
@@ -152,10 +158,31 @@ type Source = {
   getInfo: (id: string) => ProductInfo;
 };
 
-/** その月に関係する商品を集める。廃盤は出さない */
-export function collectMonth(src: Source, year: number, month: number): MonthEntry[] {
+/**
+ * 販売期間がその月と重なるか。
+ *
+ * **ここだけが「その月に売っているか」の判定。**一覧も、複数月の資料も、
+ * 必ずこれを通す（判定が2か所にあると、片方だけ直して食い違う）。
+ * 終わりが入っていない／継続販売中なら、まだ続いているものとして扱う。
+ */
+export function overlapsMonth(
+  p: { releaseDate: string; endDate: string; ongoing: boolean },
+  year: number,
+  month: number
+): boolean {
+  if (!p.releaseDate) return false;
   const first = monthStart(year, month);
   const last = monthEnd(year, month);
+  return p.releaseDate <= last && (p.ongoing || !p.endDate || p.endDate >= first);
+}
+
+/**
+ * その月に売っている商品を集める。廃盤は出さない。
+ *
+ * 「販売期間がその月と重なるか」だけで決める。発売開始か継続かは、
+ * 出すか出さないかには関わらない（見分けの印としてだけ使う）。
+ */
+export function collectMonth(src: Source, year: number, month: number): MonthEntry[] {
   const ym = ymKey(year, month);
   const out: MonthEntry[] = [];
 
@@ -166,9 +193,8 @@ export function collectMonth(src: Source, year: number, month: number): MonthEnt
     for (const entry of listRuns(info)) {
       if (!entry.releaseDate) continue; // 期間が入っていない回は月に割り当てられない
       const starts = entry.releaseDate.slice(0, 7) === ym;
-      const onSale =
-        entry.releaseDate <= last && (entry.ongoing || !entry.endDate || entry.endDate >= first);
-      if (!starts && !onSale) continue;
+      const onSale = overlapsMonth(entry, year, month);
+      if (!onSale) continue;
 
       const fields = runFieldsOf(info, entry.run);
       const own = pickCardImage({ ...info, visualDownloads: fields.visualDownloads });
@@ -189,14 +215,143 @@ export function collectMonth(src: Source, year: number, month: number): MonthEnt
         imageFromOtherRun: !own && !!borrowed,
         startsThisMonth: starts,
         onSaleThisMonth: onSale,
+        continuedFrom: starts
+          ? null
+          : {
+              year: Number(entry.releaseDate.slice(0, 4)),
+              month: Number(entry.releaseDate.slice(5, 7)),
+            },
       });
     }
   }
 
-  /* 発売日の早い順。同じ日なら名前順 */
-  out.sort(
-    (a, b) => a.releaseDate.localeCompare(b.releaseDate) || a.product.name.localeCompare(b.product.name, "ja")
+  /* 同じ商品が2枚出ないようにする。回が重なっているときは、
+     その月に発売が始まる回を優先し、なければ発売日がいちばん新しい回を残す。
+     **どちらを残しても、その回に入っている中身はそのまま出す（作り変えない）** */
+  const one = new Map<string, MonthEntry>();
+  for (const e of out) {
+    const cur = one.get(e.product.id);
+    if (!cur) {
+      one.set(e.product.id, e);
+      continue;
+    }
+    if (e.startsThisMonth !== cur.startsThisMonth) {
+      one.set(e.product.id, e.startsThisMonth ? e : cur);
+    } else {
+      one.set(e.product.id, e.releaseDate > cur.releaseDate ? e : cur);
+    }
+  }
+
+  /* 今月発売を先に、そのあと継続。それぞれ発売日の早い順、同じ日なら名前順 */
+  return [...one.values()].sort(
+    (a, b) =>
+      Number(b.startsThisMonth) - Number(a.startsThisMonth) ||
+      a.releaseDate.localeCompare(b.releaseDate) ||
+      a.product.name.localeCompare(b.product.name, "ja")
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * 複数の月をまとめる（海外チームへ送る商品予定の資料で使う）
+ *
+ * 決めごと
+ * - **選んだ月のどれかと販売期間が重なる商品を、もれなく拾う。**
+ *   11月から1月までを選んだなら、12月に始まる商品も、
+ *   11月から続いて1月まで売る商品も、ぜんぶ入る。
+ * - **同じ商品の同じ回を、2件に増やさない。**どの月で見つかっても1件にまとめ、
+ *   その商品がどの月に売っているかを覚えておく。
+ *   （別の販売回は別の期間なので、別の1件として出す）
+ * - 月を選んだだけでは「出してよい」とは決めない。**資料に入れる商品は人が選ぶ。**
+ * ------------------------------------------------------------------ */
+
+export interface YearMonth {
+  year: number;
+  month: number;
+}
+
+/** 商品1件と、選んだ月のうちその商品を売っている月 */
+export interface RangeEntry {
+  entry: MonthEntry;
+  /** 選んだ月のうち、売っている月（選んだ順＝古い順） */
+  months: YearMonth[];
+}
+
+export function sortMonths(ms: YearMonth[]): YearMonth[] {
+  return [...ms].sort((a, b) => a.year - b.year || a.month - b.month);
+}
+
+/** 選んだ月すべてをまとめて、売っている商品を集める */
+export function collectRange(src: Source, months: YearMonth[]): RangeEntry[] {
+  const map = new Map<string, RangeEntry>();
+  for (const m of sortMonths(months)) {
+    for (const e of collectMonth(src, m.year, m.month)) {
+      const k = entryKey(e) + "|" + e.releaseDate;
+      const cur = map.get(k);
+      if (cur) cur.months.push(m);
+      else map.set(k, { entry: e, months: [m] });
+    }
+  }
+  return [...map.values()].sort(
+    (a, b) =>
+      a.entry.releaseDate.localeCompare(b.entry.releaseDate) ||
+      a.entry.product.name.localeCompare(b.entry.product.name, "ja")
+  );
+}
+
+/**
+ * 「選んだ期間のうち、いつ売っているか」の言い方。
+ *
+ * 選んだ月が続いていれば「11月〜1月」、飛んでいれば「11月・1月」。
+ * 年は付けない（資料のいちばん上に「2026年11月 〜 2027年1月」と出しているので、
+ * ここで年まで書くと字が増えて読みにくい）。
+ */
+export function rangeMonthsLabel(months: YearMonth[], selected: YearMonth[]): string {
+  const all = sortMonths(selected);
+  const idx = (m: YearMonth) => all.findIndex((x) => x.year === m.year && x.month === m.month);
+  const nums = sortMonths(months).map(idx).filter((i) => i >= 0).sort((a, b) => a - b);
+  const groups: number[][] = [];
+  for (const i of nums) {
+    const g = groups[groups.length - 1];
+    if (g && i === g[g.length - 1] + 1) g.push(i);
+    else groups.push([i]);
+  }
+  return groups
+    .map((g) =>
+      g.length === 1
+        ? `${all[g[0]].month}月`
+        : `${all[g[0]].month}月〜${all[g[g.length - 1]].month}月`
+    )
+    .join("・");
+}
+
+/** 選んだ期間そのものの言い方（資料の題）。「2026年11月 〜 2027年1月」 */
+export function rangeTitle(selected: YearMonth[]): string {
+  const all = sortMonths(selected);
+  if (all.length === 0) return "";
+  const a = all[0];
+  const b = all[all.length - 1];
+  if (a.year === b.year && a.month === b.month) return ymLabel(a.year, a.month);
+  const to = a.year === b.year ? `${b.month}月` : ymLabel(b.year, b.month);
+  return `${ymLabel(a.year, a.month)} 〜 ${to}`;
+}
+
+/**
+ * 海外チームへの資料に出せる材料がそろっているか。
+ *
+ * **価格は見ない。**この資料に価格は載せないため。
+ * 正式な商品画像が無いものは「未確認」として、まとめて選ぶ対象にしない
+ * （画像のない枠を資料に並べない。代わりの画像も作らない）。
+ */
+export function scheduleReady(e: MonthEntry): boolean {
+  return !!e.image && hasPeriod(e) && !isTentativeName(e.product.name);
+}
+
+/** 資料に出せない理由 */
+export function missingForSchedule(e: MonthEntry): string[] {
+  const out: string[] = [];
+  if (!e.image) out.push("正式な商品画像が未登録");
+  if (!hasPeriod(e)) out.push("販売期間が未入力");
+  if (isTentativeName(e.product.name)) out.push("商品名が仮");
   return out;
 }
 
@@ -244,6 +399,30 @@ export function jpDate(d: string, withWeekday = false): string {
   const base = `${y}年${mo}月${da}日`;
   if (!withWeekday) return base;
   return `${base}(${WD[new Date(y, mo - 1, da).getDay()]})`;
+}
+
+/**
+ * 前の月から続いている商品の、売り始めた月の言い方。
+ *
+ * 同じ年なら「3月から継続」、年をまたいでいれば「2026年12月から継続」。
+ * **見ている月の年と比べて決める**ので、年をまたいだことが必ず分かる。
+ * 今月発売の商品は null（印を付けない）。
+ */
+export function continuedText(e: MonthEntry, year: number): string | null {
+  if (!e.continuedFrom) return null;
+  const c = e.continuedFrom;
+  return c.year === year ? `${c.month}月から継続` : `${c.year}年${c.month}月から継続`;
+}
+
+/**
+ * 同じことを、店頭に貼る紙の言い方で。
+ * 「継続」は社内の言葉なので、お客さまが読んで自然な言い方にする。
+ */
+export function posterContinuedText(e: MonthEntry, year: number): string | null {
+  if (!e.continuedFrom) return null;
+  const c = e.continuedFrom;
+  const when = c.year === year ? `${c.month}月` : `${c.year}年${c.month}月`;
+  return `${when}から引き続き販売中`;
 }
 
 /** 掲示・共有に出す販売期間の言い方。入っていなければ「未定」 */
@@ -315,6 +494,30 @@ export function storeText(fields: Pick<ProductInfo, RunField>): string {
   if (sold.length === STORE_IDS.length) return "全店";
   if (sold.length === 0) return "取り扱い店なし";
   return sold.map((s) => STORE_LABELS[s]).join("・");
+}
+
+/**
+ * LINEなどへ送るときの、短い案内文。
+ *
+ * 選んだ月と、選んだ商品の中身に合わせて言い方を変える。
+ * **ぜんぶその月に発売を始める商品なら「新商品一覧」、
+ * 続いている商品が混ざっていれば「商品一覧」**。嘘にならない言い方を選ぶ。
+ * 文面は送る前に画面で直せる（ここで作るのは最初の下書き）。
+ */
+export function shareMessageText(
+  year: number,
+  month: number,
+  entries: MonthEntry[],
+  today: Date = new Date()
+): string {
+  const when = year === today.getFullYear() ? `${month}月` : `${year}年${month}月`;
+  const allNew = entries.length > 0 && entries.every((e) => e.startsThisMonth);
+  const what = allNew ? `${when}の新商品一覧` : `${when}の商品一覧`;
+  return [
+    "お疲れ様です！",
+    `${what}を共有します。`,
+    "販売期間・価格をご確認のうえ、各店での準備をお願いいたします。",
+  ].join("\n");
 }
 
 /** 商品を見分けるための鍵（商品＋回）。掲示に出す／出さないの記録に使う */
