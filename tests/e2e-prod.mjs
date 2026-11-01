@@ -6,7 +6,8 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const APP = process.env.APP_URL || "https://age3-shinshohin-tool-theta.vercel.app/";
-const MARK = `【テスト】通しの動作確認 ${new Date().toISOString().slice(0, 16).replace(/\D/g, "")}`;
+// 数字は伏せ字になるので、目印は毎回違う英字にする
+const MARK = `【テスト】通しの動作確認 ${Array.from({ length: 8 }, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]).join("")}`;
 
 // 公開が終わるまで待つ（最大10分）
 for (let i = 0; i < 40; i++) {
@@ -69,5 +70,5 @@ if (!/ご意見/.test(text) || !/\d+月\d+日/.test(text)) {
 }
 console.log("お知らせ:", text.replace(/\s+/g, " ").slice(0, 160));
 if (errors.length) console.log("画面のエラー:", errors);
-writeFileSync("e2e-mark.txt", MARK.replace(/\d/g, "#"));
+writeFileSync("e2e-mark.txt", MARK);
 await browser.close();
