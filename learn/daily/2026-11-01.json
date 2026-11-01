@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-01",
+  "generatedAt": "2026-11-01T07:12:32.329Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 4,
+    "devices": 4,
+    "events": 7,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 3
+    },
+    {
+      "page": "/genba",
+      "count": 1
+    }
+  ],
+  "clicks": [],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": [
+    {
+      "page": "/",
+      "kind": "よかった",
+      "comment": "【テスト】通しの動作確認 #",
+      "test": true,
+      "at": "2026-11-01T06:53:54.231Z",
+      "form": "スマホ"
+    },
+    {
+      "page": "/",
+      "kind": "よかった",
+      "comment": "【テスト】通しの動作確認 #",
+      "test": true,
+      "at": "2026-11-01T07:05:00.342Z",
+      "form": "スマホ"
+    },
+    {
+      "page": "/",
+      "kind": "よかった",
+      "comment": "【テスト】通しの動作確認 lorlpjcq",
+      "test": true,
+      "at": "2026-11-01T07:12:25.357Z",
+      "form": "スマホ"
+    }
+  ]
+}
