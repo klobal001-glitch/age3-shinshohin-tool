@@ -1,0 +1,27 @@
+name: learn probe
+on:
+  push:
+    branches: ["claude/peaceful-gauss-h1hdca"]
+    paths: [".github/workflows/learn-probe.yml"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      U: https://cchndwcqxzztagpmfofq.supabase.co
+      K: sb_publishable_OYx_V5WwGrpMWmsWkJbk6w_wevBM7es
+    steps:
+      - name: probe
+        run: |
+          set -x
+          H=(-H "apikey: $K" -H "Authorization: Bearer $K")
+          echo '{"probe":1}' > p.json
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" -H "Content-Type: application/json" -H "x-upsert: true" --data-binary @p.json "$U/storage/v1/object/genba-photos/learn/probe/a.json"
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" -H "Content-Type: text/plain" -H "x-upsert: true" --data-binary @p.json "$U/storage/v1/object/genba-photos/learn/probe/b.txt"
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" -H "Content-Type: application/json" -d '{"prefix":"learn/probe","limit":100}' "$U/storage/v1/object/list/genba-photos"
+          curl -sS -w "\n%{http_code}\n" "$U/storage/v1/object/public/genba-photos/learn/probe/a.json"
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" -H "Content-Type: application/json" -d '{"prefix":"","limit":100}' "$U/storage/v1/object/list/genba-photos"
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" -X DELETE -H "Content-Type: application/json" -d '{"prefixes":["learn/probe/a.json","learn/probe/b.txt"]}' "$U/storage/v1/object/genba-photos"
+          curl -sS -w "\n%{http_code}\n" "${H[@]}" "$U/rest/v1/learn_events?select=*&limit=1"
+          curl -sS -o /dev/null -w "vercel %{http_code}\n" https://age3-shinshohin-tool-theta.vercel.app/
