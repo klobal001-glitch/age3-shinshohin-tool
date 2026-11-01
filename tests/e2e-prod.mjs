@@ -20,12 +20,6 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-let stored = null;
-page.on("response", async (res) => {
-  if (res.url().includes("/storage/v1/object/") && res.url().includes("/learn/raw/") && res.request().method() === "POST") {
-    stored = { status: res.status(), body: await res.text().catch(() => ""), url: res.url() };
-  }
-});
 
 await page.goto(APP, { waitUntil: "networkidle" });
 await page.waitForFunction(() => !!document.querySelector("age3-learn-kit"), null, { timeout: 30000 });
@@ -35,14 +29,34 @@ await kit.locator(".tab").click();
 await kit.locator('button[role="tab"]', { hasText: "ご意見" }).click();
 await kit.locator("button.pick.good").click();
 await kit.locator("textarea").fill(MARK);
+const sentP = page.waitForResponse(
+  (r) => r.url().includes("/learn/raw/") && r.request().method() === "POST",
+  { timeout: 20000 }
+);
 await kit.locator("button.send").click();
+const res = await sentP;
+const body = await res.text();
 await kit.locator(".done").waitFor({ timeout: 15000 });
 await page.screenshot({ path: "e2e-2-sent.png" });
-if (!stored || stored.status !== 200 || !stored.body.includes("learn/raw/")) {
-  console.error("保管場所に届いていません", stored);
+if (res.status() !== 200 || !body.includes("learn/raw/")) {
+  console.error("保管場所に届いていません", res.status(), body);
   process.exit(1);
 }
-console.log("保管場所に届きました:", stored.body);
+// 画面の表示だけでは信じない。保管場所の一覧に本当にあるかを見る
+const key = JSON.parse(body).Key.replace(/^genba-photos\//, "");
+const dir = key.slice(0, key.lastIndexOf("/"));
+const U = process.env.SUPABASE_URL;
+const K = process.env.SUPABASE_KEY;
+const listed = await fetch(`${U}/storage/v1/object/list/genba-photos`, {
+  method: "POST",
+  headers: { apikey: K, Authorization: `Bearer ${K}`, "Content-Type": "application/json" },
+  body: JSON.stringify({ prefix: dir, limit: 1000 }),
+}).then((r) => r.json());
+if (!listed.some((o) => `${dir}/${o.name}` === key)) {
+  console.error("保管場所の一覧に見つかりません", key);
+  process.exit(1);
+}
+console.log("保管場所に届きました:", key);
 
 await page.waitForTimeout(2000);
 await kit.locator(".tab").click();
