@@ -1,0 +1,60 @@
+name: 学習キット 本番の通し確認
+
+# 本番と同じ経路で通しで試す（手動で動かす）。
+# 1. 本番のアプリから「【テスト】」で始まるご意見を1件送る
+# 2. その日の集計を動かし、ご意見が載ったこと・signal が false のままであることを確かめる
+# 3. お知らせに更新が出ることを確かめる
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "確かめるURL"
+        required: false
+        default: "https://age3-shinshohin-tool-theta.vercel.app/"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: learn-commit
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_URL: https://cchndwcqxzztagpmfofq.supabase.co
+      SUPABASE_KEY: sb_publishable_OYx_V5WwGrpMWmsWkJbk6w_wevBM7es
+      APP_URL: ${{ inputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: ブラウザを用意
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i -s playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: 本番からご意見を送り、お知らせを確かめる
+        run: NODE_PATH=/tmp/pw/node_modules node tests/e2e-prod.mjs
+      - name: その日の集計を動かす
+        run: node learn/scripts/aggregate.mjs --date "$(TZ=Asia/Tokyo date +%F)"
+      - name: 集計に載ったか・signal が false のままか
+        run: node tests/e2e-verify.mjs
+      - name: 集計結果を残す
+        run: |
+          git config user.name "learn-kit"
+          git config user.email "learn-kit@users.noreply.github.com"
+          git add learn/daily learn/latest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "学習キット：通し確認の集計 $(jq -r .date learn/latest.json)（signal=$(jq -r .signal learn/latest.json)）"
+          for i in 1 2 3 4; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep $((2**i)); done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screens
+          path: e2e-*.png

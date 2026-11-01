@@ -20,7 +20,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        {/* 学習キット（ご意見・お知らせ）。learn/scripts/install.mjs が入れる1行 */}
+        <script async src="/learn-kit.js" data-app="age3-shinshohin-tool" data-endpoint={process.env.NEXT_PUBLIC_SUPABASE_URL} data-key={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY} />
+      </body>
     </html>
   );
 }

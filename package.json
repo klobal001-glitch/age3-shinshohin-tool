@@ -6,7 +6,10 @@
           "dev": "next dev",
           "build": "next build",
           "start": "next start",
-          "lint": "eslint"
+          "lint": "eslint",
+          "test:ui": "node tests/ui-check.mjs",
+          "learn:check": "node learn/scripts/check.mjs --out",
+          "learn:install": "node learn/scripts/install.mjs"
     },
     "dependencies": {
           "@supabase/supabase-js": "^2",

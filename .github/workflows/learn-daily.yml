@@ -1,0 +1,46 @@
+name: 学習キット 毎晩の集計
+
+# 毎晩 0:30（日本時間）に前日の記録を集計する。AIは使わない。
+# 読み取りの合鍵は deploy.yml と同じ公開用のもの（Supabase の publishable key）を使う。
+on:
+  schedule:
+    - cron: "30 15 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "集計する日（YYYY-MM-DD・日本時間）。空なら前日"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: learn-commit
+  cancel-in-progress: false
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: https://cchndwcqxzztagpmfofq.supabase.co
+      SUPABASE_KEY: sb_publishable_OYx_V5WwGrpMWmsWkJbk6w_wevBM7es
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 集計
+        run: node learn/scripts/aggregate.mjs ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+      - name: 集計結果を残す
+        run: |
+          git config user.name "learn-kit"
+          git config user.email "learn-kit@users.noreply.github.com"
+          git add learn/daily learn/latest.json
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -m "学習キット：毎晩の集計 $(jq -r .date learn/latest.json)（signal=$(jq -r .signal learn/latest.json)）"
+          for i in 1 2 3 4; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep $((2**i)); done
+          exit 1

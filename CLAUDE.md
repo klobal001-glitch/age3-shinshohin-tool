@@ -65,6 +65,30 @@
   この画面の色はクラスに直接書いている（globals.css は共有）。
 
 
+## 学習キット（2026年11月1日・中嶋会長の資料「アプリを使われるほど自分で良くなるようにする方法」）
+
+画面の右はしの「ご意見」ボタンと、操作の記録・毎晩の集計・夜のAI・お知らせの仕組み。
+**商品データベースと現場チェックの両方に入っている**（共通の `src/app/layout.tsx` に1行）。
+
+| ファイル | 役割 |
+| --- | --- |
+| `public/learn-kit.js` | 部品本体。`<age3-learn-kit>` の Shadow DOM の中に置く。**スクリプトの閉じタグの文字列を書かない** |
+| `public/updates.json` | アプリ内の「お知らせ」。新しいものを上に足す |
+| `learn/scripts/install.mjs` `check.mjs` | 1行を入れる（二重に入らない）／入れ忘れ・混入を数える |
+| `learn/scripts/aggregate.mjs` | 毎晩の集計（AIなし）→ `learn/daily/<日付>.json` と `learn/latest.json` |
+| `learn/NIGHTLY.md` `WEEKLY.md` | 夜のAI・週1回の提案の手順。定期タスクはここを読んで動く |
+| `learn/LEARNING.md` `approvals.md` `ai-proposals.md` | 学んだこと／承認待ち／AI提案 |
+| `tests/ui-check.mjs` | 公開前のテスト（360/390/PC・はみ出し0・エラー0・既存機能）。保管場所は作り物で置き換える |
+| `.github/workflows/learn-daily.yml` `learn-e2e.yml` | 毎晩 0:30 の集計／本番の通し確認（手動） |
+
+- **記録の置き場は写真置き場 `genba-photos` の `learn/raw/<日付>/`**（新しいテーブルは作れないため。
+  写真と同じ「間借り」）。120日より古いものは毎晩の集計が消す。日ごとの集計は `learn/daily/` に残る。
+- 数字とメールは、送る前（部品）と集計のとき（aggregate.mjs）の2回伏せる。入力欄の中身は読まない。
+- **お客様に端末を渡すアンケート回答画面では止めている**（`SurveyAskView.tsx` が `<html data-learn-kit-off>` を付ける）。
+  端末ごとに止めるときは `?learnkit=off` を付けて開く（`?learnkit=on` で戻る）。
+- 集計の結果だけを main に積む。`vercel.json` の `ignoreCommand` で、`learn/` だけの変更では公開し直さない。
+- 動作確認のご意見は「【テスト】」で始める。集計には載るが、AIを動かす理由（signal）には数えない。
+
 ## 写真の置き場（2026年9月24日）
 
 材料の行に貼る写真は、Supabase Storage の **`genba-photos`** の中の `product/` に入れている。

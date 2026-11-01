@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { STORES } from "@/lib/genba/checkItems";
 import { SURVEY_QUESTIONS, createEmptyAnswer, hasAnyAnswer } from "@/lib/genba/survey";
 import { SurveyAnswer } from "@/lib/genba/types";
@@ -36,6 +36,16 @@ export function SurveyAskView({
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  /**
+   * お客様に端末を渡す画面なので、学習キット（ご意見ボタン・操作の記録）を止める。
+   * <html data-learn-kit-off> が付いている間、キットは何も出さず何も記録しない。
+   */
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute("data-learn-kit-off", "");
+    return () => html.removeAttribute("data-learn-kit-off");
+  }, []);
 
   const q = SURVEY_QUESTIONS[step];
   const last = step === SURVEY_QUESTIONS.length - 1;

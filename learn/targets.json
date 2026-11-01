@@ -1,0 +1,20 @@
+{
+  "note": "学習キットを入れる先と、入れない先。導入スクリプト（install.mjs）と検査（check.mjs）が読む。",
+  "kit": "public/learn-kit.js",
+  "targets": [
+    {
+      "name": "商品データベース ＋ 現場チェック（同じ共通レイアウト）",
+      "layout": "src/app/layout.tsx",
+      "pages": ["/", "/genba"],
+      "url": "https://age3-shinshohin-tool-theta.vercel.app/"
+    }
+  ],
+  "pageOff": [
+    {
+      "name": "現場チェックのアンケート回答画面（お客様にスマホを渡す画面）",
+      "file": "src/components/genba/SurveyAskView.tsx",
+      "reason": "お客様が触る画面なので、ご意見ボタンも記録も出さない（ページ単位で止める）"
+    }
+  ],
+  "excluded": []
+}
