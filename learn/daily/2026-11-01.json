@@ -1,25 +1,126 @@
 {
   "date": "2026-11-01",
-  "generatedAt": "2026-11-01T07:13:08.598Z",
+  "generatedAt": "2026-11-01T19:53:39.712Z",
   "signal": false,
   "reasons": [],
   "totals": {
-    "batches": 4,
-    "devices": 4,
-    "events": 7,
+    "batches": 25,
+    "devices": 5,
+    "events": 108,
     "droppedBatches": 0
   },
   "views": [
     {
       "page": "/",
-      "count": 3
+      "count": 26
     },
     {
       "page": "/genba",
+      "count": 8
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "今回は作らない",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "紅蜜芋ブリュレ #%",
+      "count": 11
+    },
+    {
+      "page": "/",
+      "name": "↩ 作る に戻す",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "別タブで開く",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "グループ別",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "このリンクを消す",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "共有を見る",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "A#をつくる",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "紅蜜芋ブリュレ（ハロウィン） 販売終了",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# #件",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "A#のPDFをダウンロード",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(土) #日 遅れ 完了 #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(日) #日 遅れ 完了 #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(火) #日 遅れ 完了 #/#",
       "count": 1
     }
   ],
-  "clicks": [],
   "errors": [],
   "network": [],
   "slow": [],
