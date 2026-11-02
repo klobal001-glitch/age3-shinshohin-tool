@@ -1,10 +1,16 @@
 name: 学習キット 毎晩の集計
 
-# 毎晩 0:30（日本時間）に前日の記録を集計する。AIは使わない。
+# 毎晩、前日（日本時間）の記録を集計する。AIは使わない。
 # 読み取りの合鍵は deploy.yml と同じ公開用のもの（Supabase の publishable key）を使う。
+#
+# 予約の時刻どおりには動かない（2026年11月に4〜8時間遅れた）。そのため
+# 混みやすい「ちょうど」「30分」を避けた時刻に3回予約し、前日分ができていれば2回目以降は何もしない。
+# 夜のAI（Claude の定期タスク）は、これより後の 10:17（日本時間）に動く。
 on:
   schedule:
-    - cron: "30 15 * * *"
+    - cron: "7 15 * * *"   # 0:07（日本時間）
+    - cron: "47 17 * * *"  # 2:47
+    - cron: "23 20 * * *"  # 5:23
   workflow_dispatch:
     inputs:
       date:
@@ -33,9 +39,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: 前日分がもうできているか
+        id: done
+        if: github.event_name == 'schedule'
+        run: |
+          y=$(TZ=Asia/Tokyo date -d yesterday +%F)
+          if [ "$(jq -r .date learn/latest.json 2>/dev/null)" = "$y" ]; then echo "前日分（$y）はできています"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
       - name: 集計
+        if: steps.done.outputs.skip != '1'
         run: node learn/scripts/aggregate.mjs ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
       - name: 集計結果を残す
+        if: steps.done.outputs.skip != '1'
         run: |
           git config user.name "learn-kit"
           git config user.email "learn-kit@users.noreply.github.com"
