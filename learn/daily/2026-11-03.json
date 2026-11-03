@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-03",
+  "generatedAt": "2026-11-03T20:54:23.624Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 89,
+    "devices": 5,
+    "events": 677,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 18
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "📷 写真",
+      "count": 384
+    },
+    {
+      "page": "/",
+      "name": "📷 #枚目",
+      "count": 151
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "すき焼き #%",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "いちご大福 販売終了",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "ローストビーフ 販売終了",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "メロンパフェ",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "黒蜜きなこ #%",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "生チョコチョコ #%",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "チョコマシュマロ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "チョコミント #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ブルーベリー #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "マンゴー #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "月見照り焼き #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "焼きチーズクリームシチュー #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ローストビーフ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "白身フライ 販売終了",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "メロンパフェ 販売終了",
+      "count": 2
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
