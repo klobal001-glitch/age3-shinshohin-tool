@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import OverseasTaskAction from "./OverseasTaskAction";
 import { useAppData } from "@/hooks/useAppData";
 import ProductPicker from "./ProductPicker";
 import Icon from "@/components/Icon";
@@ -331,7 +332,9 @@ function MilestoneCard({
   onPatchInfo,
   isSkipped,
   onToggleSkip,
+  children,
 }: {
+  children?: ReactNode;
   group: TaskGroup;
   milestone: Milestone;
   deadline: Date | null;
@@ -544,6 +547,7 @@ function MilestoneCard({
           )}
         </div>
       )}
+      {children}
     </div>
   );
 }
@@ -987,7 +991,9 @@ export default function PrepTaskView({
                       onPatchInfo={patchInfo}
                       isSkipped={(t) => isSkipped(group.id, m.id, t)}
                       onToggleSkip={(t) => toggle(skipKey(group.id, m.id, t.id))}
-                    />
+                    >
+                      {group.id === "g4" && <OverseasTaskAction key={`${selectedProduct.id}:${run.viewingLabel}`} app={app}/>}
+                    </MilestoneCard>
                   ))}
                 </div>
               </section>
@@ -1025,7 +1031,9 @@ export default function PrepTaskView({
                     onPatchInfo={patchInfo}
                     isSkipped={(t) => isSkipped(group.id, m.id, t)}
                     onToggleSkip={(t) => toggle(skipKey(group.id, m.id, t.id))}
-                  />
+                  >
+                    {group.id === "g4" && <OverseasTaskAction key={`${selectedProduct.id}:${run.viewingLabel}`} app={app}/>}
+                  </MilestoneCard>
                 ))}
             </div>
           </section>

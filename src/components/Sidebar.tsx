@@ -19,6 +19,7 @@ const NAV: { key: TabKey; icon: IconName; label: string }[] = [
   { key: "tasks", icon: "task", label: "タスク" },
   { key: "gallery", icon: "gallery", label: "ビジュアル" },
   { key: "flyer", icon: "calendar", label: "チラシ" },
+  { key: "overseas", icon: "sheet", label: "海外FC資料" },
 ];
 
 /** シーズン以外の並び順の第一キー。販売中 → 販売終了 → 廃盤 の順に上から並べる

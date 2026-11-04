@@ -6,7 +6,7 @@ import ProductThumb from "@/components/ProductThumb";
 import { ProductInfo } from "@/lib/types";
 import { focusRing } from "@/lib/ui";
 
-export type TabKey = "menu" | "monthly" | "sheet" | "tasks" | "gallery" | "flyer" | "help";
+export type TabKey = "menu" | "monthly" | "sheet" | "tasks" | "gallery" | "flyer" | "overseas" | "help";
 
 /**
  * このヘッダーはスマホ専用（PCでは左のサイドバーを使う）。
@@ -36,6 +36,7 @@ const SUBTITLES: Record<TabKey, string> = {
   tasks: "準備タスク：発売月から締め切りを自動計算",
   gallery: "ビジュアル一覧（Instagram 1枚目）",
   flyer: "グランドメニュー：号ごとの配布日と入稿日",
+  overseas: "海外FC向け：作成済み資料を保管・閲覧",
   help: "使い方",
 };
 
