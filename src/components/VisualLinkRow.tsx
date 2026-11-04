@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef,useState } from "react";
+import { useEffect,useRef,useState } from "react";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
 import { inputCls } from "./PriceInput";
 import { focusRing } from "@/lib/ui";
@@ -29,10 +29,13 @@ export function VisualLinkRow({
   const [broken, setBroken] = useState(false);
   const [editing, setEditing] = useState(false);
   const fileInput=useRef<HTMLInputElement>(null);
+  const [view,setView]=useState(''),[opening,setOpening]=useState(false);
+  useEffect(()=>()=>{if(view)URL.revokeObjectURL(view);},[view]);
   const url = value.trim();
   const stored=useStoredArtwork(url,isImageUrl(url)&&!editing);
   const showThumb = (!!stored.saved||!broken) && isImageUrl(url);
   const { name, host } = linkLabel(url);
+  async function openSaved(){if(opening)return;setOpening(true);try{const saved=await savedArtwork(url,true);if(!saved)throw new Error('画像が見つかりません。');setView(URL.createObjectURL(await readSavedArtwork(saved)));}catch{alert('保存画像を読み込めませんでした。時間を置いて再試行してください。');}finally{setOpening(false);}}
 
   /* URLが空のときと編集中は、これまで通りの入力欄を出す */
   if (editing || !url) {
@@ -71,7 +74,7 @@ export function VisualLinkRow({
   return (
     <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-white p-2">
       {showThumb ? (
-        <a href={url} target="_blank" rel="noreferrer" title="別タブで開く" className="shrink-0">
+        <a href={stored.saved?.previewUrl??url} onClick={stored.saved?e=>{e.preventDefault();void openSaved();}:undefined} target="_blank" rel="noreferrer" title={stored.saved?'保存した画像を開く':'別タブで開く'} className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={stored.saved?.previewUrl??toThumbnailUrl(url)}
@@ -113,15 +116,17 @@ export function VisualLinkRow({
       >
         ⬇ 保存
       </a>
-      {!url.startsWith('inside:')&&<a
-        href={url}
+      {(stored.saved||!url.startsWith('inside:'))&&<a
+        href={stored.saved?.previewUrl??url}
         target="_blank"
         rel="noreferrer"
         className={linkBtnCls}
-        title="置き場所を別タブで開く"
+        title={stored.saved?'保存した原画像を開く':'置き場所を別タブで開く'}
+        onClick={stored.saved?e=>{e.preventDefault();void openSaved();}:undefined}
       >
-        開く
+        {opening?'開いています…':'開く'}
       </a>}
+      {stored.saved&&!url.startsWith('inside:')&&<a href={url} target="_blank" rel="noreferrer" className="min-h-11 text-xs text-stone-500 underline">元リンク</a>}
       <button
         type="button"
         title="URLを直す"
@@ -138,6 +143,11 @@ export function VisualLinkRow({
       >
         ×
       </button>
+      {view&&<div role="dialog" aria-modal="true" aria-label={`${name} 保存画像`} className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 overflow-auto bg-stone-950/90 p-4">
+        <button type="button" onClick={()=>setView('')} className="min-h-11 rounded-full bg-white px-6 py-2 text-stone-800">画像を閉じる</button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={view} alt={name} className="max-h-[85vh] max-w-full object-contain"/>
+      </div>}
     </div>
   );
 }
