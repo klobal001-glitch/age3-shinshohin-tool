@@ -3,7 +3,7 @@
 //   npm run build && node tests/ui-check.mjs
 //   LEARN_TEST_BREAK=overflow node tests/ui-check.mjs   … わざと壊して、検査が落ちることを確かめる
 //
-// 書き出した out/ を手元で配り、データの保管場所（Supabase）への通信は作り物の返事で置き換える。
+// ビルド済みのアプリを手元で起動し、データの保管場所（Supabase）への通信は作り物の返事で置き換える。
 // 本物のデータには一切触らない。
 //
 // 見ること
@@ -15,8 +15,8 @@
 //
 // もともと落ちている検査は tests/known-failures.json に書く。それ以外の失敗が1つでもあれば終了コード1。
 import { createServer } from "node:http";
-import { readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
-import { join, extname } from "node:path";
+import { spawn } from "node:child_process";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -27,7 +27,6 @@ try {
   ({ chromium } = await import("playwright"));
 }
 
-const OUT = "out";
 const BREAK = process.env.LEARN_TEST_BREAK || "";
 const WIDTHS = [
   { name: "スマホ360", width: 360, height: 740, mobile: true },
@@ -35,26 +34,23 @@ const WIDTHS = [
   { name: "PC", width: 1280, height: 800, mobile: false },
 ];
 
-if (!existsSync(OUT)) {
-  console.error("out/ がありません。先に npm run build を実行してください。");
+if (!existsSync(".next/BUILD_ID")) {
+  console.error("ビルド結果がありません。先に npm run build を実行してください。");
   process.exit(2);
 }
-
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain", ".woff2": "font/woff2" };
-const server = createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split("?")[0]);
-  let file = join(OUT, p);
-  if (existsSync(file + ".html") && (!existsSync(file) || statSync(file).isDirectory())) file += ".html";
-  else if (existsSync(file) && statSync(file).isDirectory()) file = join(file, "index.html");
-  if (!existsSync(file)) {
-    res.writeHead(404);
-    return res.end("not found");
-  }
-  res.writeHead(200, { "Content-Type": TYPES[extname(file)] || "application/octet-stream" });
-  res.end(readFileSync(file));
-});
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const BASE = `http://127.0.0.1:${server.address().port}`;
+const portServer=createServer();
+await new Promise(r=>portServer.listen(0,"127.0.0.1",r));
+const port=portServer.address().port;
+await new Promise(r=>portServer.close(r));
+const server=spawn(process.execPath,["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",String(port)],{stdio:"ignore"});
+const BASE=`http://127.0.0.1:${port}`;
+let ready=false;
+for(let i=0;i<100;i++){
+  try{if((await fetch(BASE)).ok){ready=true;break;}}catch{}
+  await new Promise(r=>setTimeout(r,100));
+}
+if(!ready){server.kill();throw new Error("確認用アプリを起動できませんでした。");}
+process.on("exit",()=>server.kill());
 
 const failures = [];
 const fail = (id, detail) => failures.push({ id, detail: String(detail).slice(0, 300) });
@@ -203,7 +199,7 @@ for (const w of WIDTHS) {
 }
 
 await browser.close();
-server.close();
+server.kill();
 
 const known = existsSync("tests/known-failures.json") ? JSON.parse(readFileSync("tests/known-failures.json", "utf8")).failures || [] : [];
 const knownIds = new Set(known.map((f) => f.id));
