@@ -1,6 +1,6 @@
 import type { ProductInfo } from "../types";
 import { documentHtml } from "./render";
-import { copyProblems, sameQuantityNumbers, sourceIngredients, sourceSignature } from "./model";
+import { copyProblems, sameQuantityNumbers, sourceIngredients, webRecipeUrl, sourceSignature } from "./model";
 import { DeckAssets, DeckAttachment, DeckDraft, DeckLanguage, LANGUAGE_NAMES } from "./types";
 
 const FONT_CACHE = new Map<string,Promise<string>>();
@@ -65,11 +65,13 @@ async function canvasPage(page:HTMLElement):Promise<HTMLCanvasElement> {
     }});
 }
 function canvasBlob(canvas:HTMLCanvasElement):Promise<Blob> {return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("表紙画像を作れませんでした。")),"image/png"));}
-export async function makeBundle(info:ProductInfo,draft:DeckDraft,languages:DeckLanguage[],assets:DeckAssets,recipe:DeckAttachment,progress:(s:string)=>void):Promise<Blob> {
+export async function makeBundle(info:ProductInfo,draft:DeckDraft,languages:DeckLanguage[],assets:DeckAssets,recipe:DeckAttachment|null,progress:(s:string)=>void):Promise<Blob> {
   if(!draft.sourceConfirmed||draft.sourceSignature!==sourceSignature(info))throw new Error("商品の情報が変更されています。内容を再確認してください。");
   const ingredients=sourceIngredients(info);
   if(ingredients.length<1||ingredients.length>8)throw new Error("この7ページ資料は食材1〜8品に対応しています。食材の件数を確認してください。");
-  const required=["product","ig1","ig2","ig3","story","portrait","landscape","poster","recipe",...ingredients.map((_,i)=>`ingredient${i}`)];
+  const recipeUrl=recipe?"Age3_Standard_Recipe.pdf":webRecipeUrl(info);
+  if(!recipeUrl)throw new Error("標準レシピを登録してください。");
+  const required=["product","ig1","ig2","ig3","story","portrait","landscape","poster",...(recipe?["recipe"]:[]),...ingredients.map((_,i)=>`ingredient${i}`)];
   const missing=required.filter(k=>!assets[k]?.data);
   if(missing.length)throw new Error("未読込の画像があります。素材の欄で画像を選び直してください。");
   if(!languages.length)throw new Error("書き出す言語を選んでください。");
@@ -80,15 +82,15 @@ export async function makeBundle(info:ProductInfo,draft:DeckDraft,languages:Deck
   }
   const [{default:JSZip},{jsPDF}]=await Promise.all([import("jszip"),import("jspdf")]);
   const zip=new JSZip(),covers=new JSZip();
-  const record=["# Age.3 海外FC 新商品資料 制作記録",`商品：${info.nameJa}`,`作成日時：${new Date().toISOString()}`,`日本販売期間：${info.releaseDate} 〜 ${info.endDate}`,`レシピ原本：${recipe.name}（${draft.recipeLanguage}）`,"", "## 確定した食材使用量",...ingredients.map(i=>`- ${i.nameJa}：${i.amount}`),"", "## 言語別注記",...languages.map(l=>`- ${LANGUAGE_NAMES[l]}：${draft.copies[l].quantityNote||"注記なし"}`),"", "## 検証","各7ページ・文字切れ確認済み。各言語の原稿を担当者が確認済み。ネイティブ校閲の完了を自動判定するものではありません。","PDFは300dpiの画像形式（文字検索なし）。表紙PNGは同じ描画から生成。HTMLの画像と書体は埋め込み。レシピは原本を同梱。"];
+  const record=["# Age.3 海外FC 新商品資料 制作記録",`商品：${info.nameJa}`,`作成日時：${new Date().toISOString()}`,`日本販売期間：${info.releaseDate} 〜 ${info.endDate}`,`レシピ原本：${recipe?.name??recipeUrl}（${recipe?draft.recipeLanguage:"Web版・登録リンクを参照"}）`,"", "## 確定した食材使用量",...ingredients.map(i=>`- ${i.nameJa}：${i.amount}`),"", "## 言語別注記",...languages.map(l=>`- ${LANGUAGE_NAMES[l]}：${draft.copies[l].quantityNote||"注記なし"}`),"", "## 検証","各7ページ・文字切れ確認済み。各言語の原稿を担当者が確認済み。ネイティブ校閲の完了を自動判定するものではありません。","PDFは300dpiの画像形式（文字検索なし）。表紙PNGは同じ描画から生成。HTMLの画像と書体は埋め込み。",recipe?"レシピは原本PDFを同梱。":"レシピは登録済みWeb版へのリンクを収録。原本PDFの同梱はありません。"];
   for(const lang of languages){
     progress(`${LANGUAGE_NAMES[lang]}の書体・レイアウトを準備しています`);
-    const fonts=await fontCss(lang);let html=documentHtml(info,draft,lang,assets,fonts),frame=await renderFrame(html);
+    const fonts=await fontCss(lang);let html=documentHtml(info,draft,lang,assets,fonts,undefined,recipeUrl),frame=await renderFrame(html);
     try {
       let problems=layoutProblems(frame.contentDocument!);if(problems.length)throw new Error(`${LANGUAGE_NAMES[lang]}：${problems.join(" ")}`);
       const first=await canvasPage(frame.contentDocument!.querySelector<HTMLElement>(".page")!);
       const cover=await canvasBlob(first),coverData=first.toDataURL("image/png");first.width=first.height=1;
-      frame.remove();html=documentHtml(info,draft,lang,assets,fonts,coverData);frame=await renderFrame(html);
+      frame.remove();html=documentHtml(info,draft,lang,assets,fonts,coverData,recipeUrl);frame=await renderFrame(html);
       problems=layoutProblems(frame.contentDocument!);if(problems.length)throw new Error(`${LANGUAGE_NAMES[lang]}：${problems.join(" ")}`);
       const pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true});
       const pages=[...frame.contentDocument!.querySelectorAll<HTMLElement>(".page")];
@@ -108,7 +110,7 @@ export async function makeBundle(info:ProductInfo,draft:DeckDraft,languages:Deck
       });
       const folder=zip.folder(lang)!;
       folder.file(`Age3_Product_${lang}.html`,html);folder.file(`Age3_Product_${lang}.pdf`,pdf.output("arraybuffer"));
-      folder.file(`Age3_Cover_${lang}.png`,cover);folder.file("Age3_Standard_Recipe.pdf",recipe.bytes);
+      folder.file(`Age3_Cover_${lang}.png`,cover);if(recipe)folder.file("Age3_Standard_Recipe.pdf",recipe.bytes);else folder.file("Age3_Standard_Recipe_URL.txt",recipeUrl);
       covers.file(`Age3_Cover_${lang}.png`,cover);
       progress(`${LANGUAGE_NAMES[lang]}のセットをまとめています`);
       zip.file(`Age3_${lang}_HTML_PDF_PNG.zip`,await folder.generateAsync({type:"uint8array",compression:"DEFLATE"}));
