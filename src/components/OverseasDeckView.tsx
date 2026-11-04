@@ -68,7 +68,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       if(!url){if(!assets[key]?.data)missing.push(labels[key]);return;}
       try{const data=await fetchImage(url);loaded[key]={data,name:labels[key],source:url};}
       catch(e){missing.push(`${labels[key]}（${message(e)}）`);}
-    }));}setAssets(loaded);setStatus(missing.length?`読み込めない素材：${missing.join("、")}。登録リンクを確認するか、画像の枠から元ファイルを選んでください。`:"登録済みの画像を読み込みました。");return loaded;}
+    }));}setAssets(loaded);setStatus(missing.length?`読み込めない素材：${missing.join("、")}。登録リンクを確認するか、画像の枠から元ファイルを選んでください。`:"画像の準備完了 ✓");return loaded;}
     finally{setLoadingAssets(false);}
   };
   const upload=async(key:string,file:File)=>{try{setError("");const data=await imageFile(file);setAssets(a=>({...a,[key]:{data,name:file.name,source:sources[key]??""}}));setPreview("");}catch(e){setError(message(e));}};
@@ -81,8 +81,10 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
     }catch(e){setError(message(e));}finally{setLoadingAssets(false);}
   };
   const showPreview=async(previewLang:DeckLanguage=lang)=>{
+    const missing=copyProblems(draft.copies[previewLang],ingredients.length);
+    if(missing.length){setPreview('');setLayout([]);setError(`${LANGUAGE_NAMES[previewLang]}の原稿が未完成です：${missing.join('、')}。先に原稿を作成してください。`);setStatus('');return;}
     setBusy(true);setError("");let frame:HTMLIFrameElement|undefined;
-    try{const html=documentHtml(info,draft,previewLang,assets,await fontCss(previewLang),undefined,recipeHref);frame=await renderFrame(html);const problems=layoutProblems(frame.contentDocument!);setLayout(problems);setPreview(html);setPreviewPage(1);setStatus(problems.length?"はみ出している原稿を短くしてください。":"7ページの文字切れチェックが完了しました。各ページの内容・画像も確認してください。");}
+    try{const html=documentHtml(info,draft,previewLang,assets,await fontCss(previewLang),undefined,recipeHref);frame=await renderFrame(html);const problems=layoutProblems(frame.contentDocument!);setLayout(problems);setPreview(html);setPreviewPage(1);setStatus(problems.length?"はみ出している原稿を短くしてください。":"文字切れなし ✓");}
     catch(e){setError(message(e));}finally{frame?.remove();setBusy(false);}
   };
   const download=async()=>{
@@ -109,7 +111,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
     try{
       setStatus("登録済みの画像を読み込んでいます…");
       const loaded=await loadAssets();
-      const missing=Object.keys(labels).filter(k=>!loaded[k]?.data);
+      const missing=Object.keys(labels).filter(k=>!(k==="recipe"&&!recipe&&registeredRecipe)&&!loaded[k]?.data);
       if(missing.length)throw new Error(`読み込めない素材があります：${missing.map(k=>labels[k]).join("、")}。元の画像を選んでください。`);
       setStatus("商品情報から日本語の文章と4言語の翻訳を作成しています…");
       const response=await fetch("/api/overseas/translate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"generate",source:generationSource(info,draft.copies.ja.quantityNote)}),signal:AbortSignal.timeout(150000)});
@@ -130,7 +132,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
         frame.remove();frame=undefined;if(language==="ja")japanese=html;
       }
       setLayout(problems);setPreview(japanese);setPreviewPage(1);
-      setStatus(problems.length?"5言語の資料を作成しました。はみ出している文章を修正してから保存してください。":"5言語の資料ができました。文章・分量・画像を確認し、下の確認チェックを入れて資料セットを保存してください。");
+      setStatus(problems.length?"5言語の資料を作成しました。はみ出している文章を修正してから保存してください。":"5言語の資料ができました。内容を確認して保存してください。");
     }catch(e){setError(e instanceof Error&&["TimeoutError","AbortError"].includes(e.name)?"作成が時間内に終わりませんでした。時間を置いて再度お試しください。":message(e));setStatus("");}
     finally{frame?.remove();setBusy(false);}
   };
@@ -169,25 +171,25 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
     if(!quick||!prepared||!filesReady||loadingAssets||autoStarted.current)return;
     void Promise.resolve().then(()=>startQuick());
   },[quick,prepared,filesReady,loadingAssets,stale,draft,ingredients.length,missingAssets.length,aiReady,needed.length]);
-  const readyCopy=!stale&&LANGUAGES.every(l=>copyProblems(draft.copies[l],ingredients.length).length===0);
+  const incompleteLanguages=LANGUAGES.filter(l=>copyProblems(draft.copies[l],ingredients.length).length>0);
+  const readyCopy=!stale&&incompleteLanguages.length===0;
   const copyPrompt=async()=>{try{await navigator.clipboard.writeText(translationPrompt(info,draft));setStatus("翻訳依頼文をコピーしました。翻訳結果のJSONを下の欄に貼り付けると取り込めます。");}catch{setImportText(translationPrompt(info,draft));setStatus("クリップボードが使えないため、下の欄に翻訳依頼文を表示しました。コピーしてご利用ください。");}};
   const input=(title:string,value:string,onChange:(v:string)=>void,large=false)=><label className="block space-y-1.5"><span className="text-sm font-medium">{title}</span>{large?<textarea className={`${field} min-h-28`} value={value} onChange={e=>onChange(e.target.value)}/>:<input className={field} value={value} onChange={e=>onChange(e.target.value)}/>}</label>;
   return <div className="space-y-5">
     {!quick&&<p className={muted}>商品情報から、5言語の7ページ資料・表紙PNG・配布用ZIPを作ります。原稿はチームで共有し、追加した素材ファイルはこの端末に保存します。</p>}
     <div aria-live="polite" className="space-y-2">{error&&<p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}{status&&<p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{status}</p>}{app.saveState==="saving"&&<p className={muted}>原稿を保存中…</p>}{app.saveState==="error"&&<button className={btn()} onClick={app.retrySave}>原稿の保存を再試行</button>}</div>
-    {(!quick||adjust||!readyCopy)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} space-y-4 border-emerald-200 p-5`}>
+    {(!quick||adjust||!readyCopy)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} min-w-0 space-y-4 border-emerald-200 p-5`}>
       <legend className="sr-only">資料の自動作成</legend>
-      <h3 className="text-lg font-semibold">{quick?"登録した情報から資料を制作":"情報が揃ったら、資料を自動作成"}</h3>
-      <p className={muted}>{quick?"この商品・販売回の入力内容を引き継いでいます。登録済みの画像も自動で読み込みます。":"商品名・説明・食材・分量は「シート」、画像とレシピ原本は下の「素材をそろえる」で登録します。"}</p>
-      <p className="text-sm">商品情報・分量・画像・レシピをもとに、日本語の文章から4言語への翻訳・7ページへの配置までまとめて作ります。文章を一から入力する必要はありません。</p>
-      {needed.length?<div className="rounded-xl bg-amber-50 p-4"><p className="text-sm font-medium">あと必要な情報</p><ul className="mt-2 list-inside list-disc space-y-1 text-sm">{needed.map((item,i)=><li key={i}>{item}</li>)}</ul></div>:<p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">必要な情報は入力済みです。作成時に画像の読み込みと5言語の文字切れを確認します。</p>}
-      {registeredRecipe&&!recipe&&<p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">標準レシピ：登録済みのWeb版を使用します。<a className="ml-2 underline" href={registeredRecipe} target="_blank" rel="noreferrer">登録済みレシピを開く ↗</a><span className="mt-1 block">資料にはこのリンクを引き継ぎます。PDFの再添付は不要です。</span></p>}
-      {LANGUAGES.some(l=>draft.copies[l].features.length||draft.copies[l].lead)&&<label className="flex min-h-11 items-center gap-2 text-sm"><input className="h-5 w-5" type="checkbox" checked={replaceAll} onChange={e=>setReplaceAll(e.target.checked)}/>既存の原稿を作り直す（日本語・4言語すべて）</label>}
-      <p className={muted}>商品名・説明・食材名・使用量・分量の注記がOpenAIへ送信されます。利用コードの入力は不要です。</p>
-      {aiReady===false&&<p className="text-sm text-amber-800">自動作成には管理者によるAIの利用設定が必要です。商品情報や素材は先にそろえられます。</p>}
-      <button className={btn("primary")} disabled={!!needed.length||aiReady!==true} onClick={autoCreate}>5言語の資料を自動作成</button>
+      <h3 className="text-lg font-semibold">1. 準備</h3>
+      <p className={muted}>登録済みの商品情報・画像を使います。</p>
+      {needed.length?<div className="rounded-xl bg-amber-50 p-3"><p className="text-sm font-medium">不足しているもの</p><ul className="mt-2 flex flex-wrap gap-2">{needed.map((item,i)=><li className="rounded-lg bg-white px-3 py-1 text-sm" key={i}>{item}</li>)}</ul></div>:<p className="text-sm text-emerald-800">✓ 必要な情報は入力済み</p>}
+      {registeredRecipe&&!recipe&&<a className="inline-flex min-h-11 items-center text-sm text-emerald-800 underline" href={registeredRecipe} target="_blank" rel="noreferrer">✓ 登録済みレシピ ↗</a>}
+      {LANGUAGES.some(l=>draft.copies[l].features.length||draft.copies[l].lead)&&<label className="flex min-h-11 items-center gap-2 text-sm"><input className="h-5 w-5" type="checkbox" checked={replaceAll} onChange={e=>setReplaceAll(e.target.checked)}/>5言語の原稿を作り直す</label>}
+      <details className="text-xs text-stone-500"><summary className="cursor-pointer py-2">AIに送る情報</summary><p className="mt-1">商品名・説明・食材名・分量・注記をOpenAIへ送信します。</p></details>
+      {aiReady===false&&<p className="text-sm text-amber-800">AI作成は設定待ちです。</p>}
+      <button className={btn("primary")} disabled={!!needed.length||aiReady!==true} onClick={autoCreate}>5言語の資料を作る</button>
     </fieldset>}
-    {!quick&&<fieldset disabled={busy} className={`${card} space-y-4 p-5`}>
+    {!quick&&<fieldset disabled={busy} className={`${card} min-w-0 space-y-4 p-5`}>
       <legend className="sr-only">商品情報の確認</legend><h3 className="text-lg font-semibold">1. 商品情報を確認</h3>
       <p className="text-sm">{info.nameJa} ／ 日本販売期間：{info.releaseDate||"未登録"} 〜 {info.endDate||"終了日未登録"}</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{ingredients.map((i,k)=><p key={k} className="rounded-lg bg-stone-50 p-3 text-sm">{i.nameJa||i.nameEn}<b className="ml-3">{i.amount||"分量未登録"}</b></p>)}</div>
@@ -195,22 +197,22 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       {stale&&<p className="text-sm text-amber-800">商品情報が原稿作成時から変わっています。説明文・食材・分量・画像を再確認してください。</p>}
       <label className="flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={draft.sourceConfirmed&&!stale} onChange={e=>patch({...draft,sourceSignature:signature,sourceConfirmed:e.target.checked,checkedLanguages:{}})}/><span>この販売回の内容・分量を確認しました。レシピ原本と異なる場合は、下の「分量に関する注記」に採用する基準を記入します。</span></label>
     </fieldset>}
-    {(!quick||adjust||(!recipe&&!registeredRecipe)||missingAssets.length>0)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} space-y-4 p-5`}>
-      <legend className="sr-only">素材をそろえる</legend><h3 className="text-lg font-semibold">2. 素材をそろえる</h3>
+    {(!quick||adjust||(!recipe&&!registeredRecipe)||missingAssets.length>0)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} min-w-0 space-y-4 p-5`}>
+      <legend className="sr-only">素材をそろえる</legend><h3 className="text-lg font-semibold">不足画像を追加</h3>
       <button className={btn()} onClick={loadAssets}>{loadingAssets?"素材を読み込み中…":"登録済みの画像を読み込む"}</button>
-      <p className={muted}>共有リンクの画像を読み込めない場合は、その枠を押して画像を選んでください。原本の画像をそのまま埋め込みます。</p>
+      <p className={muted}>画像の枠を押して追加・差し替え。</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{Object.entries(labels).filter(([key])=>key!=="recipe"&&(!quick||adjust||!assets[key]?.data)).map(([key,title])=><label key={key} className="relative flex min-h-44 cursor-pointer flex-col rounded-xl border border-stone-200 bg-stone-50 p-3 focus-within:ring-2 focus-within:ring-amber-500"><span className="text-sm font-medium">{title}</span>{assets[key]?.data?<img src={assets[key].data} alt={title} className="mt-2 h-24 w-full object-contain"/>:<span className="flex flex-1 items-center justify-center py-6 text-center text-sm text-amber-800">＋ 画像を選ぶ</span>}<span className="mt-2 truncate text-xs text-stone-500">{assets[key]?.name??"未読込"}</span><input className="absolute inset-0 h-full w-full cursor-pointer opacity-0" type="file" accept="image/png,image/jpeg,image/webp" aria-label={`${title}を選ぶ`} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(key,f);e.target.value="";}}/></label>)}</div>
       <label className="block space-y-2"><span className="text-sm font-medium">標準レシピの原本PDF（任意・変更せず同梱）</span><input className={field} type="file" aria-label="標準レシピの原本PDF（任意・変更せず同梱）" accept="application/pdf" onChange={e=>{const f=e.target.files?.[0];if(f)void uploadRecipe(f);e.target.value="";}}/>{recipe&&<span className="block text-sm text-emerald-700">選択済み：{recipe.name}</span>}</label>
       {assets.recipe?.data&&<img className="h-48 max-w-full object-contain" src={assets.recipe.data} alt="同梱レシピの1ページ目"/>}
       {input("レシピ原本に記載されている言語",draft.recipeLanguage,v=>patch({...draft,recipeLanguage:v}))}
     </fieldset>}
-    {(!quick||adjust)&&<fieldset disabled={busy} className={`${card} space-y-5 p-5`}>
-      <legend className="sr-only">各国語の原稿</legend><h3 className="text-lg font-semibold">3. 作成した原稿を確認・必要に応じて修正</h3>
+    {(!quick||adjust)&&<fieldset disabled={busy} className={`${card} min-w-0 space-y-5 p-5`}>
+      <legend className="sr-only">各国語の原稿</legend><h3 className="text-lg font-semibold">原稿を編集</h3>
       <div className="space-y-3 rounded-xl bg-stone-50 p-4">
-        <p className="text-sm">日本語の原稿を整えてから、4言語へ自動翻訳します。翻訳後に各言語を確認・修正してください。日本語原稿と参考の英語説明がOpenAIへ送信されます。画像・レシピ原本・仕入れ情報は送信しません。</p>
+        <p className="text-sm">日本語原稿を4言語へ翻訳します。</p>
         <label className="flex min-h-11 items-center gap-2 text-sm"><input className="h-5 w-5" type="checkbox" checked={replaceTranslations} onChange={e=>setReplaceTranslations(e.target.checked)}/>既存の各国語原稿を今回の翻訳に置き換える</label>
         <button className={btn("primary")} disabled={aiReady!==true} onClick={autoTranslate}>日本語から4言語へAI翻訳する</button>
-        <p className={muted}>{aiReady===null?"自動翻訳の利用状況を確認しています…":aiReady?"利用コードの入力は不要です。":"自動翻訳はまだ利用設定が完了していません。管理者による設定後、この画面を開き直してください。"}</p>
+        <p className={muted}>{aiReady===null?"自動翻訳の利用状況を確認しています…":aiReady?"利用コードの入力は不要です。":"AI翻訳は設定待ちです。"}</p>
       </div>
       <div role="tablist" aria-label="資料の言語" className="flex flex-wrap gap-2">{LANGUAGES.map(l=><button role="tab" aria-selected={lang===l} key={l} className={btn(lang===l?"primary":"secondary")} onClick={()=>{setLang(l);setPreview("");setLayout([]);}}>{LANGUAGE_NAMES[l]}{draft.checkedLanguages[l]?" ✓":""}</button>)}</div>
       {input("商品名",copy.name,v=>changeCopy({name:v}))}{input("表紙のひとこと",copy.lead,v=>changeCopy({lead:v}))}{input("商品説明",copy.description,v=>changeCopy({description:v}),true)}
@@ -221,22 +223,26 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       <label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 h-5 w-5" type="checkbox" checked={draft.checkedLanguages[lang]===true} onChange={e=>patch({...draft,checkedLanguages:{...draft.checkedLanguages,[lang]:e.target.checked}})}/><span>{LANGUAGE_NAMES[lang]}の表現と分量を確認しました。翻訳は最終的に各国の担当者にも確認してください。</span></label>
       <details className="rounded-xl border border-stone-200 p-4"><summary className="cursor-pointer text-sm font-medium">翻訳用文章をコピー・翻訳原稿をまとめて取り込む</summary><div className="mt-4 space-y-3"><p className={muted}>日本語の原稿を整えてから翻訳依頼文をコピーします。翻訳結果を貼り付けると、各言語の欄へ取り込めます。</p><button className={btn()} onClick={copyPrompt}>翻訳依頼文をコピー</button><textarea aria-label="翻訳原稿を貼り付け" className={`${field} min-h-40`} value={importText} onChange={e=>setImportText(e.target.value)} placeholder="翻訳結果のJSONをここに貼り付け"/><button className={btn()} onClick={()=>{try{const copies=parseTranslations(importText,ingredients.length);assertTranslationQuantities(copies,ingredients.map(i=>i.amount));patch({...draft,copies:{...draft.copies,...copies},checkedLanguages:{}});setStatus("翻訳原稿を取り込みました。各言語の表現と分量を確認してください。");setImportText("");setError("");}catch(e){setError(message(e));}}}>翻訳原稿を取り込む</button></div></details>
     </fieldset>}
-    <fieldset disabled={busy} className={`${card} space-y-4 p-5`}>
-      <legend className="sr-only">見た目と書き出し</legend><h3 className="text-lg font-semibold">{quick?"資料を確認して保存":"4. 7ページを確認して書き出す"}</h3>
+    {quick&&!readyCopy&&!preview&&!adjust&&<button className={btn("quiet")} onClick={()=>setAdjust(true)}>原稿を編集する</button>}
+    {(!quick||readyCopy||preview||adjust)&&<fieldset disabled={busy} className={`${card} min-w-0 space-y-4 p-5`}>
+      <legend className="sr-only">見た目と書き出し</legend><h3 className="text-lg font-semibold">{quick?"2. 資料を確認":"資料を確認"}</h3>
       {(!quick||adjust)&&<div className="flex flex-wrap gap-5">{([["deep","見出しの色"],["accent","アクセント"],["paper","背景色"]] as const).map(([key,title])=><label className="flex min-h-11 items-center gap-2 text-sm" key={key}><input type="color" className="h-11 w-12" value={draft.palette[key]} onChange={e=>patch({...draft,palette:{...draft.palette,[key]:e.target.value}})}/>{title}</label>)}</div>}
       {(!quick||adjust)&&<p className={muted}>7ページの構成・縦横サイネージの配置は固定です。商品に合わせて色を選べます。</p>}
       {(!quick||!preview)&&<button className={btn()} onClick={()=>showPreview()}>{LANGUAGE_NAMES[lang]}の7ページを確認</button>}
       {layout.map((p,i)=><p key={i} className="text-sm text-red-700">{p}</p>)}
-      {quick&&<><div className="flex flex-wrap gap-2">{LANGUAGES.map(l=><button key={l} className={btn(lang===l?"primary":"secondary")} onClick={()=>{setLang(l);void showPreview(l);}}>{LANGUAGE_NAMES[l]}</button>)}</div><button className={btn("quiet")} onClick={()=>setAdjust(v=>!v)}>{adjust?"細かい編集を閉じる":"文章・画像・配色を修正する"}</button></>}
+      {quick&&<><div className="flex flex-wrap gap-2">{LANGUAGES.map(l=><button key={l} className={btn(lang===l?"primary":"secondary")} onClick={()=>{setLang(l);void showPreview(l);}}>{LANGUAGE_NAMES[l]}{copyProblems(draft.copies[l],ingredients.length).length>0&&<span className="ml-2 text-xs">原稿未完成</span>}</button>)}</div><button className={btn("quiet")} onClick={()=>setAdjust(v=>!v)}>{adjust?"編集を閉じる":"編集する"}</button></>}
+      {incompleteLanguages.length>0&&<p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">原稿未完成：{incompleteLanguages.map(l=>LANGUAGE_NAMES[l]).join('・')}</p>}
+      {stale&&<p className="text-sm text-amber-800">商品情報が更新されています。編集画面で原稿を確認してください。</p>}
       {preview&&<div className="space-y-3"><div className="flex flex-wrap gap-2">{Array.from({length:7},(_,i)=><button key={i} className={btn(previewPage===i+1?"primary":"secondary")} onClick={()=>setPreviewPage(i+1)}>{i+1}</button>)}</div><Preview html={preview} page={previewPage}/></div>}
       {(!quick||adjust)&&<div className="flex flex-wrap gap-4">{LANGUAGES.map(l=><label key={l} className="flex min-h-11 items-center gap-2 text-sm"><input className="h-5 w-5" type="checkbox" checked={selected.includes(l)} onChange={e=>setSelected(s=>e.target.checked?LANGUAGES.filter(x=>x===l||s.includes(x)):s.filter(x=>x!==l))}/>{LANGUAGE_NAMES[l]}</label>)}</div>}
-      <p className={muted}>各言語のHTML・PDF・表紙PNG・標準レシピ、言語別ZIP、表紙のみのZIP、制作記録MDをまとめます。PDF・表紙PNGは300dpiです。PDFの文字は画像として保存されるため検索できません。</p>
+      <div className="border-t border-stone-100 pt-4"><h3 className="text-lg font-semibold">3. 保存</h3><p className="mt-1 text-xs text-stone-500">5言語 · HTML / PDF / 表紙PNG</p></div>
+      <details className="text-xs text-stone-500"><summary className="cursor-pointer py-2">保存内容</summary><p className="mt-1">標準レシピ・言語別ZIP・制作記録も同梱。PDF・PNGは300dpi。保存した資料は「海外FC資料」から開けます。</p></details>
       {missingAssets.length>0&&<p className="text-sm text-amber-800">未読込の画像：{missingAssets.map(k=>labels[k]).join("、")}</p>}
       {copyProblems(copy,ingredients.length).length>0&&<p className="text-sm text-amber-800">{LANGUAGE_NAMES[lang]}の未入力：{copyProblems(copy,ingredients.length).join("、")}</p>}
-      <label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 h-5 w-5" type="checkbox" disabled={!selected.length||stale||selected.some(l=>copyProblems(draft.copies[l],ingredients.length).length>0)} checked={selected.length>0&&selected.every(l=>draft.checkedLanguages[l]===true)} onChange={e=>patch({...draft,sourceConfirmed:quick&&e.target.checked?true:draft.sourceConfirmed,checkedLanguages:{...draft.checkedLanguages,...Object.fromEntries(selected.map(l=>[l,e.target.checked]))}})}/><span>{quick?"5言語の内容・分量・画像を確認しました。":"選んだ言語すべての内容・分量・画像を確認しました。"}</span></label>
-      <button className={btn("primary")} disabled={!filesReady||loadingAssets||!selected.length} onClick={download}>{quick?"5言語の資料をまとめて保存":"選んだ言語の資料セットを作る"}</button>
-    </fieldset>
-    {busy&&<p role="status" className="sticky bottom-24 rounded-xl bg-stone-900 p-4 text-sm text-white md:bottom-4">{status||"資料を準備しています…"}　完了までこの画面を開いておいてください。</p>}
+      <label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 h-5 w-5" type="checkbox" disabled={!selected.length||stale||selected.some(l=>copyProblems(draft.copies[l],ingredients.length).length>0)} checked={selected.length>0&&selected.every(l=>draft.checkedLanguages[l]===true)} onChange={e=>patch({...draft,sourceConfirmed:quick&&e.target.checked?true:draft.sourceConfirmed,checkedLanguages:{...draft.checkedLanguages,...Object.fromEntries(selected.map(l=>[l,e.target.checked]))}})}/><span>{quick?"内容・分量・画像を確認しました":"選んだ言語すべての内容・分量・画像を確認しました。"}</span></label>
+      <button className={btn("primary")} disabled={!filesReady||loadingAssets||!selected.length||stale||selected.some(l=>copyProblems(draft.copies[l],ingredients.length).length>0||!draft.checkedLanguages[l])} onClick={download}>{quick?"資料を保存・ダウンロード":"資料セットを作る"}</button>
+    </fieldset>}
+    {busy&&<p role="status" className="sticky bottom-24 rounded-xl bg-stone-900 p-4 text-sm text-white md:bottom-4">{status||"資料を準備しています…"}　</p>}
   </div>;
 }
 function message(e:unknown){return e instanceof Error?e.message:"作成できませんでした。入力内容をご確認ください。";}
@@ -244,5 +250,5 @@ function Preview({html,page}:{html:string;page:number}) {
   const container=useRef<HTMLDivElement>(null),[width,setWidth]=useState(800);
   useEffect(()=>{const el=container.current;if(!el)return;const observer=new ResizeObserver(()=>setWidth(el.clientWidth));observer.observe(el);return()=>observer.disconnect();},[]);
   const preview=html.replace("</head>",`<style>html,body{padding:0!important;width:1123px!important}.page{display:none!important;width:297mm!important;height:210mm!important;min-height:0!important;overflow:hidden!important;margin:0!important}.page:nth-child(${page}){display:block!important}</style></head>`);
-  return <div ref={container} className="w-full overflow-hidden rounded-xl border border-stone-200" style={{height:width*794/1123}}><iframe title={`資料プレビュー ${page}ページ`} sandbox="allow-same-origin" srcDoc={preview} className="origin-top-left border-0" style={{width:1123,height:794,transform:`scale(${width/1123})`}}/></div>;
+  return <div ref={container} className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-stone-200" style={{height:width*794/1123}}><iframe title={`資料プレビュー ${page}ページ`} sandbox="allow-same-origin" srcDoc={preview} className="block origin-top-left border-0" style={{width:1123,height:794,transform:`scale(${width/1123})`}}/></div>;
 }
