@@ -1,5 +1,5 @@
 import { openOverseasDatabase } from "./library";
-import { toEmbeddedImageUrl } from "../imageUrl";
+import {readSavedArtwork,resolvedArtworkUrl,savedArtwork} from '../storedArtwork';
 import type { DeckAssets, DeckAttachment } from "./types";
 
 export function readDataUrl(blob:Blob):Promise<string> {
@@ -15,7 +15,9 @@ export async function imageFile(file:Blob):Promise<string> {
 }
 export async function fetchImage(raw:string):Promise<string> {
   if(!raw.trim())throw new Error("画像未登録");
-  const u=new URL(toEmbeddedImageUrl(raw),location.origin);
+  const saved=await savedArtwork(raw,true).catch(()=>null);
+  if(saved)return imageFile(await readSavedArtwork(saved));
+  const u=new URL(await resolvedArtworkUrl(raw),location.origin);
   if(!["http:","https:"].includes(u.protocol))throw new Error("画像の場所を確認してください。");
   let response:Response;
   try{response=await fetch(u,{credentials:"omit",signal:AbortSignal.timeout(30000)});}
