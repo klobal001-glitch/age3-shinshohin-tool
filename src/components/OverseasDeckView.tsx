@@ -11,7 +11,7 @@ import { saveTeamArchive } from "@/lib/overseas/teamLibrary";
 import RunTabs, { runView } from "./RunTabs";
 import { runFieldsOf } from "@/lib/productRun";
 import { btn, card, field, h2, muted } from "@/lib/ui";
-import { assertTranslationQuantities, assetSources, copyProblems, createDeckDraft, generationSource, sourceProblems, parseTranslations, sourceIngredients, sourceSignature, translationPrompt } from "@/lib/overseas/model";
+import { assertTranslationQuantities, assetSources, copyProblems, createDeckDraft, generationSource, sourceProblems, parseTranslations, sourceIngredients, webRecipeUrl, sourceSignature, translationPrompt } from "@/lib/overseas/model";
 import { DeckAssets, DeckAttachment, DeckDraft, DeckLanguage, LANGUAGES, LANGUAGE_NAMES } from "@/lib/overseas/types";
 import { fetchImage, imageFile, readLocalFiles, recipePreview, saveLocalFiles } from "@/lib/overseas/assets";
 import { documentHtml } from "@/lib/overseas/render";
@@ -57,11 +57,13 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
   },[assets,recipe,filesReady,attachmentKey]);
   const labels:Record<string,string>={product:"背景なし商品画像",ig1:"Instagram 1（メイン）",ig2:"Instagram 2（食材説明）",ig3:"Instagram 3（寄り画像）",story:"ストーリーズ",portrait:"サイネージ・縦",landscape:"サイネージ・横",poster:"A1ポスター",recipe:"標準レシピの見本画像"};
   ingredients.forEach((row,i)=>{labels[`ingredient${i}`]=row.nameJa||row.nameEn;});
-  const missingAssets=Object.keys(labels).filter(k=>!assets[k]?.data);
+  const registeredRecipe=webRecipeUrl(info),recipeHref=recipe?"Age3_Standard_Recipe.pdf":registeredRecipe||undefined;
+  const missingAssets=Object.keys(labels).filter(k=>!(k==="recipe"&&!recipe&&registeredRecipe)&&!assets[k]?.data);
   const stale=draft.sourceSignature!==signature;
   const loadAssets=async()=>{
     setError("");setLoadingAssets(true);const missing:string[]=[],loaded={...assets};
     try{for(let start=0;start<Object.keys(sources).length;start+=3){await Promise.all(Object.entries(sources).slice(start,start+3).map(async([key,url])=>{
+      if(key==="recipe"&&!recipe&&registeredRecipe)return;
       if(assets[key]?.data&&assets[key].source===url)return;
       if(!url){if(!assets[key]?.data)missing.push(labels[key]);return;}
       try{const data=await fetchImage(url);loaded[key]={data,name:labels[key],source:url};}
@@ -80,13 +82,13 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
   };
   const showPreview=async(previewLang:DeckLanguage=lang)=>{
     setBusy(true);setError("");let frame:HTMLIFrameElement|undefined;
-    try{const html=documentHtml(info,draft,previewLang,assets,await fontCss(previewLang));frame=await renderFrame(html);const problems=layoutProblems(frame.contentDocument!);setLayout(problems);setPreview(html);setPreviewPage(1);setStatus(problems.length?"はみ出している原稿を短くしてください。":"7ページの文字切れチェックが完了しました。各ページの内容・画像も確認してください。");}
+    try{const html=documentHtml(info,draft,previewLang,assets,await fontCss(previewLang),undefined,recipeHref);frame=await renderFrame(html);const problems=layoutProblems(frame.contentDocument!);setLayout(problems);setPreview(html);setPreviewPage(1);setStatus(problems.length?"はみ出している原稿を短くしてください。":"7ページの文字切れチェックが完了しました。各ページの内容・画像も確認してください。");}
     catch(e){setError(message(e));}finally{frame?.remove();setBusy(false);}
   };
   const download=async()=>{
     setBusy(true);setError("");
     try{
-      if(!recipe)throw new Error("標準レシピの原本PDFを選んでください。");
+      if(!recipe&&!registeredRecipe)throw new Error("標準レシピを登録してください。");
       const blob=await makeBundle(info,draft,selected,assets,recipe,setStatus);
       setStatus("資料を保管し、チームの共有先に保存しています…");
       let archived=true,shared=false;
@@ -96,7 +98,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`Age3_${info.nameJa.replace(/[\\/:*?"<>|]/g,"_")}_資料セット.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);setStatus(!archived?"資料セットをダウンロードしました。一覧には保存されていません。":shared?"資料をチームの共有先と「海外FC資料」の一覧に保存しました。別の端末からも開けます。":"資料はこの端末に保存しました。チーム共有は未完了です。「海外FC資料」の一覧から共有保存を再試行してください。");
     }catch(e){setError(message(e));}finally{setBusy(false);}
   };
-  const needed=[...sourceProblems(info),...(!recipe?["標準レシピの原本PDF"]:[]),
+  const needed=[...sourceProblems(info),...(!recipe&&!registeredRecipe?["標準レシピ（Web版リンクまたは原本PDF）"]:[]),
     ...Object.keys(labels).filter(k=>k!=="recipe"&&!assets[k]?.data&&!sources[k]).map(k=>labels[k]),
     ...(!quick&&(stale||!draft.sourceConfirmed)?["商品情報・分量の確認"]:[])];
   const autoCreate=async()=>{
@@ -122,7 +124,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       const problems:string[]=[];let japanese="";
       for(const language of LANGUAGES){
         setStatus(`${LANGUAGE_NAMES[language]}の7ページを確認しています…`);
-        const html=documentHtml(info,next,language,loaded,await fontCss(language));
+        const html=documentHtml(info,next,language,loaded,await fontCss(language),undefined,recipeHref);
         frame=await renderFrame(html);
         problems.push(...layoutProblems(frame.contentDocument!).map(p=>`${LANGUAGE_NAMES[language]}：${p}`));
         frame.remove();frame=undefined;if(language==="ja")japanese=html;
@@ -179,6 +181,7 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       <p className={muted}>{quick?"この商品・販売回の入力内容を引き継いでいます。登録済みの画像も自動で読み込みます。":"商品名・説明・食材・分量は「シート」、画像とレシピ原本は下の「素材をそろえる」で登録します。"}</p>
       <p className="text-sm">商品情報・分量・画像・レシピをもとに、日本語の文章から4言語への翻訳・7ページへの配置までまとめて作ります。文章を一から入力する必要はありません。</p>
       {needed.length?<div className="rounded-xl bg-amber-50 p-4"><p className="text-sm font-medium">あと必要な情報</p><ul className="mt-2 list-inside list-disc space-y-1 text-sm">{needed.map((item,i)=><li key={i}>{item}</li>)}</ul></div>:<p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">必要な情報は入力済みです。作成時に画像の読み込みと5言語の文字切れを確認します。</p>}
+      {registeredRecipe&&!recipe&&<p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">標準レシピ：登録済みのWeb版を使用します。<a className="ml-2 underline" href={registeredRecipe} target="_blank" rel="noreferrer">登録済みレシピを開く ↗</a><span className="mt-1 block">資料にはこのリンクを引き継ぎます。PDFの再添付は不要です。</span></p>}
       {LANGUAGES.some(l=>draft.copies[l].features.length||draft.copies[l].lead)&&<label className="flex min-h-11 items-center gap-2 text-sm"><input className="h-5 w-5" type="checkbox" checked={replaceAll} onChange={e=>setReplaceAll(e.target.checked)}/>既存の原稿を作り直す（日本語・4言語すべて）</label>}
       <p className={muted}>商品名・説明・食材名・使用量・分量の注記がOpenAIへ送信されます。利用コードの入力は不要です。</p>
       {aiReady===false&&<p className="text-sm text-amber-800">自動作成には管理者によるAIの利用設定が必要です。商品情報や素材は先にそろえられます。</p>}
@@ -192,12 +195,12 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       {stale&&<p className="text-sm text-amber-800">商品情報が原稿作成時から変わっています。説明文・食材・分量・画像を再確認してください。</p>}
       <label className="flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={draft.sourceConfirmed&&!stale} onChange={e=>patch({...draft,sourceSignature:signature,sourceConfirmed:e.target.checked,checkedLanguages:{}})}/><span>この販売回の内容・分量を確認しました。レシピ原本と異なる場合は、下の「分量に関する注記」に採用する基準を記入します。</span></label>
     </fieldset>}
-    {(!quick||adjust||!recipe||missingAssets.length>0)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} space-y-4 p-5`}>
+    {(!quick||adjust||(!recipe&&!registeredRecipe)||missingAssets.length>0)&&<fieldset disabled={busy||loadingAssets||!filesReady} className={`${card} space-y-4 p-5`}>
       <legend className="sr-only">素材をそろえる</legend><h3 className="text-lg font-semibold">2. 素材をそろえる</h3>
       <button className={btn()} onClick={loadAssets}>{loadingAssets?"素材を読み込み中…":"登録済みの画像を読み込む"}</button>
       <p className={muted}>共有リンクの画像を読み込めない場合は、その枠を押して画像を選んでください。原本の画像をそのまま埋め込みます。</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{Object.entries(labels).filter(([key])=>key!=="recipe"&&(!quick||adjust||!assets[key]?.data)).map(([key,title])=><label key={key} className="relative flex min-h-44 cursor-pointer flex-col rounded-xl border border-stone-200 bg-stone-50 p-3 focus-within:ring-2 focus-within:ring-amber-500"><span className="text-sm font-medium">{title}</span>{assets[key]?.data?<img src={assets[key].data} alt={title} className="mt-2 h-24 w-full object-contain"/>:<span className="flex flex-1 items-center justify-center py-6 text-center text-sm text-amber-800">＋ 画像を選ぶ</span>}<span className="mt-2 truncate text-xs text-stone-500">{assets[key]?.name??"未読込"}</span><input className="absolute inset-0 h-full w-full cursor-pointer opacity-0" type="file" accept="image/png,image/jpeg,image/webp" aria-label={`${title}を選ぶ`} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(key,f);e.target.value="";}}/></label>)}</div>
-      <label className="block space-y-2"><span className="text-sm font-medium">標準レシピの原本PDF（変更せず同梱）</span><input className={field} type="file" accept="application/pdf" onChange={e=>{const f=e.target.files?.[0];if(f)void uploadRecipe(f);e.target.value="";}}/>{recipe&&<span className="block text-sm text-emerald-700">選択済み：{recipe.name}</span>}</label>
+      <label className="block space-y-2"><span className="text-sm font-medium">標準レシピの原本PDF（任意・変更せず同梱）</span><input className={field} type="file" aria-label="標準レシピの原本PDF（任意・変更せず同梱）" accept="application/pdf" onChange={e=>{const f=e.target.files?.[0];if(f)void uploadRecipe(f);e.target.value="";}}/>{recipe&&<span className="block text-sm text-emerald-700">選択済み：{recipe.name}</span>}</label>
       {assets.recipe?.data&&<img className="h-48 max-w-full object-contain" src={assets.recipe.data} alt="同梱レシピの1ページ目"/>}
       {input("レシピ原本に記載されている言語",draft.recipeLanguage,v=>patch({...draft,recipeLanguage:v}))}
     </fieldset>}
