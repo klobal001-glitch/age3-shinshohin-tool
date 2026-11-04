@@ -54,7 +54,10 @@ export async function POST(request:Request){
       return json({error:'画像の転送先を確認できませんでした。'},422);
     }
     if(body.action==='report-load'){
-      const {data,error}=await store.download('artwork/reports/latest.json');
+      const listed=await store.list('artwork/reports',{limit:10,sortBy:{column:'created_at',order:'desc'}});
+      if(listed.error)throw new Error('前回の確認結果を読み込めませんでした。');
+      const latest=listed.data?.find(f=>f.name.endsWith('.json')&&f.name!=='latest.json');
+      const {data,error}=await store.download(latest?`artwork/reports/${latest.name}`:'artwork/reports/latest.json');
       if(error){if(Number(error.status)===404||Number(error.statusCode)===404)return json({report:null});throw new Error('前回の確認結果を読み込めませんでした。');}
       return json({report:JSON.parse(await data.text())});
     }
@@ -64,7 +67,7 @@ export async function POST(request:Request){
       const report={createdAt:r.createdAt,total:r.total,done:r.done,saved:r.saved,bytes:r.bytes,errors:r.errors.map((e:{product:string;name:string;error:string})=>({product:e.product,name:e.name,error:e.error}))};
       const value=JSON.stringify(report),path=`artwork/reports/${crypto.randomUUID()}.json`;
       const history=await store.upload(path,value,{contentType:'application/json',upsert:false});if(history.error)throw new Error('確認結果を保存できませんでした。画像は保存されています。');
-      const latest=await store.upload('artwork/reports/latest.json',value,{contentType:'application/json',upsert:true});if(latest.error)throw new Error('最新の確認結果を記録できませんでした。');return json({report});
+      const latest=await store.upload('artwork/reports/latest.json',value,{contentType:'application/json',cacheControl:'0',upsert:true});if(latest.error)throw new Error('最新の確認結果を記録できませんでした。');return json({report});
     }
     if(body.action==='lookup'){
       if(!Array.isArray(body.ids)||body.ids.length>400||body.ids.some((id:unknown)=>typeof id!=='string'||!artworkIdPattern.test(id)))return json({error:'保存番号を確認してください。'},400);
