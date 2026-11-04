@@ -1,6 +1,7 @@
 import type { ProductInfo } from "../types";
 import type { DeckDraft, DeckLanguage, DeckAssets } from "./types";
-import { sourceIngredients, webRecipeUrl } from "./model";
+import { copyProblems, sourceIngredients, webRecipeUrl } from "./model";
+import {LANGUAGE_NAMES} from './types';
 import { LABELS } from "./labels";
 import { DECK_CSS } from "./style";
 
@@ -10,6 +11,8 @@ export function safeLink(s:string):string {
 }
 export function documentHtml(info:ProductInfo,draft:DeckDraft,lang:DeckLanguage,assets:DeckAssets,fontCss:string,cover?:string,recipeHref?:string):string {
   const l=LABELS[lang],c=draft.copies[lang],e=escapeHtml;
+  const missing=copyProblems(c,sourceIngredients(info).length);
+  if(missing.length)throw new Error(`${LANGUAGE_NAMES[lang]}の原稿が未完成です：${missing.join('、')}。原稿を作成してからプレビューしてください。`);
   const image=(key:string,alt="",cls="")=>assets[key]?.data?`<img src="${e(assets[key].data)}" alt="${e(alt)}" class="${e(cls)}">`:`<div class="blank-visual">${e(alt)}</div>`;
   const label=(n:number,title:string)=>`<div class="section-label"><div class="num">${n}</div><div class="section-title">${e(title)}</div></div>`;
   const page=(n:number,body:string)=>`<section class="page ${n===1?"cover-page":""}"><div class="topline"></div>${body}<div class="footer"><b>Age.3 Japan Team</b><span>${e(l.footer)} ${n} / 7</span></div></section>`;
