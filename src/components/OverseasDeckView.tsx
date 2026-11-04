@@ -67,8 +67,8 @@ function DeckEditor({app,productId,info,runKey,quick}:{app:App;productId:string;
       if(assets[key]?.data&&assets[key].source===url)return;
       if(!url){if(!assets[key]?.data)missing.push(labels[key]);return;}
       try{const data=await fetchImage(url);loaded[key]={data,name:labels[key],source:url};}
-      catch{missing.push(labels[key]);}
-    }));}setAssets(loaded);setStatus(missing.length?`読み込めない素材：${missing.join("、")}。画像の枠またはレシピ原本PDFを選んでください。`:"登録済みの画像を読み込みました。");return loaded;}
+      catch(e){missing.push(`${labels[key]}（${message(e)}）`);}
+    }));}setAssets(loaded);setStatus(missing.length?`読み込めない素材：${missing.join("、")}。登録リンクを確認するか、画像の枠から元ファイルを選んでください。`:"登録済みの画像を読み込みました。");return loaded;}
     finally{setLoadingAssets(false);}
   };
   const upload=async(key:string,file:File)=>{try{setError("");const data=await imageFile(file);setAssets(a=>({...a,[key]:{data,name:file.name,source:sources[key]??""}}));setPreview("");}catch(e){setError(message(e));}};

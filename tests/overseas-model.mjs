@@ -164,3 +164,14 @@ test('all five guides link to the registered web recipe, while uploaded PDFs kee
     assert(withPdf.includes('href="Age3_Standard_Recipe.pdf"'));assert(!withPdf.includes('href="'+url+'"'));
   }
 });
+
+const {toEmbeddedImageUrl}=load('../src/lib/imageUrl.ts');
+test('guide artwork uses Dropbox content bytes without losing the shared file key or changing stored links',()=>{
+  const original='https://www.dropbox.com/scl/fi/test/art.jpg?rlkey=example&st=tracking&dl=0';
+  const result=new URL(toEmbeddedImageUrl(original));
+  assert.equal(result.hostname,'dl.dropboxusercontent.com');assert.equal(result.pathname,'/scl/fi/test/art.jpg');
+  assert.equal(result.searchParams.get('rlkey'),'example');assert.equal(result.searchParams.has('dl'),false);assert.equal(result.searchParams.has('raw'),false);
+  assert.equal(original.endsWith('dl=0'),true);
+  assert.equal(toEmbeddedImageUrl('https://example.com/art.jpg'),'https://example.com/art.jpg');
+  assert.equal(new URL(toEmbeddedImageUrl('https://www.dropbox.com/s/test/art.png?raw=1')).hostname,'dl.dropboxusercontent.com');
+});

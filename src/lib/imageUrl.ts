@@ -134,3 +134,13 @@ export function linkLabel(rawUrl: string): { name: string; host: string } {
   if (!name) return { name: host || s, host: "" };
   return { name, host };
 }
+
+/** Full artwork bytes for guide embedding; a preview/download page cannot be embedded. */
+export function toEmbeddedImageUrl(rawUrl:string):string {
+  let u:URL;try{u=new URL(rawUrl.trim());}catch{return rawUrl;}
+  if(u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&["dropbox.com","www.dropbox.com","dl.dropboxusercontent.com"].includes(u.hostname)&&/^\/(scl\/fi|s)\/[^/]+\//.test(u.pathname)){
+    u.hostname="dl.dropboxusercontent.com";
+    u.searchParams.delete("dl");u.searchParams.delete("raw");u.hash="";return u.href;
+  }
+  return toDownloadUrl(rawUrl);
+}
