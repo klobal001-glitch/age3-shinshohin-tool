@@ -20,6 +20,15 @@ test('source changes invalidate previous confirmation but internal price changes
 test('empty translations are not represented as complete',()=>{
   const d=createDeckDraft(info);assert.equal(d.copies.th.name,'');assert(copyProblems(d.copies.th,1).length>0);assert.equal(d.sourceConfirmed,false);
 });
+test('unfinished copies cannot render a blank finished-looking guide in any language',()=>{
+  const draft=createDeckDraft(info);
+  for(const lang of LANGUAGES)assert.throws(()=>documentHtml(info,draft,lang,{},''),/原稿が未完成/);
+  for(const key of ['name','lead','description','caption']){
+    draft.copies.en={...copy,[key]:''};assert.throws(()=>documentHtml(info,draft,'en',{},''),/原稿が未完成/);
+  }
+  draft.copies.en={...copy,features:[]};assert.throws(()=>documentHtml(info,draft,'en',{},''),/原稿が未完成/);
+  draft.copies.en=copy;assert(documentHtml(info,draft,'en',{},'').includes('Short lead.'));
+});
 test('translation import validates ingredient order/count and required text',()=>{
   assert.deepEqual(parseTranslations(JSON.stringify({en:copy}),1).en,copy);
   assert.throws(()=>parseTranslations(JSON.stringify({en:{...copy,ingredientNames:[]}}),1));
