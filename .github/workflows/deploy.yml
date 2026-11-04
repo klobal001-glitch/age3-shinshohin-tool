@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Validate app and redirect legacy Pages
 
 on:
   push:
@@ -28,16 +28,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - name: Install dependencies
-        run: npm install
-      - name: Build (static export)
+        run: npm ci
+      - name: Check overseas guide logic
+        run: npm run test:overseas
+      - name: Build app (Vercel is the live host)
         run: npm run build
+      - name: Prepare legacy Pages redirect
+        run: |
+          mkdir -p pages-redirect
+          cat > pages-redirect/index.html <<'HTML'
+          <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=https://age3-shinshohin-tool-theta.vercel.app/"><title>Age.3 商品データベース</title></head><body><a href="https://age3-shinshohin-tool-theta.vercel.app/">Age.3 商品データベースを開く</a></body></html>
+          HTML
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./pages-redirect
 
   deploy:
     needs: build
@@ -46,6 +54,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Validate app and redirect legacy Pages
         id: deployment
         uses: actions/deploy-pages@v4
