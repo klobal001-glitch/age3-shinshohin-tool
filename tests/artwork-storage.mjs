@@ -12,6 +12,7 @@ const bytes=new Uint8Array(ARTWORK_PART_SIZE+5).fill(3),preview=new Uint8Array([
 const manifest={version:1,id:hash(source),source,createdAt:new Date().toISOString(),mime:'image/png',size:bytes.length,width:2000,height:2000,parts:[bytes.slice(0,ARTWORK_PART_SIZE),bytes.slice(ARTWORK_PART_SIZE)].map(b=>({size:b.length,sha256:hash(b)})),preview:{size:preview.length,sha256:hash(preview)}};
 const objects=new Map();
 const store={
+ list:async prefix=>({data:[...objects.keys()].filter(p=>p.startsWith(prefix+'/')).reverse().map(p=>({name:p.slice(prefix.length+1)}))}),
  download:async p=>objects.has(p)?{data:objects.get(p),error:null}:{error:{status:404}},
  upload:async(p,value,options)=>{if(objects.has(p)&&!options.upsert)return {error:{status:409}};objects.set(p,new Blob([value]));return {error:null};},
  createSignedUploadUrl:async p=>({data:{signedUrl:`https://storage.example/${p}`}}),
@@ -56,6 +57,8 @@ test('migration reports are shared, bounded and retain historical results',async
  const history=[...objects.keys()].filter(p=>p.startsWith('artwork/reports/')&&!p.endsWith('latest.json'));assert.equal(history.length,1);
  assert.equal((await request({action:'report-save',report:{...report,createdAt:new Date(Date.now()+1000).toISOString()}})).status,200);
  assert.equal([...objects.keys()].filter(p=>p.startsWith('artwork/reports/')&&!p.endsWith('latest.json')).length,2);
+ objects.set('artwork/reports/latest.json',new Blob([JSON.stringify(report)]));
+ const newest=await (await request({action:'report-load'})).json();assert.notEqual(newest.report.createdAt,report.createdAt);
 });
 
 test('folder selections resolve only registered Dropbox redirects; HTML and unsafe targets fail closed',async()=>{
