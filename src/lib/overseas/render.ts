@@ -1,6 +1,6 @@
 import type { ProductInfo } from "../types";
 import type { DeckDraft, DeckLanguage, DeckAssets } from "./types";
-import { sourceIngredients } from "./model";
+import { sourceIngredients, webRecipeUrl } from "./model";
 import { LABELS } from "./labels";
 import { DECK_CSS } from "./style";
 
@@ -8,7 +8,7 @@ export const escapeHtml = (s:string) => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<
 export function safeLink(s:string):string {
   try { const u=new URL(s);return u.protocol==="https:"?escapeHtml(u.href):""; } catch { return ""; }
 }
-export function documentHtml(info:ProductInfo,draft:DeckDraft,lang:DeckLanguage,assets:DeckAssets,fontCss:string,cover?:string):string {
+export function documentHtml(info:ProductInfo,draft:DeckDraft,lang:DeckLanguage,assets:DeckAssets,fontCss:string,cover?:string,recipeHref?:string):string {
   const l=LABELS[lang],c=draft.copies[lang],e=escapeHtml;
   const image=(key:string,alt="",cls="")=>assets[key]?.data?`<img src="${e(assets[key].data)}" alt="${e(alt)}" class="${e(cls)}">`:`<div class="blank-visual">${e(alt)}</div>`;
   const label=(n:number,title:string)=>`<div class="section-label"><div class="num">${n}</div><div class="section-title">${e(title)}</div></div>`;
@@ -16,7 +16,7 @@ export function documentHtml(info:ProductInfo,draft:DeckDraft,lang:DeckLanguage,
   const p1=page(1,`<div class="cover-wrap"><div><div class="kicker">Age.3 / NEW PRODUCT</div><div class="title-row"><div><div class="main-title">${e(c.name)}</div><div class="sub-title">${e(info.nameEn)}</div></div><div class="meta">${e(l.japanPeriod)}<br>${e(info.releaseDate)}${info.endDate?`<br>– ${e(info.endDate)}`:""}</div></div>${label(1,l.overview)}<div class="island cover-overview"><div class="cover-product">${image("product",c.name)}</div><div class="lead">${e(c.lead)}</div><div class="bodycopy">${e(c.description)}</div></div></div><div class="cover-right">${image("ig1",c.name)}</div></div>`);
   const p2=page(2,label(2,l.features)+`<div class="feature-layout"><div class="feature-img">${image("ig2",c.name)}</div><div class="checks">${c.features.map(f=>`<div class="check"><span class="dot">✓</span><div><b>${e(f.title)}</b><br>${e(f.text)}</div></div>`).join("")}</div></div>`);
   const p3=page(3,label(3,l.instagram)+`<div class="asset-grid">${["ig1","ig2","ig3","story"].map((key,i)=>`<div class="asset-card">${image(key,i<3?`Instagram ${i+1}`:"Instagram Stories")}<div class="asset-name">${i<3?`Instagram ${i+1}`:"Instagram Stories"}</div></div>`).join("")}</div><div class="caption-box"><b>${e(l.caption)}</b>\n${e(c.caption)}</div>`);
-  const recipeName="Age3_Standard_Recipe.pdf";
+  const recipeName=recipeHref===undefined?(safeLink(webRecipeUrl(info))||"Age3_Standard_Recipe.pdf"):(safeLink(recipeHref)||"Age3_Standard_Recipe.pdf");
   const video=safeLink(info.howToVideoUrl);
   const p4=page(4,label(3,l.store)+`<div class="store-grid">${[["portrait",l.portrait,""],["landscape",l.landscape,"land"],["poster",l.poster,"small"],["recipe",l.recipe,"small"]].map(([key,title,cls])=>`<div class="store-card ${cls}">${key==="recipe"?`<a href="${recipeName}">${image(key,title)}</a>`:image(key,title)}<div class="asset-name">${e(title)}</div></div>`).join("")}</div><div class="material-list"><div class="material-item">Instagram × 3 + Stories × 1</div><div class="material-item">${e(l.digital)}</div><div class="material-item"><a href="${recipeName}">${e(l.recipe)}</a></div>${video?`<div class="material-item"><a href="${video}">${e(l.video)} ▶</a></div>`:""}</div><div class="note">${e(l.localize)}</div>`);
   const ing=sourceIngredients(info);

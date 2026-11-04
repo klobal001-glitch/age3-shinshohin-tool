@@ -143,3 +143,24 @@ test('generation rejects invented Japanese names, changed ingredient order/amoun
     {...generated,th:{...copy,ingredientAmounts:['10g']}},
   ])await assert.rejects(()=>generateCopies(source,{key:'test-key',model:'configured-model'},async()=>aiReply(output)));
 });
+
+const {webRecipeUrl,assetSources}=load('../src/lib/overseas/model.ts');
+test('registered web recipe keeps its product route and is not fetched as an image',()=>{
+  const url='https://zenkoku-kyotsu-recipe.vercel.app/age3-recipe.html#/r/sukiyaki-sand';
+  const webInfo={...info,recipeImages:[url,'https://example.com/recipe.jpg']};
+  assert.equal(webRecipeUrl(webInfo),url);
+  assert.equal(assetSources(webInfo).recipe,'https://example.com/recipe.jpg');
+  for(const invalid of ['javascript:alert(1)','https://zenkoku-kyotsu-recipe.vercel.app/age3-recipe.html','https://evil.example/age3-recipe.html#/r/sukiyaki-sand'])assert.equal(webRecipeUrl({...info,recipeImages:[invalid]}),'');
+});
+test('all five guides link to the registered web recipe, while uploaded PDFs keep portable links',()=>{
+  const url='https://zenkoku-kyotsu-recipe.vercel.app/age3-recipe.html#/r/sukiyaki-sand';
+  const webInfo={...info,recipeImages:[url]},draft=createDeckDraft(webInfo);
+  for(const lang of LANGUAGES){
+    draft.copies[lang]=copy;
+    const html=documentHtml(webInfo,draft,lang,{},'');
+    assert(html.includes('href="'+url+'"'));assert(!html.includes('href="Age3_Standard_Recipe.pdf"'));
+    assert.equal((html.match(/<section class="page/g)||[]).length,7);
+    const withPdf=documentHtml(webInfo,draft,lang,{},'',undefined,'Age3_Standard_Recipe.pdf');
+    assert(withPdf.includes('href="Age3_Standard_Recipe.pdf"'));assert(!withPdf.includes('href="'+url+'"'));
+  }
+});

@@ -23,13 +23,21 @@ export function createDeckDraft(info: ProductInfo): DeckDraft {
   return { version:1,sourceSignature:sourceSignature(info),sourceConfirmed:false,checkedLanguages:{},
     palette:{deep:"#164e38",accent:"#dc6516",paper:"#f7f7f0"},copies,recipeLanguage:"日本語・英語", };
 }
+// The registered standard recipe may be the product-specific nationwide web recipe.
+// Keep its original route/hash; never turn a recipe index or arbitrary URL into a recipe.
+export function webRecipeUrl(info:ProductInfo):string {
+  for(const raw of info.recipeImages){
+    try{const u=new URL(raw.trim());if(u.protocol==="https:"&&u.hostname==="zenkoku-kyotsu-recipe.vercel.app"&&u.pathname==="/age3-recipe.html"&&/^#\/r\/[a-z0-9-]+$/.test(u.hash))return u.href;}catch{}
+  }
+  return "";
+}
 export function assetSources(info: ProductInfo): Record<string,string> {
   const links = (key:string) => info.visualDownloads.find(g=>g.key===key)?.links.filter(Boolean) ?? [];
   const feed=links("ig_feed");
   const sources: Record<string,string> = {
     product:links("product_image")[0]??"",ig1:feed[0]??"",ig2:feed[1]??"",ig3:feed[2]??"",
     story:links("ig_story")[0]??"",portrait:links("signage_v")[0]??"",landscape:links("signage_h")[0]??"",
-    poster:links("poster_a1_asakusa")[0]??"",recipe:info.recipeImages[0]??"",
+    poster:links("poster_a1_asakusa")[0]??"",recipe:info.recipeImages.find(raw=>!webRecipeUrl({...info,recipeImages:[raw]}))??"",
   };
   sourceIngredients(info).forEach((row,i)=>{sources[`ingredient${i}`]=row.photoUrl;});
   return sources;
