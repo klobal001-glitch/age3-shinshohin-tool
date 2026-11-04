@@ -1,5 +1,5 @@
 import { openOverseasDatabase } from "./library";
-import { toDownloadUrl } from "../imageUrl";
+import { toEmbeddedImageUrl } from "../imageUrl";
 import type { DeckAssets, DeckAttachment } from "./types";
 
 export function readDataUrl(blob:Blob):Promise<string> {
@@ -15,11 +15,15 @@ export async function imageFile(file:Blob):Promise<string> {
 }
 export async function fetchImage(raw:string):Promise<string> {
   if(!raw.trim())throw new Error("画像未登録");
-  const u=new URL(toDownloadUrl(raw),location.origin);
+  const u=new URL(toEmbeddedImageUrl(raw),location.origin);
   if(!["http:","https:"].includes(u.protocol))throw new Error("画像の場所を確認してください。");
-  const response=await fetch(u,{signal:AbortSignal.timeout(20000)});
-  if(!response.ok)throw new Error("画像を読み込めません。");
-  return imageFile(await response.blob());
+  let response:Response;
+  try{response=await fetch(u,{credentials:"omit",signal:AbortSignal.timeout(30000)});}
+  catch{throw new Error("画像を取得できませんでした。共有設定または接続を確認してください。");}
+  if(!response.ok)throw new Error(response.status===404?"共有リンクの画像が見つかりません（404）。":"画像を取得できません。共有設定を確認してください。");
+  const blob=await response.blob();
+  if(!/^image\/(png|jpeg|webp)(;|$)/i.test(blob.type))throw new Error("画像ではなく案内ページが返されました。共有リンクを確認してください。");
+  return imageFile(blob);
 }
 export async function recipePreview(bytes:ArrayBuffer):Promise<string> {
   const pdfjs=await import("pdfjs-dist");
