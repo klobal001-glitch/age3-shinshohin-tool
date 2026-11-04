@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,3 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /tests/last-result.json
+
+# Generated from the locked pdfjs-dist package before dev/build
+/public/overseas/

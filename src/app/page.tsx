@@ -8,6 +8,7 @@ import MonthlyView from "@/components/MonthlyView";
 import ProductSheetView from "@/components/ProductSheetView";
 import PrepTaskView from "@/components/PrepTaskView";
 import VisualGalleryView from "@/components/VisualGalleryView";
+import OverseasDeckView from "@/components/OverseasDeckView";
 import HelpView from "@/components/HelpView";
 import GrandMenuView from "@/components/GrandMenuView";
 import ProductSwitcher, { useRecentProducts } from "@/components/ProductSwitcher";
@@ -76,6 +77,7 @@ function AppShell() {
           {tab === "tasks" && <PrepTaskView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "gallery" && <VisualGalleryView app={app} onNavigate={setTab} />}
           {tab === "flyer" && <GrandMenuView />}
+          {tab === "overseas" && <OverseasDeckView app={app} onOpenSwitcher={openSwitcher} />}
           {tab === "help" && <HelpView />}
         </main>
       </div>

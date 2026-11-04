@@ -380,7 +380,7 @@ function buildShareText(visit: Visit, meta: Meta): string {
   return lines.join("\n\n");
 }
 
-export function SubmitPanel({ visits }: { visits: Visit[] }) {
+function SubmitPanel({ visits }: { visits: Visit[] }) {
   const sorted = useMemo(
     () => [...(visits || [])].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
     [visits]

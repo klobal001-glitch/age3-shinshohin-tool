@@ -229,6 +229,14 @@ export default function MenuView({
           <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-stone-400" />
         </button>
 
+        <button type="button" onClick={() => onNavigate("overseas")}
+          className={`${surface} mt-3 flex min-h-16 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-stone-50 ${focusRing}`}>
+          <Icon name="sheet" className="h-6 w-6 shrink-0 text-amber-700" />
+          <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-stone-900">海外FC資料</span>
+            <span className="mt-0.5 block text-sm text-stone-500">作成済みの資料を見る・言語別に開く・保存する</span></span>
+          <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-stone-400" />
+        </button>
+
         {/* 商品を探す。スマホだけに出す（パソコンは左のリストに検索がある） */}
         <div className="mt-5 md:hidden">
           <div className="relative">
