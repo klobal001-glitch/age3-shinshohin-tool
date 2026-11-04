@@ -1,3 +1,4 @@
+import type { DeckDraft } from "./overseas/types";
 // Age.3 新商品シート — データ型定義
 
 export type Genre =
@@ -188,6 +189,8 @@ export interface VisualLinkGroup {
 }
 
 export interface ProductInfo {
+  /** 海外FC資料の原稿。販売の回ごとに独立して保存する */
+  overseasDecks?: Record<string, DeckDraft>;
     // 基本データ
   noAlcoholPork: "mark" | "nomark" | null;
     nameJa: string;
