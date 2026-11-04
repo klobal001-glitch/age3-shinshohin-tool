@@ -1,23 +1,71 @@
 {
-  "date": "2026-11-03",
-  "generatedAt": "2026-11-03T20:54:23.624Z",
-  "signal": false,
-  "reasons": [],
+  "date": "2026-11-04",
+  "generatedAt": "2026-11-04T21:14:59.530Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 48回: age#-shinshohin-tool-theta.vercel.app/（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/（404）",
+    "遅い通信 27回: / age#-shinshohin-tool-theta.vercel.app/api/artwork"
+  ],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 89,
-    "devices": 5,
-    "events": 677,
+    "batches": 43,
+    "devices": 3,
+    "events": 236,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
-  "topNetwork": [],
-  "topSlow": [],
-  "relatedFiles": [],
+  "topNetwork": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/",
+      "status": 0,
+      "count": 48
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 0,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/",
+      "status": 404,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/#hodomof#c#ekukemdces/Instagram_#.jpg",
+      "status": 404,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/#harf#qlsr#sqltelbm/Instagram_#.jpg",
+      "status": 404,
+      "count": 1
+    }
+  ],
+  "topSlow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 18950,
+      "count": 27
+    }
+  ],
+  "relatedFiles": [
+    "src/app/page.tsx",
+    "src/components/Header.tsx",
+    "src/components/Sidebar.tsx"
+  ],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 385151148,
+    "storageBytes": 385252037,
     "storageLimitBytes": 1073741824,
     "ratio": 0.359,
     "warn": false,

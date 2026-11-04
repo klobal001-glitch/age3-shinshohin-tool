@@ -1,0 +1,186 @@
+{
+  "date": "2026-11-04",
+  "generatedAt": "2026-11-04T21:14:59.530Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 48回: age#-shinshohin-tool-theta.vercel.app/（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/（404）",
+    "遅い通信 27回: / age#-shinshohin-tool-theta.vercel.app/api/artwork"
+  ],
+  "totals": {
+    "batches": 43,
+    "devices": 3,
+    "events": 236,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 21
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 17
+    },
+    {
+      "page": "/",
+      "name": "海外FC資料制作",
+      "count": 17
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 15
+    },
+    {
+      "page": "/",
+      "name": "海外FC資料",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "すき焼き #%",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "登録画像の共有保存・リンク確認",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(金) #日 遅れ 完了 #/#",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "画像を閉じる",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "保存した画像を開く",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "中国語（簡体字）",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "ティラミス #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "前月#日まで #月#日(月) #日 遅れ 完了 #/#",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "AIに送る情報",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(月) #日 遅れ 完了 #/#",
+      "count": 2
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/",
+      "status": 0,
+      "count": 48
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 0,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/",
+      "status": 404,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/#hodomof#c#ekukemdces/Instagram_#.jpg",
+      "status": 404,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/#harf#qlsr#sqltelbm/Instagram_#.jpg",
+      "status": 404,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/k#aqg#y#w#rspwe#zgvg/Instagram_#.jpg",
+      "status": 404,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "dl.dropboxusercontent.com/scl/fi/#lfyudj#kugsozoty#s/#.jpg",
+      "status": 404,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 1
+    }
+  ],
+  "slow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 18950,
+      "count": 27
+    }
+  ],
+  "feedback": []
+}
