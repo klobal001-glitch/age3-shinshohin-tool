@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef,useState } from "react";
 import { isImageUrl, linkLabel, toDownloadUrl, toThumbnailUrl } from "@/lib/imageUrl";
 import { inputCls } from "./PriceInput";
 import { focusRing } from "@/lib/ui";
+import {archiveArtwork,readSavedArtwork,savedArtwork,useStoredArtwork} from '@/lib/storedArtwork';
 
 /** 登録済みリンクの右に並ぶ小さなボタン */
 export const linkBtnCls =
@@ -27,8 +28,10 @@ export function VisualLinkRow({
 }) {
   const [broken, setBroken] = useState(false);
   const [editing, setEditing] = useState(false);
+  const fileInput=useRef<HTMLInputElement>(null);
   const url = value.trim();
-  const showThumb = !broken && isImageUrl(url);
+  const stored=useStoredArtwork(url,isImageUrl(url)&&!editing);
+  const showThumb = (!!stored.saved||!broken) && isImageUrl(url);
   const { name, host } = linkLabel(url);
 
   /* URLが空のときと編集中は、これまで通りの入力欄を出す */
@@ -66,12 +69,12 @@ export function VisualLinkRow({
   }
 
   return (
-    <div className="mb-2 flex items-center gap-3 rounded-lg border border-stone-200 bg-white p-2">
+    <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-white p-2">
       {showThumb ? (
         <a href={url} target="_blank" rel="noreferrer" title="別タブで開く" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={toThumbnailUrl(url)}
+            src={stored.saved?.previewUrl??toThumbnailUrl(url)}
             alt=""
             className="h-12 w-12 rounded border border-stone-200 bg-stone-50 object-cover"
             loading="lazy"
@@ -86,24 +89,31 @@ export function VisualLinkRow({
         </div>
       )}
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <div className="truncate text-sm text-stone-700" title={url}>
           {name}
         </div>
         {host && <div className="truncate text-xs text-stone-400">{host}</div>}
+        {isImageUrl(url)&&<div className={`text-xs ${stored.status==='saved'?'text-emerald-700':stored.status==='error'?'text-red-700':'text-stone-500'}`}>
+          {stored.status==='saved'?'画像保存済み':stored.status==='saving'?'画像を共有保存中…':stored.status==='error'?`リンクのみ登録：${stored.error}`:'リンク登録済み・画像の保存確認中'}
+          {stored.status==='error'&&<button type="button" className="ml-2 min-h-11 underline" onClick={()=>void archiveArtwork(url).catch(()=>{})}>再試行</button>}
+        </div>}
       </div>
+      <input type="file" ref={fileInput} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const source=`inside:artwork/${crypto.randomUUID()}/${encodeURIComponent(file.name)}`;onChange(source);setBroken(false);void archiveArtwork(source,file).catch(()=>{});e.target.value='';}}/>
+      <button type="button" className={linkBtnCls} onClick={()=>fileInput.current?.click()}>画像を差し替え</button>
 
       <a
-        href={toDownloadUrl(url)}
+        href={stored.saved?'#':url.startsWith('inside:')?undefined:toDownloadUrl(url)}
         download
         target="_blank"
         rel="noreferrer"
         className={linkBtnCls}
         title="このファイルを保存する"
+        onClick={stored.saved?async e=>{e.preventDefault();try{const saved=await savedArtwork(url,true);if(!saved)throw new Error('画像が見つかりません。');const object=URL.createObjectURL(await readSavedArtwork(saved));const a=document.createElement('a');a.href=object;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(object),60000);}catch{alert('保存画像を読み込めませんでした。時間を置いて再試行してください。');}}:undefined}
       >
         ⬇ 保存
       </a>
-      <a
+      {!url.startsWith('inside:')&&<a
         href={url}
         target="_blank"
         rel="noreferrer"
@@ -111,7 +121,7 @@ export function VisualLinkRow({
         title="置き場所を別タブで開く"
       >
         開く
-      </a>
+      </a>}
       <button
         type="button"
         title="URLを直す"

@@ -42,6 +42,7 @@ import { PriceInput, inputCls } from "./PriceInput";
 import { IngredientPhoto, removeProductPhoto } from "./IngredientPhoto";
 import { IngredientSubmitSheet } from "./IngredientSubmitSheet";
 import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
+import ArtworkArchivePanel from './ArtworkArchivePanel';
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
 import RunTabs, { RunSourceNotice, runView } from "./RunTabs";
@@ -1496,6 +1497,7 @@ export default function ProductSheetView({
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
         </p>
 
+        <ArtworkArchivePanel app={app} />
         {shownVisuals
           .filter((v) =>
             viewingPast

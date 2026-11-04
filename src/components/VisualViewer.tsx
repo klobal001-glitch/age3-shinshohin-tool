@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GENRE_LABELS } from "@/lib/types";
 import { toThumbnailUrl } from "@/lib/imageUrl";
+import {readSavedArtwork,savedArtwork,useStoredArtwork} from '@/lib/storedArtwork';
 import { CardImage } from "@/lib/visualThumb";
 import { SALE_STATUS_LABEL, SaleStatus, isInactive } from "@/lib/saleStatus";
 import Icon from "@/components/Icon";
@@ -33,11 +34,18 @@ export interface ViewerItem {
 
 /** 全画面で見せる画像。表示用URLがだめなら貼られたURLを試す */
 function FullImage({ card, alt }: { card: CardImage | null; alt: string }) {
+    const stored=useStoredArtwork(card?.url??'');
+    const [original,setOriginal]=useState<{source:string;url:string}|null>(null);
+    const source=card?.url??'',hasSaved=!!stored.saved;
+    useEffect(()=>{if(!source||!hasSaved)return;let live=true,object='';
+      void savedArtwork(source,true).then(s=>s?readSavedArtwork(s):null).then(blob=>{if(!blob||!live)return;object=URL.createObjectURL(blob);setOriginal({source,url:object});}).catch(()=>{});
+      return ()=>{live=false;if(object)URL.revokeObjectURL(object);};
+    },[source,hasSaved]);
     const candidates = useMemo(() => {
         const url = card?.url ?? "";
         if (!url) return [];
-        return [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i);
-    }, [card]);
+        return [original?.source===url?original.url:undefined,stored.saved?.previewUrl,toThumbnailUrl(url), url].filter((u):u is string=>!!u).filter((u, i, all) => all.indexOf(u) === i);
+    }, [card,stored.saved?.previewUrl,original]);
     const [i, setI] = useState(0);
 
     /* 商品が変わったら最初の候補から試し直す */

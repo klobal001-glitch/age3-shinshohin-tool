@@ -5,6 +5,7 @@ import { useAppData } from "@/hooks/useAppData";
 import { GENRE_LABELS, Genre } from "@/lib/types";
 import { TabKey } from "./Header";
 import { toThumbnailUrl } from "@/lib/imageUrl";
+import {useStoredArtwork} from '@/lib/storedArtwork';
 import { CardImage, isFullBleed, pickCardImage } from "@/lib/visualThumb";
 import { requiredVisualFilled, requiredVisualTotal } from "@/lib/productInfo";
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
@@ -55,9 +56,10 @@ function Thumb({ card, alt }: { card: CardImage | null; alt: string }) {
   const timerRef = useRef<number | null>(null);
 
   const url = card?.url ?? "";
+  const stored=useStoredArtwork(url);
   const candidates = useMemo(
-    () => (url ? [toThumbnailUrl(url), url].filter((u, i, all) => u && all.indexOf(u) === i) : []),
-    [url]
+    () => (url ? [stored.saved?.previewUrl,toThumbnailUrl(url), url].filter((u):u is string=>!!u).filter((u, i, all) => all.indexOf(u) === i) : []),
+    [url,stored.saved?.previewUrl]
   );
   const token = `${url}#${attempt}`;
 

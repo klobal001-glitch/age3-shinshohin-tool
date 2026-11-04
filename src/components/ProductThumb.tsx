@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ProductInfo } from "@/lib/types";
 import { isFullBleed, pickProductThumb } from "@/lib/visualThumb";
 import { toThumbnailUrl } from "@/lib/imageUrl";
+import {useStoredArtwork} from '@/lib/storedArtwork';
 
 /**
  * 商品の小さな絵。
@@ -32,10 +33,11 @@ export default function ProductThumb({
   className?: string;
 }) {
   const card = pickProductThumb(info);
+  const stored=useStoredArtwork(card?.url??'');
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   if (!card) return null;
-  const url = toThumbnailUrl(card.url);
+  const url = stored.saved?.previewUrl??toThumbnailUrl(card.url);
   if (failedUrl === url) return null;
 
   const dim = size === "md" ? "h-10 w-10" : "h-7 w-7";
