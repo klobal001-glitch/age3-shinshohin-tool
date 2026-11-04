@@ -12,7 +12,8 @@
         "learn:install": "node learn/scripts/install.mjs",
         "test:overseas": "node --test tests/overseas-model.mjs tests/overseas-sharing.mjs",
         "prebuild": "node scripts/prepare-overseas.mjs",
-        "predev": "node scripts/prepare-overseas.mjs"
+        "predev": "node scripts/prepare-overseas.mjs",
+        "test:artwork": "node --test tests/artwork-storage.mjs"
     },
     "dependencies": {
         "@supabase/supabase-js": "^2",
