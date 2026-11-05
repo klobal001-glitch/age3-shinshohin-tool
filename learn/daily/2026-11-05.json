@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-05",
+  "generatedAt": "2026-11-05T21:26:20.105Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 3,
+    "devices": 2,
+    "events": 6,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 2
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ 🧪 前々月#日まで（#月#日(日)） #日遅れ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
