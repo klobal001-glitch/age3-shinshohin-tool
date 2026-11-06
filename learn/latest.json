@@ -1,13 +1,13 @@
 {
-  "date": "2026-11-05",
-  "generatedAt": "2026-11-05T21:26:20.105Z",
+  "date": "2026-11-06",
+  "generatedAt": "2026-11-06T20:49:31.484Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 3,
-    "devices": 2,
-    "events": 6,
+    "batches": 16,
+    "devices": 3,
+    "events": 52,
     "droppedBatches": 0
   },
   "feedback": [],
@@ -17,7 +17,7 @@
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 385252862,
+    "storageBytes": 385257545,
     "storageLimitBytes": 1073741824,
     "ratio": 0.359,
     "warn": false,

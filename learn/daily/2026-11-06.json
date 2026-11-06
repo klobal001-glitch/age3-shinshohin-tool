@@ -1,0 +1,89 @@
+{
+  "date": "2026-11-06",
+  "generatedAt": "2026-11-06T20:49:31.484Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 16,
+    "devices": 3,
+    "events": 52,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 18
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "すき焼き #%",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "# ビジュアル #/#",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "この商品にはこのビジュアルが無いので、必須の数から外す",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "使い方",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "⬇ 控えを書き出す",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# 🖼️ ビジュアル #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "海外FC資料 作成済みの資料を見る・言語別に開く・保存する",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# 作り方 #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
