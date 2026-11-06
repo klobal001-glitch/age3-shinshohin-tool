@@ -828,10 +828,14 @@ export default function ProductSheetView({
    * 逆にバナナブリュレのようにシーズンから移ってきて全部そろっている商品は、
    * 「あります」に戻すとジャンルの既定を無視して必須に数える。
    */
-  const toggleVisualNa = (key: string, required: boolean) => {
+  const toggleVisualNa = (key: string) => {
+    /* いまの値を反転させる。
+       以前はここに「いまの状態」をそのまま渡していたため、押しても値が変わらず、
+       「ありません」にしても必須の数から外れなかった（2026-11-06 修正）。
+       呼ぶ側が値を渡す形だと同じ取り違えが起きるので、**この中だけで反転させる** */
     patch({
       visualDownloads: info.visualDownloads.map((v) =>
-        v.key === key ? { ...v, na: required } : v
+        v.key === key ? { ...v, na: v.na !== true } : v
       ),
     });
   };
@@ -1524,7 +1528,7 @@ export default function ProductSheetView({
                 {!viewingPast && (
                   <button
                     type="button"
-                    onClick={() => toggleVisualNa(v.key, isNa)}
+                    onClick={() => toggleVisualNa(v.key)}
                     className={`ml-auto inline-flex min-h-10 shrink-0 items-center rounded-lg border px-2.5 py-1 text-xs font-normal transition sm:min-h-0 ${
                       isNa
                         ? "border-amber-300 bg-amber-50 font-medium text-amber-800 hover:bg-amber-100"
