@@ -598,8 +598,12 @@ export default function GrandMenuView() {
                     onOpen={(i) => setViewer({ id: row.id, index: i })}
                   />
 
+                  {/* 覚え書きは長いことがあるので、畳んだカードでは2行まで。
+                      全文は「直す」を押したときの欄で読める */}
                   {!open && d.note && (
-                    <p className="whitespace-pre-wrap text-xs leading-relaxed text-stone-500">{d.note}</p>
+                    <p className="line-clamp-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-stone-500">
+                      {d.note}
+                    </p>
                   )}
                 </div>
 
