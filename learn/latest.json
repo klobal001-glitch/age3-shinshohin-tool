@@ -1,13 +1,13 @@
 {
-  "date": "2026-11-06",
-  "generatedAt": "2026-11-06T20:49:31.484Z",
+  "date": "2026-11-07",
+  "generatedAt": "2026-11-07T19:21:05.960Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 16,
-    "devices": 3,
-    "events": 52,
+    "batches": 3,
+    "devices": 2,
+    "events": 6,
     "droppedBatches": 0
   },
   "feedback": [],
@@ -17,9 +17,9 @@
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 385257545,
+    "storageBytes": 390995582,
     "storageLimitBytes": 1073741824,
-    "ratio": 0.359,
+    "ratio": 0.364,
     "warn": false,
     "note": "写真置き場（genba-photos）全体の使用量。Supabase 無料枠 1GB に対する割合"
   },

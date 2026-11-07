@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-07",
+  "generatedAt": "2026-11-07T19:21:05.960Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 3,
+    "devices": 2,
+    "events": 6,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 2
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "銀座 #",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "すべて #",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
