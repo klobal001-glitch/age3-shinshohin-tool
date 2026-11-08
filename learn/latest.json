@@ -1,23 +1,31 @@
 {
-  "date": "2026-11-07",
-  "generatedAt": "2026-11-07T19:21:05.960Z",
+  "date": "2026-11-08",
+  "generatedAt": "2026-11-08T19:29:13.982Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 3,
-    "devices": 2,
-    "events": 6,
+    "batches": 12,
+    "devices": 3,
+    "events": 33,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
   "topNetwork": [],
-  "topSlow": [],
+  "topSlow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "dl.dropboxusercontent.com/scl/fi/x#z#d#nsjjmzwtks#tp/Age.#.pdf",
+      "maxMs": 5805,
+      "count": 1
+    }
+  ],
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 390995582,
+    "storageBytes": 390997483,
     "storageLimitBytes": 1073741824,
     "ratio": 0.364,
     "warn": false,

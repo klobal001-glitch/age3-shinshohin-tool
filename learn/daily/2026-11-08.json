@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-08",
+  "generatedAt": "2026-11-08T19:29:13.982Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 12,
+    "devices": 3,
+    "events": 33,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 5
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "号を追加",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "# 材料 #/#",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "次の未入力へ →",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 作り方 #/#",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ 🧪 前々月#日まで（#月#日(日)） #日遅れ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "前々月#日まで #月#日(日) #日 遅れ 完了 #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ホーム",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "dl.dropboxusercontent.com/scl/fi/x#z#d#nsjjmzwtks#tp/Age.#.pdf",
+      "maxMs": 5805,
+      "count": 1
+    }
+  ],
+  "feedback": []
+}
