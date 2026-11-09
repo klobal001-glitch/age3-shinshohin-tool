@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-09",
+  "generatedAt": "2026-11-09T23:45:12.490Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 5,
+    "devices": 2,
+    "events": 14,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 4
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "号を追加",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "嘉麻",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ 🧪 前々月#日まで（#月#日(日)） #日遅れ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "銀座",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
