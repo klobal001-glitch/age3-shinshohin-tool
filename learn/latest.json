@@ -1,25 +1,32 @@
 {
-  "date": "2026-11-09",
-  "generatedAt": "2026-11-09T23:45:12.490Z",
+  "date": "2026-11-10",
+  "generatedAt": "2026-11-10T21:16:20.530Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 5,
-    "devices": 2,
-    "events": 14,
+    "batches": 45,
+    "devices": 1,
+    "events": 191,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
-  "topNetwork": [],
+  "topNetwork": [
+    {
+      "page": "/",
+      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/grand_menu",
+      "status": 400,
+      "count": 1
+    }
+  ],
   "topSlow": [],
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 391845228,
+    "storageBytes": 431203770,
     "storageLimitBytes": 1073741824,
-    "ratio": 0.365,
+    "ratio": 0.402,
     "warn": false,
     "note": "写真置き場（genba-photos）全体の使用量。Supabase 無料枠 1GB に対する割合"
   },

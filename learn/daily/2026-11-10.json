@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-10",
+  "generatedAt": "2026-11-10T21:16:20.530Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 45,
+    "devices": 1,
+    "events": 191,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 25
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "号を追加",
+      "count": 56
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 15
+    },
+    {
+      "page": "/",
+      "name": "原宿",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "飛騨高山",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "浅草",
+      "count": 11
+    },
+    {
+      "page": "/",
+      "name": "銀座",
+      "count": 10
+    },
+    {
+      "page": "/",
+      "name": "直す",
+      "count": 10
+    },
+    {
+      "page": "/",
+      "name": "嘉麻",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "バンコク",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "飛騨高山 #",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "原宿 #",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "浅草 #",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "嘉麻 #",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "銀座 #",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "バンコク #",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "海外FC資料",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/grand_menu",
+      "status": 400,
+      "count": 1
+    }
+  ],
+  "slow": [],
+  "feedback": []
+}
