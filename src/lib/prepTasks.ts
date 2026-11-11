@@ -76,6 +76,14 @@ export const TASK_GROUPS: TaskGroup[] = [
             id: "recipe_create",
             label: "レシピ作成",
             linkedField: "recipeImages",
+            /* 全国共通レシピのサイト。レシピが「あるか無いか」を、
+               この画面を離れずにすぐ見にいけるようにしている */
+            links: [
+              {
+                url: "https://zenkoku-kyotsu-recipe.vercel.app/age3-recipe.html",
+                label: "Age.3 レシピ",
+              },
+            ],
           },
           { id: "final_decision", label: "商品名・画像・価格（標準と店舗別）・期間 最終決定 → リーダーへ共有" },
           { id: "hida_recipe", label: "飛騨高山にレシピを公開、仕入れを促す。" },
