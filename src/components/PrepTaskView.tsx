@@ -105,10 +105,24 @@ function LinkedImageRow({
         </span>
         <TaskLabel
           task={task}
-          className={`flex-1 ${done ? "text-stone-400 line-through" : "text-stone-700"}`}
+          className={`min-w-0 ${done ? "text-stone-400 line-through" : "text-stone-700"}`}
         />
+        {/* レシピがもうあるかを、この画面を離れずに見にいくためのボタン。
+            ふつうのタスク行の「リンク」と同じ見た目にそろえてある */}
+        {task.links?.map((l) => (
+          <a
+            key={l.url}
+            href={l.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 shrink-0 items-center rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700 sm:min-h-0"
+            title="別タブで開く"
+          >
+            {l.label} ↗
+          </a>
+        ))}
         {/* スマホでは注記を下の行に落とす。横に並べたままだとタスク名が1文字ずつ折り返される */}
-        <span className="basis-full pl-7 text-xs text-stone-400 sm:basis-auto sm:pl-0">
+        <span className="basis-full pl-7 text-xs text-stone-400 sm:ml-auto sm:basis-auto sm:pl-0">
           画像を貼ると完了になります
         </span>
       </div>
