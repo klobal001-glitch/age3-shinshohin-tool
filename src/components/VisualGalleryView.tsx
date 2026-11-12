@@ -185,6 +185,10 @@ export default function VisualGalleryView({
         status: saleStatus(info, today),
       };
     });
+    /* 廃盤は数え方をホームと揃えて外す。以前はここだけ廃盤も数えていたため、
+       ホームの「登録商品数」（廃盤を除く）と、この画面の「○件中」の元になる数が
+       食い違って見えた（2026年11月・改善） */
+    list = list.filter((r) => !r.info.discontinued);
     if (genre !== "all") list = list.filter((r) => r.product.genre === genre);
     if (imageFilter === "has") list = list.filter((r) => r.card !== null);
     if (imageFilter === "none") list = list.filter((r) => r.card === null);

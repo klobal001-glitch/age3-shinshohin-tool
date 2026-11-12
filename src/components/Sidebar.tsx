@@ -52,13 +52,18 @@ export default function Sidebar({
   onChangeTab: (t: TabKey) => void;
 }) {
   const { products, selectedId, setSelectedId, getInfo, addProduct } = app;
-  const [query, setQuery] = useState("");
+  /* 検索はホームの商品一覧と共通（useAppData で持つ）。ここで入れた言葉は
+     ホームの一覧も絞り込む */
+  const query = app.productQuery;
+  const setQuery = app.setProductQuery;
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   /* 廃盤も一覧には残す。ジャンルの中に「廃盤」の印を付けて、いちばん下に回す */
   const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
+    const q = query.trim().normalize("NFC").toLowerCase();
+    const filtered = q
+      ? products.filter((p) => p.name.normalize("NFC").toLowerCase().includes(q))
+      : products;
     const day = todayKey();
 
     const map = new Map<Genre, typeof products>();
@@ -153,12 +158,27 @@ export default function Sidebar({
             className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
           />
           <input
-            className={`${darkField} pl-9`}
+            className={`${darkField} pl-9 pr-9`}
             placeholder="商品を検索"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          {query && (
+            <button
+              type="button"
+              aria-label="検索をやめる"
+              onClick={() => setQuery("")}
+              className={`absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white ${focusRing}`}
+            >
+              <Icon name="close" className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+        {query.trim() && (
+          <p className="px-1 pt-1.5 text-xs tabular-nums text-white/45">
+            {grouped.reduce((sum, s) => sum + s.items.length, 0)}件が当てはまります
+          </p>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2">

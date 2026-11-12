@@ -16,6 +16,8 @@ import {
 import { SALE_STATUS_LABEL, isInactive, saleStatus, todayKey } from "@/lib/saleStatus";
 import { GENRE_LABELS } from "@/lib/types";
 import { formatJpDate } from "@/lib/deadline";
+import { formatYen } from "@/lib/productInfo";
+import ProductThumb from "@/components/ProductThumb";
 import { badge, chip, focusRing, meter } from "@/lib/ui";
 
 /**
@@ -137,10 +139,16 @@ export default function MenuView({
   app: ReturnType<typeof useAppData>;
   onNavigate: (t: TabKey) => void;
 }) {
-  const { products, getInfo, getTaskState, setSelectedId } = app;
+  const { products, getInfo, getTaskState, setSelectedId, loading } = app;
   const [productSort, setProductSort] = useState<"progress" | "name">("progress");
-  /* スマホには左のリスト（検索つき）が無いので、この画面の上に検索を置く */
-  const [query, setQuery] = useState("");
+  /* 検索は左のリストと共通（useAppData で持つ）。スマホではこの画面の上の検索欄、
+     パソコンでは左のリストの検索欄から入れ、どちらでも下の商品一覧が絞り込まれる。
+     以前はこの画面の中だけで持っていたため、パソコンでは検索しても
+     中央の一覧が絞り込まれなかった */
+  const query = app.productQuery;
+  const setQuery = app.setProductQuery;
+  /* 販売終了を隠して、販売中（現行）の商品だけを見る切り替え */
+  const [activeOnly, setActiveOnly] = useState(false);
 
   const deadlines = useMemo(() => collectDeadlines(app), [app]);
   const stats = useMemo(() => computeDashboardStats(app, deadlines), [app, deadlines]);
@@ -157,15 +165,24 @@ export default function MenuView({
 
   const productRows = useMemo(() => {
     /* 廃盤はもう作らないので、この一覧にも出さない */
-    const rows = products
+    let rows = products
       .filter((p) => !getInfo(p.id).discontinued)
       .map((p) => {
         const raw = getInfo(p.id);
         const info = infoFillRate(raw, p.genre);
         const t = taskCompletion(getTaskState(p.id), raw);
         const task = t.total ? Math.round((t.checked / t.total) * 100) : 0;
-        return { product: p, info, task, status: saleStatus(raw, today) };
+        return { product: p, rawInfo: raw, info, task, status: saleStatus(raw, today) };
       });
+    /* 検索（左のリストと共通の言葉）で名前を絞り込む */
+    const q = query.trim().normalize("NFC").toLowerCase();
+    if (q) {
+      rows = rows.filter((r) => r.product.name.normalize("NFC").toLowerCase().includes(q));
+    }
+    /* 「現行のみ」: 販売終了を隠す（廃盤はもともと出していない） */
+    if (activeOnly) {
+      rows = rows.filter((r) => r.status === "active");
+    }
     if (productSort === "name") {
       rows.sort((a, b) => a.product.name.localeCompare(b.product.name, "ja"));
     } else {
@@ -173,7 +190,7 @@ export default function MenuView({
     }
     return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, productSort]);
+  }, [products, productSort, query, activeOnly]);
 
   /* 検索に当たった商品。濁点の付き方の違い（NFD）でも当たるようにそろえる */
   const hits = useMemo(() => {
@@ -351,25 +368,27 @@ export default function MenuView({
         </div>
       )}
 
+      {/* 読み込みが終わるまでは、土台の仮データ（初期値の88件・空のシート）から
+          計算した数字を本物らしく見せない。数字は「…」にして、確定してから出す */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
-        <StatCard label="登録商品数" value={String(stats.productCount)} suffix="件" />
+        <StatCard label="登録商品数" value={loading ? "…" : String(stats.productCount)} suffix="件" />
         <StatCard
           label="シート 平均入力率"
-          value={String(stats.avgInfoFill)}
+          value={loading ? "…" : String(stats.avgInfoFill)}
           suffix="%"
-          pct={stats.avgInfoFill}
+          pct={loading ? undefined : stats.avgInfoFill}
           tone="info"
         />
         <StatCard
           label="タスク 平均完了率"
-          value={String(stats.avgTaskCompletion)}
+          value={loading ? "…" : String(stats.avgTaskCompletion)}
           suffix="%"
-          pct={stats.avgTaskCompletion}
+          pct={loading ? undefined : stats.avgTaskCompletion}
           tone="task"
         />
         <StatCard
           label={`期限超過のタスク（直近${BACKLOG_MONTHS}か月）`}
-          value={String(stats.overdueTaskCount)}
+          value={loading ? "…" : String(stats.overdueTaskCount)}
           suffix="件"
           tone={stats.overdueTaskCount > 0 ? "danger" : "plain"}
         />
@@ -477,8 +496,26 @@ export default function MenuView({
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
           <SectionIcon name="sheet" tone="info" />
           <h3 className={sectionTitle}>商品一覧</h3>
-          <span className="text-sm tabular-nums text-stone-400">{productRows.length}件</span>
-          <div className="ml-auto flex gap-2">
+          <span className="text-sm tabular-nums text-stone-400">
+            {loading ? "読み込み中" : `${productRows.length}件`}
+          </span>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {query.trim() && (
+              <button
+                className={chip(false, "rounded-full", "sm")}
+                onClick={() => setQuery("")}
+              >
+                検索をやめる
+              </button>
+            )}
+            <button
+              className={chip(activeOnly, "rounded-full", "sm")}
+              onClick={() => setActiveOnly((v) => !v)}
+              aria-pressed={activeOnly}
+              title="販売終了を隠して、販売中の商品だけを表示します"
+            >
+              現行のみ
+            </button>
             <button
               className={chip(productSort === "progress", "rounded-full", "sm")}
               onClick={() => setProductSort("progress")}
@@ -497,20 +534,47 @@ export default function MenuView({
           <div className="max-h-[30rem] overflow-y-auto">
             <table className="w-full">
               <tbody className="divide-y divide-stone-100">
-                {productRows.map(({ product, info, task, status }) => (
+                {productRows.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-stone-400">
+                      {query.trim()
+                        ? `「${query.trim()}」に当てはまる商品がありません。`
+                        : "条件に合う商品がありません。"}
+                    </td>
+                  </tr>
+                )}
+                {productRows.map(({ product, rawInfo, info, task, status }) => (
                   <tr key={product.id} className="transition hover:bg-stone-50">
                     <td className="w-full py-2.5 pl-5 pr-3 sm:pl-7">
-                      <button
-                        onClick={() => openProduct(product.id)}
-                        className={`min-h-11 text-left text-[15px] font-medium transition hover:text-amber-700 md:min-h-0 ${focusRing} ${
-                          isInactive(status) ? "text-stone-400" : "text-stone-900"
-                        }`}
-                      >
-                        {product.name}
-                      </button>
-                      {isInactive(status) && (
-                        <span className={badge("neutral", "ml-2")}>{SALE_STATUS_LABEL[status]}</span>
-                      )}
+                      <div className="flex items-center gap-2.5">
+                        {/* 画像が無い商品でも名前の位置がずれないよう、枠の場所だけ確保する */}
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+                          <ProductThumb info={rawInfo} />
+                        </span>
+                        <span className="min-w-0">
+                          <button
+                            onClick={() => openProduct(product.id)}
+                            className={`min-h-11 text-left text-[15px] font-medium transition hover:text-amber-700 md:min-h-0 ${focusRing} ${
+                              isInactive(status) ? "text-stone-400" : "text-stone-900"
+                            }`}
+                          >
+                            {product.name}
+                          </button>
+                          {isInactive(status) && (
+                            <span className={badge("neutral", "ml-2")}>{SALE_STATUS_LABEL[status]}</span>
+                          )}
+                          {/* 名前だけでは見分けがつかないので、標準価格と発売日を小さく添える */}
+                          <span className="block text-xs tabular-nums text-stone-400">
+                            {rawInfo.priceBase != null
+                              ? formatYen(rawInfo.priceBase)
+                              : rawInfo.priceBaseNotSold
+                                ? "取り扱いなし"
+                                : "価格未設定"}
+                            {rawInfo.releaseDate &&
+                              ` ・ ${rawInfo.releaseDate.replace(/-/g, "/")}発売`}
+                          </span>
+                        </span>
+                      </div>
                     </td>
                     <td className="whitespace-nowrap py-2.5 pr-3">
                       <span className="text-xs text-stone-400 sm:hidden">情報 {info}%</span>

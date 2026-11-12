@@ -41,7 +41,8 @@ import { SALE_STATUS_LABEL, isInactive, saleStatus } from "@/lib/saleStatus";
 import { PriceInput, inputCls } from "./PriceInput";
 import { IngredientPhoto, removeProductPhoto } from "./IngredientPhoto";
 import { IngredientSubmitSheet } from "./IngredientSubmitSheet";
-import { VisualLinkRow, linkBtnCls } from "./VisualLinkRow";
+import { VisualLinkRow, VisualImageAddButton, linkBtnCls } from "./VisualLinkRow";
+import { archiveArtwork } from "@/lib/storedArtwork";
 import Icon from "@/components/Icon";
 import ProductThumb from "@/components/ProductThumb";
 import RunTabs, { RunSourceNotice, runView } from "./RunTabs";
@@ -1498,6 +1499,7 @@ export default function ProductSheetView({
           各サイズのデータ置き場（Dropbox / Google Drive など）のリンクを、下の枠に貼って
           <kbd className="mx-1 rounded border border-stone-300 bg-stone-50 px-1 text-xs">Enter</kbd>
           を押すと登録されます。Enterを押さずに他の欄へ移っても登録されるので、貼ったURLが消えることはありません。
+          画像そのものは、各枠の「画像を追加」から選んでも登録できます。
         </p>
 
         {shownVisuals
@@ -1552,14 +1554,24 @@ export default function ProductSheetView({
                   onRemove={() => updateVisual(v.key, v.links.filter((_, i) => i !== li))}
                 />
               ))}
-              <input
-                id={`f-visual-${v.key}`}
-                className="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
-                placeholder="URLを貼って Enter（複数まとめて貼ってもOK）"
-                aria-label={`${v.label}のリンクを追加`}
-                onKeyDown={(e) => onVisualPaste(e, v.key, v.links)}
-                onBlur={(e) => commitVisualInput(e.currentTarget, v.key, v.links)}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  id={`f-visual-${v.key}`}
+                  className="min-w-0 flex-1 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 placeholder:text-stone-400 focus:border-solid focus:border-amber-500 focus:text-stone-800 focus:outline-none"
+                  placeholder="URLを貼って Enter（複数まとめて貼ってもOK）"
+                  aria-label={`${v.label}のリンクを追加`}
+                  onKeyDown={(e) => onVisualPaste(e, v.key, v.links)}
+                  onBlur={(e) => commitVisualInput(e.currentTarget, v.key, v.links)}
+                />
+                {/* リンクを作らなくても、画像そのものを選んで足せるようにする。
+                    先にリンクとして登録してから共有保存へ送る（差し替えと同じ順番） */}
+                <VisualImageAddButton
+                  onAdd={(source, file) => {
+                    updateVisual(v.key, [...v.links, source]);
+                    void archiveArtwork(source, file).catch(() => {});
+                  }}
+                />
+              </div>
             </div>
             );
           })}

@@ -11,6 +11,45 @@ export const linkBtnCls =
   `inline-flex min-h-10 shrink-0 items-center rounded-lg border border-stone-300 px-2.5 py-1 text-xs text-stone-600 transition hover:border-amber-500 hover:text-amber-700 md:min-h-0 ${focusRing}`;
 
 /**
+ * ビジュアルの枠に、画像そのものを選んで新しく追加するボタン。
+ *
+ * 空の枠にはURLを貼る欄しかなく、置き場所のリンクを作るところで手が止まっていた。
+ * 仕組みは登録済みリンクの「画像を差し替え」と同じ（`inside:` の置き場所を作って
+ * 共有保存へ送る）。違うのは、既存のリンクを差し替えるのではなく、
+ * 新しいリンクとして足すところだけ。
+ * 呼び出し側で先にリンクをシートへ登録してから archiveArtwork を呼ぶこと
+ * （保存先の確認は「シートに登録済みの置き場所か」で行われるため）。
+ */
+export function VisualImageAddButton({
+  onAdd,
+}: {
+  onAdd: (source: string, file: File) => void;
+}) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        type="file"
+        ref={fileInput}
+        className="hidden"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const source = `inside:artwork/${crypto.randomUUID()}/${encodeURIComponent(file.name)}`;
+          onAdd(source, file);
+          /* 同じファイルをもう一度選べるように空に戻す */
+          e.target.value = "";
+        }}
+      />
+      <button type="button" className={linkBtnCls} onClick={() => fileInput.current?.click()}>
+        画像を追加
+      </button>
+    </>
+  );
+}
+
+/**
  * ビジュアルの登録済みリンク1行。
  *
  * 普段はURLを出さず、サムネイル＋ファイル名だけを見せる（長いURLは邪魔なため）。

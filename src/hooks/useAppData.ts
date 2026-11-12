@@ -38,6 +38,10 @@ export function useAppData() {
     "selected_product",
     INITIAL_PRODUCTS[0]?.id ?? ""
   );
+  /* 商品名の検索。左のリストとホームの商品一覧で同じ検索を使うため、ここで持つ。
+     検索が画面ごとに別々だと、左のリストだけ絞り込まれて中央の一覧が変わらず、
+     「検索が効いていない」ように見えていた（2026年11月・改善） */
+  const [productQuery, setProductQuery] = useState("");
   const [infoMap, setInfoMap] = useState<Record<string, ProductInfo>>(buildInitialInfoMap());
   const [taskStateAll, setTaskStateAll] = useState<Record<string, TaskStateMap>>({});
   /* いま見ている「販売の回」。null なら今の回。商品を変えたら今の回に戻す。
@@ -424,6 +428,8 @@ export function useAppData() {
     selectedProduct,
     selectedId,
     setSelectedId,
+    productQuery,
+    setProductQuery,
     loading,
     saveState,
     retrySave,
