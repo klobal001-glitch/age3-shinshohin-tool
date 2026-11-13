@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-13",
+  "generatedAt": "2026-11-13T21:23:36.266Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 15回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）"
+  ],
+  "totals": {
+    "batches": 11,
+    "devices": 1,
+    "events": 57,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 7
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "アイスクリームブリュレ",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "紅蜜芋ブリュレ",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "URLを直す",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "ティラミス #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "チョコブリュレ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "チョコマシュマロ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "SAKURA抹茶 #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "#年",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "紅蜜芋ブリュレ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 🖼️ ビジュアル #/#",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "アイスクリームブリュレ #%",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# 📣 SNS・PR #/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ティラミス",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "SAKURA抹茶",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "#年#月（既存販売回） #/#/#〜#/#/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "【本人確定】#年#月 再販売｜予定期間#/#〜#/#（日単位未確定） #/#/#",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ほうじ茶スリー（スイーツサンド） #%",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# #件",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ホーム",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 15
+    }
+  ],
+  "slow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 6797,
+      "count": 2
+    }
+  ],
+  "feedback": []
+}
