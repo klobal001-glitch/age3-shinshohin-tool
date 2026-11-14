@@ -1,41 +1,20 @@
 {
-  "date": "2026-11-13",
-  "generatedAt": "2026-11-13T21:23:36.266Z",
-  "signal": true,
-  "reasons": [
-    "通信の失敗 15回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）"
-  ],
+  "date": "2026-11-14",
+  "generatedAt": "2026-11-14T19:52:10.051Z",
+  "signal": false,
+  "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 11,
-    "devices": 1,
-    "events": 57,
+    "batches": 0,
+    "devices": 0,
+    "events": 0,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
-  "topNetwork": [
-    {
-      "page": "/",
-      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
-      "status": 422,
-      "count": 15
-    }
-  ],
-  "topSlow": [
-    {
-      "page": "/",
-      "kind": "通信",
-      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
-      "maxMs": 6797,
-      "count": 2
-    }
-  ],
-  "relatedFiles": [
-    "src/app/page.tsx",
-    "src/components/Header.tsx",
-    "src/components/Sidebar.tsx"
-  ],
+  "topNetwork": [],
+  "topSlow": [],
+  "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
     "storageBytes": 431222236,

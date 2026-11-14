@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-14",
+  "generatedAt": "2026-11-14T19:52:10.051Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 0,
+    "devices": 0,
+    "events": 0,
+    "droppedBatches": 0
+  },
+  "views": [],
+  "clicks": [],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
