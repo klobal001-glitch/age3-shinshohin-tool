@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-14",
-  "generatedAt": "2026-11-14T19:52:10.051Z",
+  "date": "2026-11-15",
+  "generatedAt": "2026-11-15T20:17:38.145Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
