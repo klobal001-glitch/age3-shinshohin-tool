@@ -15,19 +15,24 @@ import {
   monthFromNow,
   periodText,
   rangeMonthsLabel,
+  rangeMonthsLabelEn,
   rangeTitle,
+  rangeTitleEn,
   scheduleReady,
   sortMonths,
   ymKey,
   ymLabel,
 } from "@/lib/monthly";
 import {
+  CAL_MONTHS_PER_PAGE,
+  CalendarMonth,
   PhotoState,
   SCHEDULE_MAX,
   SCHEDULE_PER_PAGE,
   ScheduleItem,
   canvasToJpeg,
   drawSchedulePages,
+  drawYearCalendarPages,
   jpegsToA4Pdf,
   loadPhoto,
   saveBlob,
@@ -78,6 +83,8 @@ export default function ScheduleSheet({
   /* ③ 資料 */
   const [pages, setPages] = useState<string[] | null>(null);
   const [showAlways, setShowAlways] = useState(false);
+  /** 資料の形。商品カード（A4たて）か、月ごとのカレンダー（A4よこ） */
+  const [form, setForm] = useState<"card" | "calendar">("card");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -187,12 +194,38 @@ export default function ScheduleSheet({
       photo: photoOf(r.entry),
     }));
 
+  /**
+   * 月ごとのカレンダー用の値。
+   *
+   * **選んだ月の枠は、商品が1件も無くても出す**（空いている月が見えることに意味がある）。
+   * 商品は、その月に売っているもの（前の月から続いているものを含む）。
+   */
+  const buildCalendar = (): CalendarMonth[] =>
+    months.map((m) => ({
+      year: m.year,
+      month: m.month,
+      items: inDoc
+        .filter((r) => r.months.some((x) => x.year === m.year && x.month === m.month))
+        .map((r) => ({
+          name: r.entry.product.name,
+          nameEn: r.entry.info.nameEn ?? "",
+          months: rangeMonthsLabel(r.months, months),
+          monthsEn: rangeMonthsLabelEn(r.months, months),
+          photo: photoOf(r.entry),
+        })),
+    }));
+
+  const draw = (dpi: number) =>
+    form === "calendar"
+      ? drawYearCalendarPages(title, rangeTitleEn(months), buildCalendar(), dpi)
+      : drawSchedulePages(title, buildItems(), dpi);
+
   /** ② のあと、できあがりを見てもらう */
   const makePreview = async () => {
     setBusy(true);
     setErr(null);
     try {
-      const canvases = await drawSchedulePages(title, buildItems(), 120);
+      const canvases = await draw(120);
       setPages(canvases.map((c) => c.toDataURL("image/jpeg", 0.9)));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "資料を作れませんでした");
@@ -206,7 +239,7 @@ export default function ScheduleSheet({
     setBusy(true);
     setErr(null);
     try {
-      const canvases = await drawSchedulePages(title, buildItems(), 200);
+      const canvases = await draw(200);
       const jpegs = await Promise.all(
         canvases.map(async (c) => ({
           jpeg: await canvasToJpeg(c, 0.9),
@@ -214,13 +247,19 @@ export default function ScheduleSheet({
           hpx: c.height,
         }))
       );
-      saveBlob(jpegsToA4Pdf(jpegs), `${fileBase}.pdf`);
+      saveBlob(
+        jpegsToA4Pdf(jpegs, form === "calendar"),
+        `${fileBase}${form === "calendar" ? "_calendar" : ""}.pdf`
+      );
     } catch (e) {
       setErr(e instanceof Error ? e.message : "PDFを作れませんでした");
     } finally {
       setBusy(false);
     }
   };
+
+  /** 件数が多すぎて1つの資料に入らないのは、商品カードの形だけ */
+  const tooMany = form === "card" && inDoc.length > SCHEDULE_MAX;
 
   const step = (n: number, label: string, note?: string) => (
     <div className="flex items-baseline gap-2">
@@ -376,7 +415,7 @@ export default function ScheduleSheet({
               </p>
             )}
 
-            {inDoc.length > SCHEDULE_MAX && (
+            {tooMany && (
               <p className="mt-2 text-sm font-medium text-red-600">
                 1つの資料に入るのは{SCHEDULE_MAX}件までです。チェックを減らしてください。
               </p>
@@ -499,11 +538,55 @@ export default function ScheduleSheet({
               </div>
             )}
 
+            {/* 資料の形。同じ中身を2通りの見せ方で出せる。
+                商品カード＝1件を大きく見せる／カレンダー＝どの月に何が出るかをひと目で見せる */}
+            <div className="mt-3">
+              <p className="text-xs text-stone-500">資料の形</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {(
+                  [
+                    { k: "card", t: "商品カード", n: "A4たて・1ページ4件・写真が大きい" },
+                    { k: "calendar", t: "月ごとのカレンダー", n: "A4よこ・1枚で年間が見わたせる" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.k}
+                    type="button"
+                    aria-pressed={form === o.k}
+                    onClick={() => {
+                      setForm(o.k);
+                      setPages(null);
+                    }}
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-left transition sm:min-h-0 ${
+                      form === o.k
+                        ? "border-amber-700 bg-amber-50"
+                        : "border-stone-300 bg-white hover:bg-stone-50"
+                    }`}
+                  >
+                    <span
+                      className={`block text-sm font-semibold ${
+                        form === o.k ? "text-amber-800" : "text-stone-700"
+                      }`}
+                    >
+                      {o.t}
+                    </span>
+                    <span className="block text-xs text-stone-500">{o.n}</span>
+                  </button>
+                ))}
+              </div>
+              {form === "calendar" && (
+                <p className="mt-1.5 text-xs text-stone-500">
+                  月の枠は、商品が1件も無くてもそのまま出ます。枠に入りきらない商品は「ほか◯品」と数で出ます。
+                  日本語の下に英語を小さく添えます（商品名は訳さず、商品データベースの英語名をそのまま使います）。
+                </p>
+              )}
+            </div>
+
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 className={btn("secondary")}
-                disabled={inDoc.length === 0 || inDoc.length > SCHEDULE_MAX || busy || checking}
+                disabled={inDoc.length === 0 || tooMany || busy || checking}
                 onClick={makePreview}
               >
                 {busy && !pages ? "作成中…" : "資料を見る"}
@@ -511,21 +594,16 @@ export default function ScheduleSheet({
               <button
                 type="button"
                 className={btn("primary")}
-                disabled={
-                  inDoc.length === 0 ||
-                  inDoc.length > SCHEDULE_MAX ||
-                  busy ||
-                  checking ||
-                  blocked.length > 0
-                }
+                disabled={inDoc.length === 0 || tooMany || busy || checking || blocked.length > 0}
                 onClick={savePdf}
               >
                 {busy && pages ? "保存中…" : "PDFを保存"}
               </button>
               {inDoc.length > 0 && (
                 <span className="text-xs text-stone-500">
-                  A4たて{Math.max(1, Math.ceil(Math.min(inDoc.length, SCHEDULE_MAX) / SCHEDULE_PER_PAGE))}
-                  ページ（1ページ{SCHEDULE_PER_PAGE}件）
+                  {form === "calendar"
+                    ? `A4よこ${Math.max(1, Math.ceil(months.length / CAL_MONTHS_PER_PAGE))}ページ（${months.length}か月ぶん）`
+                    : `A4たて${Math.max(1, Math.ceil(Math.min(inDoc.length, SCHEDULE_MAX) / SCHEDULE_PER_PAGE))}ページ（1ページ${SCHEDULE_PER_PAGE}件）`}
                 </span>
               )}
             </div>
