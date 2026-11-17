@@ -233,67 +233,6 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* その月に売っている商品。発売開始も継続も1つの一覧 */}
-      <div className={`${card} overflow-hidden`}>
-        <div className={`${cardHead} flex-wrap`}>
-          <h2 className="flex items-baseline gap-2 tracking-tight">
-            <span className="text-[22px] font-bold tabular-nums text-stone-900 sm:text-[26px]">
-              {year}年{month}月
-            </span>
-            <span className="text-sm font-medium text-stone-500">に店に並ぶ商品</span>
-          </h2>
-          {/* 月ボタンの「新」とこの数は意味が違う。見比べて迷わないよう、
-              ここに「うち今月発売」も並べて出す */}
-          <span className="ml-auto shrink-0 text-sm text-stone-500">
-            <strong className="text-lg font-bold tabular-nums text-stone-800">{all.length}</strong>
-            件
-            {starts.length > 0 && (
-              <span className="ml-1.5 text-xs text-stone-500">
-                （うち今月発売 {starts.length}件）
-              </span>
-            )}
-          </span>
-        </div>
-
-        <div className="p-4 sm:p-5">
-          <p className={muted}>
-            販売期間が{ymLabel(year, month)}と重なる商品です。
-            前の月から続いているものや、通年ずっと売っている商品も入っています。
-          </p>
-
-          {all.length === 0 ? (
-            <p className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-stone-500">
-              この月に販売する商品は登録されていません。
-            </p>
-          ) : (
-            /* 掲示に出せるものと、まだ決まっていないものを混ぜない */
-            <>
-              <Group
-                title="内容がそろっている"
-                note="写真・商品名・販売期間・価格が入っています。"
-                items={readyList}
-                empty="そろっている商品はまだありません。"
-                year={year}
-                foldOngoing
-                isPicked={isPicked}
-                togglePick={togglePick}
-                openDetail={openDetail}
-              />
-              <Group
-                title="未確定・未入力あり"
-                note="空欄や仮の名前が残っています。出すかどうかはご自身で決めてください。"
-                items={needCheck}
-                empty="ありません。"
-                year={year}
-                isPicked={isPicked}
-                togglePick={togglePick}
-                openDetail={openDetail}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
       {/* つくる：店頭A4 ／ 海外チームへ ／ リーダー共有 */}
       <div className={`${card} overflow-hidden`}>
         <div className={cardHead}>
@@ -307,7 +246,8 @@ export default function MonthlyView({
               <span className="text-xs text-stone-500">A4たて1枚・価格あり</span>
             </div>
             <p className={`mt-1 ${muted}`}>
-              貼る商品はご自身で選んでください。作ったあとの画面から、同じ内容を画像にしてLINEで送れます。
+              「今月発売をえらぶ」でまとめて選べます。1件ずつ選ぶときは、下の一覧で「店頭掲示に出す」に
+              チェックしてください。作ったあとの画面から、同じ内容を画像にしてLINEで送れます。
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
@@ -385,6 +325,67 @@ export default function MonthlyView({
               共有を見る
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* その月に売っている商品。発売開始も継続も1つの一覧 */}
+      <div className={`${card} overflow-hidden`}>
+        <div className={`${cardHead} flex-wrap`}>
+          <h2 className="flex items-baseline gap-2 tracking-tight">
+            <span className="text-[22px] font-bold tabular-nums text-stone-900 sm:text-[26px]">
+              {year}年{month}月
+            </span>
+            <span className="text-sm font-medium text-stone-500">に店に並ぶ商品</span>
+          </h2>
+          {/* 月ボタンの「新」とこの数は意味が違う。見比べて迷わないよう、
+              ここに「うち今月発売」も並べて出す */}
+          <span className="ml-auto shrink-0 text-sm text-stone-500">
+            <strong className="text-lg font-bold tabular-nums text-stone-800">{all.length}</strong>
+            件
+            {starts.length > 0 && (
+              <span className="ml-1.5 text-xs text-stone-500">
+                （うち今月発売 {starts.length}件）
+              </span>
+            )}
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <p className={muted}>
+            販売期間が{ymLabel(year, month)}と重なる商品です。
+            前の月から続いているものや、通年ずっと売っている商品も入っています。
+          </p>
+
+          {all.length === 0 ? (
+            <p className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-stone-500">
+              この月に販売する商品は登録されていません。
+            </p>
+          ) : (
+            /* 掲示に出せるものと、まだ決まっていないものを混ぜない */
+            <>
+              <Group
+                title="内容がそろっている"
+                note="写真・商品名・販売期間・価格が入っています。"
+                items={readyList}
+                empty="そろっている商品はまだありません。"
+                year={year}
+                foldOngoing
+                isPicked={isPicked}
+                togglePick={togglePick}
+                openDetail={openDetail}
+              />
+              <Group
+                title="未確定・未入力あり"
+                note="空欄や仮の名前が残っています。出すかどうかはご自身で決めてください。"
+                items={needCheck}
+                empty="ありません。"
+                year={year}
+                isPicked={isPicked}
+                togglePick={togglePick}
+                openDetail={openDetail}
+              />
+            </>
+          )}
         </div>
       </div>
 
