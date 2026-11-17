@@ -445,10 +445,14 @@ export function jpegToA4Pdf(jpeg: Uint8Array, wpx: number, hpx: number): Blob {
  * 複数ページでも、**ページの区切りは絵の区切りそのもの**なので、
  * 文字が途中で切れたり、商品が改ページで分断されたりすることがない。
  */
-export function jpegsToA4Pdf(pages: { jpeg: Uint8Array; wpx: number; hpx: number }[]): Blob {
+export function jpegsToA4Pdf(
+  pages: { jpeg: Uint8Array; wpx: number; hpx: number }[],
+  landscape = false
+): Blob {
   if (pages.length === 0) throw new Error("ページがありません");
-  const W = 595.28; // 210mm をポイントで
-  const H = 841.89; // 297mm
+  /* たては 210mm×297mm。よこは縦横を入れ替えるだけ（絵も横長で描いてある） */
+  const W = landscape ? 841.89 : 595.28; // 210mm をポイントで
+  const H = landscape ? 595.28 : 841.89; // 297mm
   const parts: Uint8Array[] = [];
   const offsets: number[] = [];
   let pos = 0;
@@ -757,6 +761,340 @@ export async function drawSchedulePages(
       await drawSchedulePage(
         title,
         use.slice(k * SCHEDULE_PER_PAGE, (k + 1) * SCHEDULE_PER_PAGE),
+        k + 1,
+        pages,
+        dpi
+      )
+    );
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ *
+ * 年間カレンダー（A4よこ）
+ *
+ * 1枚で「どの月に何が出るか」をひと目で見せるための形。
+ * 月ごとの枠を並べ、その中に商品を小さく積む。
+ * 商品カードの資料（A4たて・1ページ4件）とは**別の形**で、中身は同じ値から作る。
+ *
+ * 決めごと
+ * - **価格・担当・原価・仕入・社内の準備状況は載せない**（商品カードの資料と同じ）。
+ * - 日本語の下に英語を小さく添える。**訳すのは決まっている言葉だけ**で、
+ *   商品名は訳さない（英語名が入っていない商品は、英語名を出さない）。
+ * - 写真が読めない商品は、絵を作らずに「準備中／In preparation」の枠で出す。
+ * - 枠に入りきらない商品は「ほか◯品」と数で出す。勝手に減らしたように見せない。
+ * ------------------------------------------------------------------ */
+
+/** A4よこ。たての縦横を入れ替えただけ */
+export const A4_LAND_W = A4_H;
+export const A4_LAND_H = A4_W;
+export const PAPER_LW = 1047; // 277mm
+export const PAPER_LH = 718; // 190mm
+
+/** 1ページに並べる月の数（4列×3段） */
+export const CAL_COLS = 4;
+export const CAL_ROWS = 3;
+export const CAL_MONTHS_PER_PAGE = CAL_COLS * CAL_ROWS;
+
+export interface CalendarItem {
+  /** 日本語の商品名 */
+  name: string;
+  /** 正式な英語名。入っていなければ空 */
+  nameEn: string;
+  /** 選んだ期間のうち売っている月。「11月〜1月」 */
+  months: string;
+  /** その英語。「Nov.–Jan.」 */
+  monthsEn: string;
+  photo: PhotoState | null;
+}
+
+export interface CalendarMonth {
+  year: number;
+  month: number;
+  items: CalendarItem[];
+}
+
+const CAL_HEADER_H = 104;
+const CAL_FOOTER_H = 28;
+const CAL_GAP = 10;
+const CAL_BAR_H = 34;
+
+/** 1行に収まらない文字は、後ろを「…」にして切る */
+function clip1(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+  if (!text) return "";
+  if (ctx.measureText(text).width <= maxW) return text;
+  let out = text;
+  while (out.length > 1 && ctx.measureText(out + "…").width > maxW) out = out.slice(0, -1);
+  return out + "…";
+}
+
+/** 月の枠を1つ描く */
+function drawCalendarCell(
+  ctx: CanvasRenderingContext2D,
+  m: CalendarMonth,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  /* 枠 */
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.fill();
+  ctx.strokeStyle = T.line;
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 10);
+  ctx.stroke();
+
+  /* 月の帯。濃い地に白文字で、月が先に目に入るようにする */
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.clip();
+  ctx.fillStyle = INK;
+  ctx.fillRect(x, y, w, CAL_BAR_H);
+  ctx.restore();
+
+  setFont(ctx, 20, "700");
+  ctx.fillStyle = "#ffffff";
+  ctx.letterSpacing = "-0.02em";
+  const mLabel = `${m.month}月`;
+  ctx.fillText(mLabel, x + 12, y + CAL_BAR_H / 2 + 7);
+  const mW = ctx.measureText(mLabel).width;
+  ctx.letterSpacing = "0px";
+  setFont(ctx, 11, "500");
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fillText(String(m.year), x + 12 + mW + 6, y + CAL_BAR_H / 2 + 6);
+  setFont(ctx, 11, "500");
+  ctx.textAlign = "right";
+  ctx.fillText(EN_MONTH_NAMES[m.month - 1] ?? "", x + w - 12, y + CAL_BAR_H / 2 + 6);
+  ctx.textAlign = "left";
+
+  /* 中身 */
+  const pad = 8;
+  const ix = x + pad;
+  const iw = w - pad * 2;
+  const top = y + CAL_BAR_H + pad;
+  const avail = h - CAL_BAR_H - pad * 2;
+  const rowH = 46;
+  const fits = Math.max(1, Math.floor(avail / rowH));
+  const extra = m.items.length - fits;
+  /* 「ほか◯品」を出すぶん、1行ぶん空ける */
+  const show = extra > 0 ? m.items.slice(0, Math.max(0, fits - 1)) : m.items.slice(0, fits);
+
+  if (m.items.length === 0) {
+    setFont(ctx, 11, "400");
+    ctx.fillStyle = FAINT;
+    ctx.fillText("この月の商品はありません", ix, top + 16);
+    setFont(ctx, 9, "400");
+    ctx.fillText("No items for this month", ix, top + 30);
+    return;
+  }
+
+  show.forEach((it, i) => {
+    const ry = top + i * rowH;
+    /* Instagram の画像は縦長（1080×1350）。枠も縦長にすると、同じ幅でも大きく見える */
+    const tw0 = 32;
+    const th0 = 40;
+    /* 写真。切り取らず枠に収める（パッケージの文字が欠けないように） */
+    ctx.save();
+    roundRect(ctx, ix, ry, tw0, th0, 6);
+    ctx.clip();
+    ctx.fillStyle = T.stone50;
+    ctx.fillRect(ix, ry, tw0, th0);
+    const ph = it.photo;
+    if (ph?.readable && ph.img) {
+      const nw = ph.img.naturalWidth || 1;
+      const nh = ph.img.naturalHeight || 1;
+      const k = Math.min(tw0 / nw, th0 / nh);
+      ctx.drawImage(ph.img, ix + (tw0 - nw * k) / 2, ry + (th0 - nh * k) / 2, nw * k, nh * k);
+    }
+    ctx.restore();
+    if (!(ph?.readable && ph.img)) {
+      /* 絵が無いときは破線の枠に「準備中」。代わりの絵は作らない */
+      ctx.save();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = T.amber700;
+      ctx.lineWidth = 1;
+      roundRect(ctx, ix + 0.5, ry + 0.5, tw0 - 1, th0 - 1, 6);
+      ctx.stroke();
+      ctx.restore();
+      setFont(ctx, 8, "600");
+      ctx.fillStyle = T.amber700;
+      ctx.textAlign = "center";
+      ctx.fillText("準備中", ix + tw0 / 2, ry + th0 / 2 - 1);
+      setFont(ctx, 6, "400");
+      ctx.fillText("in prep.", ix + tw0 / 2, ry + th0 / 2 + 9);
+      ctx.textAlign = "left";
+    }
+
+    const tx = ix + tw0 + 8;
+    const tw = iw - tw0 - 8;
+    setFont(ctx, 12, "700");
+    ctx.fillStyle = INK;
+    ctx.letterSpacing = "-0.01em";
+    ctx.fillText(clip1(ctx, it.name, tw), tx, ry + 12);
+    ctx.letterSpacing = "0px";
+    if (it.nameEn) {
+      setFont(ctx, 9, "400");
+      ctx.fillStyle = SUB;
+      ctx.fillText(clip1(ctx, it.nameEn, tw), tx, ry + 24);
+    }
+    if (it.months) {
+      setFont(ctx, 9, "600");
+      ctx.fillStyle = T.amber700;
+      const jp = it.months;
+      ctx.fillText(clip1(ctx, jp, tw), tx, ry + 36);
+      const jw = ctx.measureText(jp).width;
+      if (it.monthsEn && jw + 8 < tw) {
+        setFont(ctx, 8, "400");
+        ctx.fillStyle = FAINT;
+        ctx.fillText(clip1(ctx, it.monthsEn, tw - jw - 8), tx + jw + 8, ry + 36);
+      }
+    }
+  });
+
+  if (extra > 0) {
+    const ry = top + show.length * rowH;
+    setFont(ctx, 10, "600");
+    ctx.fillStyle = SUB;
+    ctx.fillText(`ほか${extra}品`, ix, ry + 12);
+    setFont(ctx, 8, "400");
+    ctx.fillStyle = FAINT;
+    ctx.fillText(`${extra} more`, ix, ry + 24);
+  }
+}
+
+const EN_MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** 年間カレンダーを1ページぶん描く */
+async function drawYearCalendarPage(
+  title: string,
+  titleEn: string,
+  months: CalendarMonth[],
+  page: number,
+  pages: number,
+  dpi: number
+): Promise<HTMLCanvasElement> {
+  const s = dpi / 96;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(A4_LAND_W * s);
+  canvas.height = Math.round(A4_LAND_H * s);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas を用意できませんでした");
+
+  ctx.fillStyle = T.canvas;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(s, s);
+  ctx.translate(PAPER_X, PAPER_Y);
+  ctx.textBaseline = "alphabetic";
+
+  /* ── 見出し ── */
+  const logo = await loadLogo();
+  const logoH = 20;
+  const logoW = (logoH * 1052) / 336;
+  if (logo) ctx.drawImage(logo, 0, 2, logoW, logoH);
+  setFont(ctx, 11, "700");
+  ctx.fillStyle = T.amber700;
+  ctx.letterSpacing = "0.12em";
+  ctx.fillText("SEASON SANDWICH", logoW + 10, 2 + logoH - 5);
+  ctx.letterSpacing = "0px";
+
+  ctx.letterSpacing = "-0.02em";
+  setFont(ctx, 27, "700");
+  ctx.fillStyle = INK;
+  ctx.fillText(`シーズン揚げサンド　販売予定　${title}`, 0, 56);
+  ctx.letterSpacing = "0px";
+  setFont(ctx, 12, "500");
+  ctx.fillStyle = SUB;
+  ctx.fillText(`Seasonal Fried Sandwich　Sales Plan　${titleEn}`, 0, 76);
+
+  /* 右上の断り書き。見落とされては困るので、濃い地に白で出す */
+  const bw = 282;
+  const bh = 48;
+  const bx = PAPER_LW - bw;
+  ctx.fillStyle = INK;
+  roundRect(ctx, bx, 6, bw, bh, 8);
+  ctx.fill();
+  setFont(ctx, 13, "700");
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.fillText("販売予定（変更の可能性あり）", bx + bw / 2, 26);
+  setFont(ctx, 10, "400");
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.fillText("Sales plan (subject to change)", bx + bw / 2, 41);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = T.amber700;
+  ctx.fillRect(0, CAL_HEADER_H - 14, 56, 3);
+  ctx.fillStyle = T.line;
+  ctx.fillRect(56, CAL_HEADER_H - 13, PAPER_LW - 56, 1);
+
+  /* ── 月の枠 ── */
+  const rows = Math.max(1, Math.ceil(months.length / CAL_COLS));
+  const gridH = PAPER_LH - CAL_HEADER_H - CAL_FOOTER_H;
+  const cellW = (PAPER_LW - CAL_GAP * (CAL_COLS - 1)) / CAL_COLS;
+  const even = (gridH - CAL_GAP * (rows - 1)) / rows;
+
+  /* 段の高さは、その段でいちばん品数が多い月に合わせる。
+     商品が少ないときに、空っぽの大きな枠が並ばないようにするため。
+     全部を足しても紙に収まらないときは、これまでどおり等分にする
+     （入りきらないぶんは枠の中で「ほか◯品」と数で出る） */
+  const needs = Array.from({ length: rows }, (_, r) => {
+    const inRow = months.slice(r * CAL_COLS, (r + 1) * CAL_COLS);
+    const most = Math.max(1, ...inRow.map((m) => m.items.length));
+    return CAL_BAR_H + 16 + Math.min(most, 4) * 46;
+  });
+  const total = needs.reduce((a, b) => a + b, 0) + CAL_GAP * (rows - 1);
+  const heights = total <= gridH ? needs : needs.map(() => even);
+
+  let cy = CAL_HEADER_H;
+  for (let r = 0; r < rows; r++) {
+    const h = heights[r];
+    months.slice(r * CAL_COLS, (r + 1) * CAL_COLS).forEach((m, i) => {
+      drawCalendarCell(ctx, m, i * (cellW + CAL_GAP), cy, cellW, h);
+    });
+    cy += h + CAL_GAP;
+  }
+
+  /* ── 下の帯 ── */
+  const fy = PAPER_LH - CAL_FOOTER_H;
+  ctx.fillStyle = T.line;
+  ctx.fillRect(0, fy, PAPER_LW, 1);
+  setFont(ctx, 12, "600");
+  ctx.fillStyle = INK;
+  ctx.fillText("※販売期間は変更になる場合があります。写真はイメージです。", 0, PAPER_LH - 12);
+  setFont(ctx, 9, "400");
+  ctx.fillStyle = FAINT;
+  ctx.fillText("Sales periods may change. Photos are for illustration only.", 0, PAPER_LH - 1);
+  setFont(ctx, 10, "400");
+  ctx.fillStyle = FAINT;
+  ctx.textAlign = "center";
+  ctx.fillText(`${page} / ${pages}`, PAPER_LW / 2, PAPER_LH - 6);
+  ctx.textAlign = "right";
+  ctx.fillText("Age.3", PAPER_LW, PAPER_LH - 6);
+  ctx.textAlign = "left";
+
+  return canvas;
+}
+
+/** 年間カレンダーのページをぜんぶ描く。13か月目から次のページになる */
+export async function drawYearCalendarPages(
+  title: string,
+  titleEn: string,
+  months: CalendarMonth[],
+  dpi = 200
+): Promise<HTMLCanvasElement[]> {
+  const pages = Math.max(1, Math.ceil(months.length / CAL_MONTHS_PER_PAGE));
+  const out: HTMLCanvasElement[] = [];
+  for (let k = 0; k < pages; k++) {
+    out.push(
+      await drawYearCalendarPage(
+        title,
+        titleEn,
+        months.slice(k * CAL_MONTHS_PER_PAGE, (k + 1) * CAL_MONTHS_PER_PAGE),
         k + 1,
         pages,
         dpi

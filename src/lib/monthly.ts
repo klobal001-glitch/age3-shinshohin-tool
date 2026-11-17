@@ -324,6 +324,64 @@ export function rangeMonthsLabel(months: YearMonth[], selected: YearMonth[]): st
     .join("・");
 }
 
+/* ------------------------------------------------------------------ *
+ * 英語の言い方（年間カレンダーの資料で、日本語の下に小さく添える）
+ *
+ * **訳すのは、こちらで決まっている言葉だけ**（月の名前と、期間の書き方）。
+ * 商品名は訳さない。英語名が入っていない商品は、英語名を空のまま出す。
+ * ------------------------------------------------------------------ */
+
+const EN_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const EN_MONTHS_SHORT = [
+  "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.",
+  "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec.",
+];
+
+/** 1〜12 → January。範囲の外は空文字 */
+export function enMonthName(month: number): string {
+  return EN_MONTHS[month - 1] ?? "";
+}
+
+/** 1〜12 → Jan.。範囲の外は空文字 */
+export function enMonthShort(month: number): string {
+  return EN_MONTHS_SHORT[month - 1] ?? "";
+}
+
+/** rangeMonthsLabel の英語版。「Nov.–Jan.」「Nov. / Jan.」 */
+export function rangeMonthsLabelEn(months: YearMonth[], selected: YearMonth[]): string {
+  const all = sortMonths(selected);
+  const idx = (m: YearMonth) => all.findIndex((x) => x.year === m.year && x.month === m.month);
+  const nums = sortMonths(months).map(idx).filter((i) => i >= 0).sort((a, b) => a - b);
+  const groups: number[][] = [];
+  for (const i of nums) {
+    const g = groups[groups.length - 1];
+    if (g && i === g[g.length - 1] + 1) g.push(i);
+    else groups.push([i]);
+  }
+  return groups
+    .map((g) =>
+      g.length === 1
+        ? enMonthShort(all[g[0]].month)
+        : `${enMonthShort(all[g[0]].month)}\u2013${enMonthShort(all[g[g.length - 1]].month)}`
+    )
+    .join(" / ");
+}
+
+/** rangeTitle の英語版。「December 2026 – November 2027」 */
+export function rangeTitleEn(selected: YearMonth[]): string {
+  const all = sortMonths(selected);
+  if (all.length === 0) return "";
+  const a = all[0];
+  const b = all[all.length - 1];
+  const one = (m: YearMonth) => `${enMonthName(m.month)} ${m.year}`;
+  if (a.year === b.year && a.month === b.month) return one(a);
+  return `${one(a)} \u2013 ${one(b)}`;
+}
+
 /** 選んだ期間そのものの言い方（資料の題）。「2026年11月 〜 2027年1月」 */
 export function rangeTitle(selected: YearMonth[]): string {
   const all = sortMonths(selected);
