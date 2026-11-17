@@ -196,7 +196,7 @@ export default function MonthlyView({
                 <span
                   className={`mt-0.5 text-[11px] tabular-nums ${on ? "text-white/80" : "text-stone-400"}`}
                 >
-                  {n > 0 ? `${n}件` : "—"}
+                  {n > 0 ? `新 ${n}` : "—"}
                 </span>
               </button>
             );
@@ -204,7 +204,8 @@ export default function MonthlyView({
         </div>
 
         <p className="mt-2 pl-10 text-xs text-stone-400">
-          数字は、その月に発売を始める商品の数です。
+          「新」は、その月に<strong className="font-semibold text-stone-500">発売を始める</strong>商品の数です。
+          その月に店に並ぶ商品の数とは違います（前の月から続いているものや通年の商品は入っていません）。
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -239,17 +240,25 @@ export default function MonthlyView({
             <span className="text-[22px] font-bold tabular-nums text-stone-900 sm:text-[26px]">
               {year}年{month}月
             </span>
-            <span className="text-sm font-medium text-stone-500">に販売する商品</span>
+            <span className="text-sm font-medium text-stone-500">に店に並ぶ商品</span>
           </h2>
+          {/* 月ボタンの「新」とこの数は意味が違う。見比べて迷わないよう、
+              ここに「うち今月発売」も並べて出す */}
           <span className="ml-auto shrink-0 text-sm text-stone-500">
             <strong className="text-lg font-bold tabular-nums text-stone-800">{all.length}</strong>
             件
+            {starts.length > 0 && (
+              <span className="ml-1.5 text-xs text-stone-500">
+                （うち今月発売 {starts.length}件）
+              </span>
+            )}
           </span>
         </div>
 
         <div className="p-4 sm:p-5">
           <p className={muted}>
             販売期間が{ymLabel(year, month)}と重なる商品です。
+            前の月から続いているものや、通年ずっと売っている商品も入っています。
           </p>
 
           {all.length === 0 ? (
