@@ -1002,19 +1002,32 @@ async function drawYearCalendarPage(
   ctx.fillText("SEASON SANDWICH", logoW + 10, 2 + logoH - 5);
   ctx.letterSpacing = "0px";
 
-  ctx.letterSpacing = "-0.02em";
-  setFont(ctx, 27, "700");
-  ctx.fillStyle = INK;
-  ctx.fillText(`シーズン揚げサンド　販売予定　${title}`, 0, 56);
-  ctx.letterSpacing = "0px";
-  setFont(ctx, 12, "500");
-  ctx.fillStyle = SUB;
-  ctx.fillText(`Seasonal Fried Sandwich　Sales Plan　${titleEn}`, 0, 76);
-
   /* 右上の断り書き。見落とされては困るので、濃い地に白で出す */
   const bw = 282;
   const bh = 48;
   const bx = PAPER_LW - bw;
+
+  /* 題。**右上の断り書きに重ならないところまでしか書かない。**
+     書体によって字の幅が変わる（Macのヒラギノは幅が広い）ので、
+     入る大きさになるまで1ptずつ小さくする */
+  const titleText = `シーズン揚げサンド　販売予定　${title}`;
+  const titleMax = bx - 20;
+  ctx.letterSpacing = "-0.02em";
+  let tSize = 27;
+  setFont(ctx, tSize, "700");
+  while (tSize > 16 && ctx.measureText(titleText).width > titleMax) {
+    tSize -= 1;
+    setFont(ctx, tSize, "700");
+  }
+  ctx.fillStyle = INK;
+  ctx.fillText(clip1(ctx, titleText, titleMax), 0, 56);
+  ctx.letterSpacing = "0px";
+
+  const subText = `Seasonal Fried Sandwich　Sales Plan　${titleEn}`;
+  setFont(ctx, 12, "500");
+  ctx.fillStyle = SUB;
+  ctx.fillText(clip1(ctx, subText, titleMax), 0, 76);
+
   ctx.fillStyle = INK;
   roundRect(ctx, bx, 6, bw, bh, 8);
   ctx.fill();
