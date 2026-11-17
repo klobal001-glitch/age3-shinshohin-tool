@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-17",
+  "generatedAt": "2026-11-17T22:51:00.335Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 30,
+    "devices": 4,
+    "events": 184,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 21
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "#",
+      "count": 46
+    },
+    {
+      "page": "/",
+      "name": "次の面",
+      "count": 17
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 16
+    },
+    {
+      "page": "/",
+      "name": "# #件",
+      "count": 14
+    },
+    {
+      "page": "/",
+      "name": "#年",
+      "count": 11
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "資料をつくる",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "詳細をひらく",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "大きく見る",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "シーズン商品をえらぶ（#）",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "資料を見る",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# —",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "翌々月（#年#月）",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "翌月（#年#月）",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "すき焼き #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "月ごとのカレンダー A#よこ・#枚で年間が見わたせる",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 新 #",
+      "count": 2
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 5163,
+      "count": 2
+    }
+  ],
+  "feedback": []
+}

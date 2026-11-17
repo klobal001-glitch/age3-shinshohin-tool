@@ -1,23 +1,31 @@
 {
-  "date": "2026-11-16",
-  "generatedAt": "2026-11-16T23:42:45.290Z",
+  "date": "2026-11-17",
+  "generatedAt": "2026-11-17T22:51:00.335Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 10,
-    "devices": 2,
-    "events": 62,
+    "batches": 30,
+    "devices": 4,
+    "events": 184,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
   "topNetwork": [],
-  "topSlow": [],
+  "topSlow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 5163,
+      "count": 2
+    }
+  ],
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 431227598,
+    "storageBytes": 431237963,
     "storageLimitBytes": 1073741824,
     "ratio": 0.402,
     "warn": false,
