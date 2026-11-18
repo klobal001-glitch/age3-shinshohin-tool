@@ -65,7 +65,7 @@ export default function MonthlyView({
   const [picks, setPicks] = useLocalStorageState<Record<string, string[]>>("poster_picks", {});
   const [posterOpen, setPosterOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  /** 海外チームへ送る商品予定（複数月） */
+  /** 販売予定表（複数月・価格なし・日本語＋英語） */
   const [scheduleOpen, setScheduleOpen] = useState(false);
   /** 社内の準備状況は、ふだんは閉じておく（この画面の主役ではない） */
   const [prepOpen, setPrepOpen] = useState(false);
@@ -160,7 +160,7 @@ export default function MonthlyView({
         </button>
         <h1 className={h2}>販売スケジュール</h1>
         <p className={`mt-1 ${muted}`}>
-          月ごとに、売っている商品を見られます。店頭のA4と、海外チームへ送る資料もここから作れます。
+          月ごとに、売っている商品を見られます。店頭のA4と、販売予定表もここから作れます。
         </p>
       </div>
 
@@ -233,7 +233,7 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* つくる：店頭A4 ／ 海外チームへ ／ リーダー共有 */}
+      {/* つくる：店頭A4 ／ 販売予定表 ／ リーダー共有 */}
       <div className={`${card} overflow-hidden`}>
         <div className={cardHead}>
           <h2 className={h3}>つくる</h2>
@@ -289,22 +289,23 @@ export default function MonthlyView({
             )}
           </div>
 
-          {/* 海外チームへ送る商品予定（価格なし・複数月） */}
+          {/* 販売予定表（価格なし・複数月・日本語＋英語）。海外チームにも社内にも同じものを使う */}
           <div className="p-4 sm:p-5">
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <h3 className="text-[15px] font-bold text-stone-900">海外チームへ送る</h3>
-              <span className="text-xs text-stone-500">商品予定・複数月えらべます</span>
+              <h3 className="text-[15px] font-bold text-stone-900">販売予定表をつくる</h3>
+              <span className="text-xs text-stone-500">複数月えらべます</span>
               <span className={badge("neutral", "ml-2")}>価格は載せません</span>
             </div>
             <p className={`mt-1 ${muted}`}>
-              月を選び、入れる商品を1件ずつ選んで、PDFにします。はじめは1件も入っていません。
+              月を選び、入れる商品を選んで、A4の予定表にします。形は「商品カード」と「月ごとの
+              カレンダー」から選べます。日本語＋英語なので、海外チームにもそのまま送れます。
             </p>
             <button
               type="button"
               className={btn("secondary", "mt-3")}
               onClick={() => setScheduleOpen(true)}
             >
-              資料をつくる
+              予定表をつくる
             </button>
           </div>
 

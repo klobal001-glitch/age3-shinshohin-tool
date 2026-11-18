@@ -43,7 +43,7 @@ import { GENRE_LABELS } from "@/lib/types";
 import { badge, btn, muted } from "@/lib/ui";
 
 /* ------------------------------------------------------------------ *
- * 海外チームへ送る「商品予定」の資料
+ * 販売予定表（複数月・価格なし・日本語＋英語）。海外チームにも社内にも同じものを使う
  *
  * 流れは3つだけ：**① 月を選ぶ → ② 入れる商品を選ぶ → ③ PDFを保存**
  *
@@ -279,7 +279,7 @@ export default function ScheduleSheet({
             <Icon name="close" className="h-4 w-4" />
             閉じる
           </button>
-          <span className="text-sm font-semibold text-stone-700">海外チームへ送る商品予定</span>
+          <span className="text-sm font-semibold text-stone-700">販売予定表</span>
           <span className={badge("neutral", "ml-auto")}>価格は載せません</span>
         </div>
 

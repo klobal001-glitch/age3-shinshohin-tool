@@ -240,7 +240,7 @@ export default function MenuView({
           <span className="min-w-0 flex-1">
             <span className="block text-[15px] font-semibold text-stone-900">販売スケジュール</span>
             <span className="mt-0.5 block text-sm text-stone-500">
-              月ごとの商品を見る／店頭のA4・海外チームへの資料・リーダー共有
+              月ごとの商品を見る／店頭のA4・販売予定表・リーダー共有
             </span>
           </span>
           <Icon name="chevronRight" className="h-5 w-5 shrink-0 text-stone-400" />
