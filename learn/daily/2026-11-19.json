@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-19",
+  "generatedAt": "2026-11-19T22:38:13.188Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 10,
+    "devices": 3,
+    "events": 36,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 10
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "#",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 新 #",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "資料を見る",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "予定表をつくる",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "翌月から#か月",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シーズン商品をえらぶ（#）",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "PDFを保存",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# 📣 SNS・PR #/#",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
