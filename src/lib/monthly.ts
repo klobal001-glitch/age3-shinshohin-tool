@@ -397,17 +397,20 @@ export function rangeTitle(selected: YearMonth[]): string {
  * 販売予定表に出せる材料がそろっているか。
  *
  * **価格は見ない。**この資料に価格は載せないため。
- * 正式な商品画像が無いものは「未確認」として、まとめて選ぶ対象にしない
- * （画像のない枠を資料に並べない。代わりの画像も作らない）。
+ *
+ * `needsPhoto` は資料の形で変わる（2026年11月・松尾さんの判断）。
+ * - **商品カードの形は写真が主役**なので、正式な商品画像が無いものは出さない。
+ * - **月ごとのカレンダーは「いつ何を売るか」の表**なので、写真がまだ無くても出せる。
+ *   写真の枠は「準備中 / in prep.」で出る。**代わりの画像は作らない。**
  */
-export function scheduleReady(e: MonthEntry): boolean {
-  return !!e.image && hasPeriod(e) && !isTentativeName(e.product.name);
+export function scheduleReady(e: MonthEntry, needsPhoto = true): boolean {
+  return (!needsPhoto || !!e.image) && hasPeriod(e) && !isTentativeName(e.product.name);
 }
 
-/** 資料に出せない理由 */
-export function missingForSchedule(e: MonthEntry): string[] {
+/** 資料に出せない理由。写真を見るかどうかは `scheduleReady` と必ず揃える */
+export function missingForSchedule(e: MonthEntry, needsPhoto = true): string[] {
   const out: string[] = [];
-  if (!e.image) out.push("正式な商品画像が未登録");
+  if (needsPhoto && !e.image) out.push("正式な商品画像が未登録");
   if (!hasPeriod(e)) out.push("販売期間が未入力");
   if (isTentativeName(e.product.name)) out.push("商品名が仮");
   return out;
