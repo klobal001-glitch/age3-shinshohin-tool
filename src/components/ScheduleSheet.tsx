@@ -354,6 +354,18 @@ export default function ScheduleSheet({
             >
               翌月から3か月
             </button>
+            {/* 年間カレンダー向け。今月を1か月目として12か月ぶん選ぶ */}
+            <button
+              type="button"
+              className={btn("secondary")}
+              onClick={() => {
+                setPages(null);
+                setPicked(Array.from({ length: 12 }, (_, i) => monthFromNow(i)));
+                setYear(monthFromNow(0).year);
+              }}
+            >
+              当月から12か月
+            </button>
             {picked.length > 0 && (
               <button
                 type="button"
