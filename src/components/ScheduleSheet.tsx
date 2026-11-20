@@ -99,8 +99,12 @@ export default function ScheduleSheet({
   );
 
   const keyOf = (r: RangeEntry) => entryKey(r.entry) + "|" + r.entry.releaseDate;
-  const ready = rows.filter((r) => scheduleReady(r.entry));
-  const notReady = rows.filter((r) => !scheduleReady(r.entry));
+  /* 写真を必須にするかは資料の形で変わる。
+     商品カードは写真が主役なので必須。月ごとのカレンダーは「いつ何を売るか」の表なので、
+     写真がまだ無い商品も入れられる（写真の枠は「準備中」で出る）。 */
+  const needsPhoto = form === "card";
+  const ready = rows.filter((r) => scheduleReady(r.entry, needsPhoto));
+  const notReady = rows.filter((r) => !scheduleReady(r.entry, needsPhoto));
   /* シーズン・期間限定の商品と、通年の商品を分ける。
      「ジャンルがシーズン」か「販売の終わりが決まっている」ものを期間限定とみなす。
      ずっと売っている通年・レギュラー・店舗限定は、下にたたんで置く（件数には入れたまま）。
@@ -125,6 +129,16 @@ export default function ScheduleSheet({
     );
   };
   const isMonthOn = (m: number) => picked.some((x) => x.year === year && x.month === m);
+
+  /** 資料の形を変える。新しい形で出せないものは、選んだ中から静かに外す */
+  const changeForm = (k: "card" | "calendar") => {
+    setForm(k);
+    setPages(null);
+    if (k === "card") {
+      const ok = new Set(rows.filter((r) => scheduleReady(r.entry, true)).map(keyOf));
+      setChosen((cur) => cur.filter((x) => ok.has(x)));
+    }
+  };
 
   const toggleOne = (r: RangeEntry) => {
     const k = keyOf(r);
@@ -160,10 +174,13 @@ export default function ScheduleSheet({
     e.image ? photos[toThumbnailUrl(e.image.url)] ?? null : null;
   /* まだ調べ終わっていない写真があるか（調べ終わるまでは保存させない） */
   const checking = inDoc.some((r) => !!r.entry.image && !photoOf(r.entry));
-  const blocked = inDoc.filter((r) => {
+  /* 写真が読み込めない商品。**商品カードの形では資料に入れられない**ので保存を止める。
+     月ごとのカレンダーは「準備中 / in prep.」で出るので、止めずにそのまま保存できる。 */
+  const unreadable = inDoc.filter((r) => {
     const st = photoOf(r.entry);
     return !!st && !st.readable;
   });
+  const blocked = needsPhoto ? unreadable : [];
 
   /** 手元の正式写真を読み込んで、この端末にだけ覚える（データベースには書かない） */
   const pickPhoto = async (url: string, file: File | null) => {
@@ -368,11 +385,64 @@ export default function ScheduleSheet({
         {/* ② 入れる商品を選ぶ */}
         {months.length > 0 && (
           <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
-            {step(2, "入れる商品を選ぶ", "選んだものだけが資料に載ります")}
+            {step(2, "資料の形と、入れる商品を選ぶ", "選んだものだけが資料に載ります")}
             <p className={`mt-1 ${muted}`}>
               {title}に売っている商品です（前の月から続いているものを含みます）。
               <strong className="text-stone-700">はじめは1件も入っていません。</strong>
             </p>
+
+            {/* 資料の形。**どちらを選ぶかで、出せる商品が変わる**ので、
+                商品を選ぶより先に、ここに置いている。
+                商品カード＝1件を大きく見せる／カレンダー＝どの月に何が出るかをひと目で見せる */}
+            <div className="mt-3">
+              <p className="text-xs text-stone-500">資料の形</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {(
+                  [
+                    {
+                      k: "card",
+                      t: "商品カード",
+                      n: "A4たて・1ページ4件・写真が大きい",
+                      n2: "正式な写真がある商品だけ",
+                    },
+                    {
+                      k: "calendar",
+                      t: "月ごとのカレンダー",
+                      n: "A4よこ・1枚で年間が見わたせる",
+                      n2: "写真がまだ無い商品も入れられる",
+                    },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.k}
+                    type="button"
+                    aria-pressed={form === o.k}
+                    onClick={() => changeForm(o.k)}
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-left transition sm:min-h-0 ${
+                      form === o.k
+                        ? "border-amber-700 bg-amber-50"
+                        : "border-stone-300 bg-white hover:bg-stone-50"
+                    }`}
+                  >
+                    <span
+                      className={`block text-sm font-semibold ${
+                        form === o.k ? "text-amber-800" : "text-stone-700"
+                      }`}
+                    >
+                      {o.t}
+                    </span>
+                    <span className="block text-xs text-stone-500">{o.n}</span>
+                    <span className="block text-xs text-stone-400">{o.n2}</span>
+                  </button>
+                ))}
+              </div>
+              {form === "calendar" && (
+                <p className="mt-1.5 text-xs text-stone-500">
+                  月の枠は、商品が1件も無くてもそのまま出ます。枠に入りきらない商品は「ほか◯品」と数で出ます。
+                  日本語の下に英語を小さく添えます（商品名は訳さず、商品データベースの英語名をそのまま使います）。
+                </p>
+              )}
+            </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
@@ -429,6 +499,7 @@ export default function ScheduleSheet({
                   months={months}
                   on={chosen.includes(keyOf(r))}
                   onToggle={() => toggleOne(r)}
+                  emptyText={needsPhoto ? undefined : "写真はまだ無し（準備中で出ます）"}
                 />
               ))}
             </ul>
@@ -455,6 +526,7 @@ export default function ScheduleSheet({
                         months={months}
                         on={chosen.includes(keyOf(r))}
                         onToggle={() => toggleOne(r)}
+                        emptyText={needsPhoto ? undefined : "写真はまだ無し（準備中で出ます）"}
                       />
                     ))}
                   </ul>
@@ -477,7 +549,16 @@ export default function ScheduleSheet({
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-stone-600">
-                  正式な商品画像や販売期間が入っていない商品です。代わりの画像は作りません。
+                  {needsPhoto ? (
+                    <>
+                      正式な商品画像や販売期間が入っていない商品です。代わりの画像は作りません。
+                      <strong className="text-stone-700">
+                        写真がまだ無いだけなら、「月ごとのカレンダー」の形にすると入れられます。
+                      </strong>
+                    </>
+                  ) : (
+                    <>販売期間が入っていない商品と、商品名が仮の商品です。</>
+                  )}
                   入れたいときは、商品のシートに正式な内容を入れてください。
                 </p>
                 <ul className="mt-2 space-y-1 text-sm text-stone-700">
@@ -485,7 +566,7 @@ export default function ScheduleSheet({
                     <li key={keyOf(r)} className="flex flex-wrap items-baseline gap-x-2">
                       <span className="font-medium">{r.entry.product.name}</span>
                       <span className="text-xs text-amber-800">
-                        {missingForSchedule(r.entry).join("／")}
+                        {missingForSchedule(r.entry, needsPhoto).join("／")}
                       </span>
                     </li>
                   ))}
@@ -504,17 +585,19 @@ export default function ScheduleSheet({
               価格・担当・原価・仕入・社内の準備状況は入りません。送信はしません。
             </p>
 
-            {blocked.length > 0 && (
+            {unreadable.length > 0 && (
               <div className="mt-3 rounded-xl bg-amber-50 p-3">
                 <p className="text-sm font-semibold text-amber-900">
-                  写真{blocked.length}件が、このままでは資料に入りません
+                  {needsPhoto
+                    ? `写真${unreadable.length}件が、このままでは資料に入りません`
+                    : `写真${unreadable.length}件は「準備中」で出ます`}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed text-stone-600">
                   ふだんどおりダウンロードした正式写真を一度だけ読み込むと入ります。
                   読み込んだ写真はこのパソコンの中だけに覚えます（商品データベースには書きません）。
                 </p>
                 <ul className="mt-2 space-y-1.5">
-                  {blocked.map((r) => {
+                  {unreadable.map((r) => {
                     const url = r.entry.image ? toThumbnailUrl(r.entry.image.url) : "";
                     return (
                       <li
@@ -537,50 +620,6 @@ export default function ScheduleSheet({
                 </ul>
               </div>
             )}
-
-            {/* 資料の形。同じ中身を2通りの見せ方で出せる。
-                商品カード＝1件を大きく見せる／カレンダー＝どの月に何が出るかをひと目で見せる */}
-            <div className="mt-3">
-              <p className="text-xs text-stone-500">資料の形</p>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {(
-                  [
-                    { k: "card", t: "商品カード", n: "A4たて・1ページ4件・写真が大きい" },
-                    { k: "calendar", t: "月ごとのカレンダー", n: "A4よこ・1枚で年間が見わたせる" },
-                  ] as const
-                ).map((o) => (
-                  <button
-                    key={o.k}
-                    type="button"
-                    aria-pressed={form === o.k}
-                    onClick={() => {
-                      setForm(o.k);
-                      setPages(null);
-                    }}
-                    className={`min-h-11 rounded-lg border px-3 py-2 text-left transition sm:min-h-0 ${
-                      form === o.k
-                        ? "border-amber-700 bg-amber-50"
-                        : "border-stone-300 bg-white hover:bg-stone-50"
-                    }`}
-                  >
-                    <span
-                      className={`block text-sm font-semibold ${
-                        form === o.k ? "text-amber-800" : "text-stone-700"
-                      }`}
-                    >
-                      {o.t}
-                    </span>
-                    <span className="block text-xs text-stone-500">{o.n}</span>
-                  </button>
-                ))}
-              </div>
-              {form === "calendar" && (
-                <p className="mt-1.5 text-xs text-stone-500">
-                  月の枠は、商品が1件も無くてもそのまま出ます。枠に入りきらない商品は「ほか◯品」と数で出ます。
-                  日本語の下に英語を小さく添えます（商品名は訳さず、商品データベースの英語名をそのまま使います）。
-                </p>
-              )}
-            </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
@@ -640,11 +679,14 @@ function Row({
   months,
   on,
   onToggle,
+  emptyText,
 }: {
   r: RangeEntry;
   months: YearMonth[];
   on: boolean;
   onToggle: () => void;
+  /** 写真が無いときに枠へ出す文字。資料の形で変わる */
+  emptyText?: string;
 }) {
   return (
     <li className={`rounded-xl p-3 transition ${on ? "bg-amber-50" : "bg-stone-50"}`}>
@@ -659,6 +701,7 @@ function Row({
           image={r.entry.image}
           className="h-20 w-20 shrink-0 rounded-lg bg-white object-contain p-1"
           fontSize={11}
+          {...(emptyText ? { emptyText } : {})}
         />
         <span className="min-w-0 flex-1">
           <span className="block text-[17px] font-bold leading-snug tracking-tight text-stone-900">
