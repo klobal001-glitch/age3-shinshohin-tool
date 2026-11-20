@@ -1,0 +1,149 @@
+{
+  "date": "2026-11-20",
+  "generatedAt": "2026-11-20T22:13:41.036Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 29,
+    "devices": 4,
+    "events": 159,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 18
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "#",
+      "count": 40
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "予定表をつくる",
+      "count": 11
+    },
+    {
+      "page": "/",
+      "name": "#年",
+      "count": 9
+    },
+    {
+      "page": "/",
+      "name": "シーズン商品をえらぶ（#）",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "資料を見る",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "名前を変える",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "月ごとのカレンダー A#よこ・#枚で年間が見わたせる 写真がまだ無い商品も入れら",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "当月から#か月",
+      "count": 5
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "商品を追加",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "今月発売をえらぶ（#）",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "もも揚げサンド(仮) #%",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "翌月から#か月",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "すべて外す",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "# 新 #",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ホーム",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "もも #%",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/product_info",
+      "status": 409,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 500,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "www.dropbox.com/scl/fi/hl#e#acv#hf#ypt#f#lv/Sukiyaki_s.png",
+      "status": 0,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "www.dropbox.com/scl/fi/qwh#ppa#gm#k#ms#otbl/Yangnyeom-Chicken-Tteokbokki_s.png",
+      "status": 0,
+      "count": 1
+    }
+  ],
+  "slow": [],
+  "feedback": []
+}
