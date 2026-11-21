@@ -4,9 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Icon from "@/components/Icon";
 import MonthlyPhoto from "@/components/MonthlyPhoto";
+import {
+  PickedPhoto,
+  loadFirstPhoto,
+  parsePhotoPlan,
+  photoPlan,
+  photoUrlsOf,
+} from "@/lib/photoPick";
 import { useAppData } from "@/hooks/useAppData";
 import {
-  MonthEntry,
   RangeEntry,
   YearMonth,
   collectRange,
@@ -34,11 +40,9 @@ import {
   drawSchedulePages,
   drawYearCalendarPages,
   jpegsToA4Pdf,
-  loadPhoto,
   saveBlob,
 } from "@/lib/posterPdf";
-import { toThumbnailUrl } from "@/lib/imageUrl";
-import { fileToPosterPhoto, rememberPhoto, storedPhoto } from "@/lib/posterPhotoStore";
+import { fileToPosterPhoto, rememberPhoto } from "@/lib/posterPhotoStore";
 import { GENRE_LABELS } from "@/lib/types";
 import { badge, btn, muted } from "@/lib/ui";
 
@@ -146,38 +150,36 @@ export default function ScheduleSheet({
     setChosen((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
   };
 
-  /* 写真が「資料に入れられるか」を調べる（店頭A4と同じ調べ方） */
-  const [photos, setPhotos] = useState<Record<string, PhotoState>>({});
+  /* 写真が「資料に入れられるか」を調べる（店頭A4と同じ調べ方）。
+     1番目が読み込めない商品は、登録されている次の画像に移る（photoPick.ts） */
+  const [photos, setPhotos] = useState<Record<string, PickedPhoto>>({});
   const [reload, setReload] = useState(0);
-  const photoUrls = inDoc
-    .map((r) => (r.entry.image ? toThumbnailUrl(r.entry.image.url) : ""))
-    .filter(Boolean)
-    .join("|");
+  const plan = photoPlan(inDoc.map((r) => ({ key: keyOf(r), urls: photoUrlsOf(r.entry) })));
   useEffect(() => {
     let cancelled = false;
-    const list = photoUrls.split("|").filter(Boolean);
     /* 調べることが無いときも、前の結果が残らないように空で入れ直す */
     Promise.all(
-      list.map(async (u) => [u, await loadPhoto(storedPhoto(u) ?? u)] as const)
+      parsePhotoPlan(plan).map(
+        async (row) => [row.key, await loadFirstPhoto(row.urls)] as const
+      )
     ).then((res) => {
       if (cancelled) return;
-      const map: Record<string, PhotoState> = {};
-      for (const [u, st] of res) map[u] = st;
+      const map: Record<string, PickedPhoto> = {};
+      for (const [k, picked] of res) if (picked) map[k] = picked;
       setPhotos(map);
     });
     return () => {
       cancelled = true;
     };
-  }, [photoUrls, reload]);
+  }, [plan, reload]);
 
-  const photoOf = (e: MonthEntry): PhotoState | null =>
-    e.image ? photos[toThumbnailUrl(e.image.url)] ?? null : null;
+  const photoOf = (r: RangeEntry): PhotoState | null => photos[keyOf(r)]?.st ?? null;
   /* まだ調べ終わっていない写真があるか（調べ終わるまでは保存させない） */
-  const checking = inDoc.some((r) => !!r.entry.image && !photoOf(r.entry));
+  const checking = inDoc.some((r) => photoUrlsOf(r.entry).length > 0 && !photoOf(r));
   /* 写真が読み込めない商品。**商品カードの形では資料に入れられない**ので保存を止める。
      月ごとのカレンダーは「準備中 / in prep.」で出るので、止めずにそのまま保存できる。 */
   const unreadable = inDoc.filter((r) => {
-    const st = photoOf(r.entry);
+    const st = photoOf(r);
     return !!st && !st.readable;
   });
   const blocked = needsPhoto ? unreadable : [];
@@ -208,7 +210,7 @@ export default function ScheduleSheet({
       name: r.entry.product.name,
       period: periodText(r.entry),
       months: rangeMonthsLabel(r.months, months),
-      photo: photoOf(r.entry),
+      photo: photoOf(r),
     }));
 
   /**
@@ -228,7 +230,7 @@ export default function ScheduleSheet({
           nameEn: r.entry.info.nameEn ?? "",
           months: rangeMonthsLabel(r.months, months),
           monthsEn: rangeMonthsLabelEn(r.months, months),
-          photo: photoOf(r.entry),
+          photo: photoOf(r),
         })),
     }));
 
@@ -610,7 +612,7 @@ export default function ScheduleSheet({
                 </p>
                 <ul className="mt-2 space-y-1.5">
                   {unreadable.map((r) => {
-                    const url = r.entry.image ? toThumbnailUrl(r.entry.image.url) : "";
+                    const url = photos[keyOf(r)]?.url ?? "";
                     return (
                       <li
                         key={keyOf(r) + "blk"}
@@ -711,6 +713,7 @@ function Row({
         />
         <MonthlyPhoto
           image={r.entry.image}
+          images={r.entry.images}
           className="h-20 w-20 shrink-0 rounded-lg bg-white object-contain p-1"
           fontSize={11}
           {...(emptyText ? { emptyText } : {})}

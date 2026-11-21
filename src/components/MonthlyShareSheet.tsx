@@ -128,6 +128,7 @@ export default function MonthlyShareSheet({
                   <li key={i} className="share-item flex gap-3">
                     <MonthlyPhoto
                       image={e.image}
+                      images={e.images}
                       className="h-24 w-24 shrink-0 rounded-lg bg-stone-100 object-contain p-1"
                       fontSize={11}
                     />

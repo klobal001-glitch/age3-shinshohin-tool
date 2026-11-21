@@ -6,7 +6,15 @@ import Age3Logo from "@/components/Age3Logo";
 import Icon from "@/components/Icon";
 import MonthlyPhoto from "@/components/MonthlyPhoto";
 import {
+  PickedPhoto,
+  loadFirstPhoto,
+  parsePhotoPlan,
+  photoPlan,
+  photoUrlsOf,
+} from "@/lib/photoPick";
+import {
   MonthEntry,
+  entryKey,
   hasPrice,
   posterContinuedText,
   posterPeriodText,
@@ -22,12 +30,10 @@ import {
   PAPER_W,
   POSTER_MAX,
   PosterItem,
-  PhotoState,
   canvasToJpeg,
   canvasToJpegBlob,
   drawPoster,
   jpegToA4Pdf,
-  loadPhoto,
   saveBlob,
   tierOf,
 } from "@/lib/posterPdf";
@@ -101,31 +107,30 @@ export default function MonthlyPoster({
      読めない写真があるときは、ファイル保存を止めて理由を出し、印刷に回す。 */
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, PhotoState>>({});
+  /* 1番目の画像が読み込めない商品は、登録されている次の画像に移る（photoPick.ts）。
+     この端末に覚えてある写真があれば、そちらを使う（PDFに入れられる） */
+  const [photos, setPhotos] = useState<Record<string, PickedPhoto>>({});
   const [checking, setChecking] = useState(true);
   /* 手元から読み込んだ写真を覚え直したときに、調べ直すための数 */
   const [reload, setReload] = useState(0);
-  const photoUrls = shown.map((e) => (e.image ? toThumbnailUrl(e.image.url) : "")).join("|");
+  const plan = photoPlan(shown.map((e) => ({ key: entryKey(e), urls: photoUrlsOf(e) })));
   useEffect(() => {
     let cancelled = false;
-    const list = photoUrls.split("|").filter(Boolean);
     Promise.all(
-      list.map(async (u) => {
-        /* この端末に覚えてある写真があれば、それを使う（PDFに入れられる） */
-        const kept = storedPhoto(u);
-        return [u, await loadPhoto(kept ?? u)] as const;
-      })
+      parsePhotoPlan(plan).map(
+        async (row) => [row.key, await loadFirstPhoto(row.urls)] as const
+      )
     ).then((rows) => {
       if (cancelled) return;
-      const map: Record<string, PhotoState> = {};
-      for (const [u, st] of rows) map[u] = st;
+      const map: Record<string, PickedPhoto> = {};
+      for (const [k, picked] of rows) if (picked) map[k] = picked;
       setPhotos(map);
       setChecking(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [photoUrls, reload]);
+  }, [plan, reload]);
 
   /** 手元の写真を選んでもらい、この端末に覚える（データベースには書かない） */
   const [picking, setPicking] = useState<string | null>(null);
@@ -146,7 +151,7 @@ export default function MonthlyPoster({
     }
   };
 
-  const photoOf = (e: MonthEntry) => (e.image ? photos[toThumbnailUrl(e.image.url)] ?? null : null);
+  const photoOf = (e: MonthEntry) => photos[entryKey(e)]?.st ?? null;
   /* PDFに入れられない写真を持つ商品 */
   const blocked = shown.filter((e) => {
     const st = photoOf(e);
@@ -157,14 +162,19 @@ export default function MonthlyPoster({
   const cantEmbed = blocked.filter((e) => photoOf(e)?.shown);
   const cantShow = blocked.filter((e) => !photoOf(e)?.shown);
   /* 手元から読み込んで、この端末に覚えてある写真を使っている商品 */
-  const kept = shown.filter((e) => e.image && storedPhoto(toThumbnailUrl(e.image.url)));
+  const kept = shown.filter((e) => {
+    const u = photos[entryKey(e)]?.url;
+    return !!u && !!storedPhoto(u);
+  });
 
   /* 画面に出す写真。手元から読み込んだものがあれば、PDFと同じものを出す
      （画面とPDFで違う絵が出ると、何が刷られるのか分からなくなる） */
   const displayImage = (e: MonthEntry) => {
-    if (!e.image) return null;
-    const keptUrl = storedPhoto(toThumbnailUrl(e.image.url));
-    return keptUrl ? { url: keptUrl, key: e.image.key } : e.image;
+    const picked = photos[entryKey(e)];
+    if (!picked) return e.image;
+    const keptUrl = storedPhoto(picked.url);
+    const key = e.images.find((c) => toThumbnailUrl(c.url) === picked.url)?.key ?? e.image?.key ?? "";
+    return { url: keptUrl ?? picked.url, key };
   };
 
   /** 紙に載せる中身。PDFも画像も、必ずここから作る（中身がズレないように） */
@@ -482,7 +492,7 @@ export default function MonthlyPoster({
             </p>
             <ul className="mt-2 space-y-1.5">
               {blocked.map((e) => {
-                const url = e.image ? toThumbnailUrl(e.image.url) : "";
+                const url = photos[entryKey(e)]?.url ?? "";
                 return (
                   <li
                     key={e.product.id + e.runLabel}
@@ -517,7 +527,7 @@ export default function MonthlyPoster({
           <div className="rounded-xl bg-stone-100 p-3 text-xs leading-relaxed text-stone-600">
             <span>このパソコンに覚えている写真：</span>
             {kept.map((e) => {
-              const url = e.image ? toThumbnailUrl(e.image.url) : "";
+              const url = photos[entryKey(e)]?.url ?? "";
               return (
                 <span
                   key={e.product.id + e.runLabel}
