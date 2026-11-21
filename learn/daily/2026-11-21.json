@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-21",
+  "generatedAt": "2026-11-21T20:52:15.703Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 6,
+    "devices": 3,
+    "events": 69,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 12
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "飛騨牛ステーキ #%",
+      "count": 30
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "保存した画像を開く",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "予定表をつくる",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "当月から#か月",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "月ごとのカレンダー A#よこ・#枚で年間が見わたせる 写真がまだ無い商品も入れら",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シーズン商品をえらぶ（#）",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "資料を見る",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "今月発売をえらぶ（#）",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "A#をつくる",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "画像を閉じる",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "このファイルを保存する",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "梨",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "揚げパンディップ チョコ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "トナカイのメープルミルキーサンド",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "飛騨牛ステーキ 商品を変える",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ドバイチョコ餅（チョコ） #%",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}

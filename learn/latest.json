@@ -1,48 +1,23 @@
 {
-  "date": "2026-11-20",
-  "generatedAt": "2026-11-20T22:13:41.036Z",
+  "date": "2026-11-21",
+  "generatedAt": "2026-11-21T20:52:15.703Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 29,
-    "devices": 4,
-    "events": 159,
+    "batches": 6,
+    "devices": 3,
+    "events": 69,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
-  "topNetwork": [
-    {
-      "page": "/",
-      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/product_info",
-      "status": 409,
-      "count": 1
-    },
-    {
-      "page": "/",
-      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
-      "status": 500,
-      "count": 1
-    },
-    {
-      "page": "/",
-      "where": "www.dropbox.com/scl/fi/hl#e#acv#hf#ypt#f#lv/Sukiyaki_s.png",
-      "status": 0,
-      "count": 1
-    },
-    {
-      "page": "/",
-      "where": "www.dropbox.com/scl/fi/qwh#ppa#gm#k#ms#otbl/Yangnyeom-Chicken-Tteokbokki_s.png",
-      "status": 0,
-      "count": 1
-    }
-  ],
+  "topNetwork": [],
   "topSlow": [],
   "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 431259864,
+    "storageBytes": 431262841,
     "storageLimitBytes": 1073741824,
     "ratio": 0.402,
     "warn": false,
