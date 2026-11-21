@@ -9,7 +9,7 @@ import {
 } from "./types";
 import { listRuns, runFieldsOf, RunField } from "./productRun";
 import { formatPrice, isRequiredVisualKey } from "./productInfo";
-import { CardImage, pickCardImage, pickProductThumb } from "./visualThumb";
+import { CardImage, pickCardImages, pickProductThumbs } from "./visualThumb";
 import { TASK_GROUPS } from "./prepTasks";
 import { isLinkedTaskDone, isTaskSkipped } from "./stats";
 import { computeDeadline, daysDiffFromToday } from "./deadline";
@@ -78,6 +78,8 @@ export interface MonthEntry {
   fields: Pick<ProductInfo, RunField>;
   /** 掲示に使う画像。この回に無ければ前の回の画像 */
   image: CardImage | null;
+  /** 1番目が読み込めなかったときに使う控え（image を含む、使う順） */
+  images: CardImage[];
   /** 画像がこの回のものではなく、ほかの回から借りてきたか */
   imageFromOtherRun: boolean;
   /** この月に発売開始するか */
@@ -197,8 +199,9 @@ export function collectMonth(src: Source, year: number, month: number): MonthEnt
       if (!onSale) continue;
 
       const fields = runFieldsOf(info, entry.run);
-      const own = pickCardImage({ ...info, visualDownloads: fields.visualDownloads });
-      const borrowed = own ? null : pickProductThumb(info);
+      const own = pickCardImages({ ...info, visualDownloads: fields.visualDownloads });
+      const borrowed = own.length ? [] : pickProductThumbs(info);
+      const images = own.length ? own : borrowed;
 
       out.push({
         product,
@@ -211,8 +214,9 @@ export function collectMonth(src: Source, year: number, month: number): MonthEnt
         endDate: entry.endDate,
         ongoing: entry.ongoing,
         fields,
-        image: own ?? borrowed,
-        imageFromOtherRun: !own && !!borrowed,
+        image: images[0] ?? null,
+        images,
+        imageFromOtherRun: !own.length && borrowed.length > 0,
         startsThisMonth: starts,
         onSaleThisMonth: onSale,
         continuedFrom: starts
