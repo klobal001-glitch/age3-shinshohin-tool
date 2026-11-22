@@ -1,13 +1,13 @@
 {
-  "date": "2026-11-21",
-  "generatedAt": "2026-11-21T20:52:15.703Z",
+  "date": "2026-11-22",
+  "generatedAt": "2026-11-22T20:59:39.993Z",
   "signal": false,
   "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 6,
-    "devices": 3,
-    "events": 69,
+    "batches": 0,
+    "devices": 0,
+    "events": 0,
     "droppedBatches": 0
   },
   "feedback": [],
