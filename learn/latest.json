@@ -1,23 +1,61 @@
 {
-  "date": "2026-11-23",
-  "generatedAt": "2026-11-24T02:07:18.574Z",
-  "signal": false,
-  "reasons": [],
+  "date": "2026-11-24",
+  "generatedAt": "2026-11-24T23:50:26.327Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 4回: drive.google.com/open（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）"
+  ],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 3,
-    "devices": 2,
-    "events": 7,
+    "batches": 13,
+    "devices": 1,
+    "events": 41,
     "droppedBatches": 0
   },
   "feedback": [],
   "topErrors": [],
-  "topNetwork": [],
+  "topNetwork": [
+    {
+      "page": "/",
+      "where": "drive.google.com/open",
+      "status": 0,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "drive.google.com/uc",
+      "status": 0,
+      "count": 2
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 400,
+      "count": 2
+    },
+    {
+      "page": "/",
+      "where": "drive.google.com/thumbnail",
+      "status": 0,
+      "count": 1
+    }
+  ],
   "topSlow": [],
-  "relatedFiles": [],
+  "relatedFiles": [
+    "src/app/page.tsx",
+    "src/components/Header.tsx",
+    "src/components/Sidebar.tsx"
+  ],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 431263846,
+    "storageBytes": 431267917,
     "storageLimitBytes": 1073741824,
     "ratio": 0.402,
     "warn": false,

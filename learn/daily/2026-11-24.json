@@ -1,0 +1,99 @@
+{
+  "date": "2026-11-24",
+  "generatedAt": "2026-11-24T23:50:26.327Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 4回: drive.google.com/open（つながらない）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）"
+  ],
+  "totals": {
+    "batches": 13,
+    "devices": 1,
+    "events": 41,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 10
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "この商品にはこのビジュアルが無いので、必須の数から外す",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "別タブで開く",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "再試行",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "置き場所を別タブで開く",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "drive.google.com/open",
+      "status": 0,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "drive.google.com/uc",
+      "status": 0,
+      "count": 2
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 400,
+      "count": 2
+    },
+    {
+      "page": "/",
+      "where": "drive.google.com/thumbnail",
+      "status": 0,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 403,
+      "count": 1
+    }
+  ],
+  "slow": [],
+  "feedback": []
+}
