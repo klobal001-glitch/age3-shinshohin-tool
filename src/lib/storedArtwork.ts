@@ -11,6 +11,8 @@ export async function artworkReport(report?:ArtworkReport):Promise<ArtworkReport
 export async function resolvedArtworkUrl(raw:string):Promise<string>{
   const u=new URL(raw,location.origin);
   if(['dropbox.com','www.dropbox.com'].includes(u.hostname)&&u.pathname.startsWith('/scl/fo/'))return (await api({action:'resolve',source:artworkSource(raw)})).url;
+  /* Googleドライブはブラウザから直接読めないので、アプリ本体に取ってきてもらう */
+  if(/^(?:www\.)?drive\.google\.com$/.test(u.hostname))return `/api/artwork?source=${encodeURIComponent(artworkSource(raw))}`;
   return toEmbeddedImageUrl(raw);
 }
 export async function savedArtwork(raw:string,full=false):Promise<SavedArtwork|null>{
@@ -42,7 +44,18 @@ export function archiveArtwork(raw:string,file?:File):Promise<SavedArtwork>{
       /* 外（Googleドライブなど）からの取り込みは、置き場所が外部サイトからの読み取りを
          許していないとブラウザに止められる。英語のまま出すと意味が分からないので、
          何をすればよいかが分かる日本語にして返す。 */
-      const r=file?new Response(file,{headers:{'Content-Type':file.type}}):await fetch(await resolvedArtworkUrl(source),{credentials:'omit',signal:AbortSignal.timeout(60000)}).catch(()=>{throw new Error('この置き場所からは画像を取り込めません。「画像を差し替え」で手元の画像を選ぶと保存できます。');});
+      let r:Response;
+      if(file)r=new Response(file,{headers:{'Content-Type':file.type}});
+      else{
+        const target=await resolvedArtworkUrl(source);
+        /* `/api/...` はアプリ本体に取ってきてもらう道。外の置き場所に余計な見出しを
+           付けると読み取りを断られることがあるので、自分のところにだけ付ける */
+        const own=target.startsWith('/');
+        r=await fetch(target,own?{headers:{'X-Artwork':'1'},signal:AbortSignal.timeout(180000)}:{credentials:'omit',signal:AbortSignal.timeout(60000)})
+          .catch(()=>{throw new Error('この置き場所からは画像を取り込めません。「画像を差し替え」で手元の画像を選ぶと保存できます。');});
+        /* アプリ本体からの返事は、断った理由が日本語で入っている */
+        if(!r.ok&&own)throw new Error(await r.json().then(d=>typeof d?.error==='string'?d.error:null).catch(()=>null)??'画像を取り込めませんでした。');
+      }
       if(!r.ok)throw new Error(r.status===404?'リンク先が見つかりません（404）。':'画像を取得できません。共有設定を確認してください。');
       if(Number(r.headers.get('Content-Length'))>ARTWORK_MAX_SIZE)throw new Error('元画像は30MB以下で選んでください。');
       const mime=(r.headers.get('Content-Type')??'').split(';')[0].toLowerCase();
