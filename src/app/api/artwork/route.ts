@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {privateLibrary,libraryConfigured} from '../../../lib/overseas/serverLibrary';
-import {artworkIdPattern,artworkPath,artworkSource,validateArtwork,ArtworkManifest} from '../../../lib/artworkTypes';
+import {ARTWORK_MAX_SIZE,artworkIdPattern,artworkPath,artworkSource,validateArtwork,ArtworkManifest} from '../../../lib/artworkTypes';
 export const runtime='nodejs',dynamic='force-dynamic',maxDuration=180;
 const json=(v:unknown,s=200)=>Response.json(v,{status:s,headers:{'Cache-Control':'no-store'}});
 const hash=(s:string|Uint8Array)=>createHash('sha256').update(s).digest('hex');
@@ -26,6 +26,50 @@ async function signed(store:Store,m:ArtworkManifest,full=false){
   const urls=full?await Promise.all(m.parts.map(async(_,i)=>{const r=await store.createSignedUrl(artworkPath(m.id,i),3600);if(r.error||!r.data)throw new Error('元画像を開けませんでした。');return r.data.signedUrl;})):undefined;
   return {manifest:m,previewUrl:data.signedUrl,urls};
 }
+/* ------------------------------------------------------------------ *
+ * Googleドライブの画像を、アプリ本体が代わりに取ってくる（2026年11月）
+ *
+ * ブラウザはドライブから直接読めない（ドライブが外部サイトからの読み取りを
+ * 止めるため）。アプリ本体はブラウザではないので、普通にダウンロードできる。
+ * ここで受け取って、そのままブラウザへ流す。ブラウザから先は今までと同じ。
+ *
+ * 安全のため、次のものだけを通す。
+ * - シートに登録済みのリンク（registered）
+ * - Googleドライブのリンク（ほかの場所は受け付けない）
+ * - 画像（PNG・JPEG・WebP）で、30MBまで
+ * 共有が「制限付き」のファイルは、アプリ本体もログインしていないので取れない。
+ * ------------------------------------------------------------------ */
+const DRIVE_FETCH_HOSTS=/^(?:drive\.google\.com|drive\.usercontent\.google\.com|(?:[a-z0-9-]+\.)?googleusercontent\.com)$/;
+function driveId(u:URL):string|null{
+  const m=u.pathname.match(/^\/file\/d\/([^/]+)/);if(m)return m[1];
+  const id=u.searchParams.get('id');return id&&/^[\w-]{10,200}$/.test(id)?id:null;
+}
+export async function GET(request:Request){
+  if(request.headers.get('x-artwork')!=='1')return json({error:'アプリの画面から実行してください。'},403);
+  try{
+    const source=artworkSource(new URL(request.url).searchParams.get('source')??'');
+    let u:URL;try{u=new URL(source);}catch{return json({error:'画像の共有リンクを確認してください。'},400);}
+    if(!/^(?:www\.)?drive\.google\.com$/.test(u.hostname))return json({error:'Googleドライブのリンクだけ取り込めます。'},400);
+    const id=driveId(u);if(!id)return json({error:'Googleドライブの「ファイル」のリンクを登録してください（フォルダのリンクは取り込めません）。'},400);
+    if(!await registered(source))return json({error:'シートに登録済みの画像リンクを選んでください。'},400);
+    let target=new URL(`https://drive.usercontent.google.com/download?export=download&id=${encodeURIComponent(id)}`);
+    for(let step=0;step<6;step++){
+      if(target.protocol!=='https:'||target.username||target.password||target.port||!DRIVE_FETCH_HOSTS.test(target.hostname))return json({error:'画像の取り込み先を確認できませんでした。'},400);
+      const response=await fetch(target,{redirect:'manual',signal:AbortSignal.timeout(60000)});
+      if([301,302,303,307,308].includes(response.status)){
+        await response.body?.cancel();const next=response.headers.get('location');if(!next)break;target=new URL(next,target);continue;
+      }
+      if(!response.ok){await response.body?.cancel();return json({error:response.status===404?'リンク先が見つかりません（404）。':'画像を取り込めませんでした。共有設定を確認してください。'},422);}
+      const mime=(response.headers.get('content-type')??'').split(';')[0].toLowerCase();
+      if(!/^image\/(png|jpeg|webp)$/.test(mime)){await response.body?.cancel();return json({error:'画像ではなく案内ページが返されました。共有を「リンクを知っている全員」にしてください。'},422);}
+      const length=Number(response.headers.get('content-length'));
+      if(Number.isFinite(length)&&length>ARTWORK_MAX_SIZE){await response.body?.cancel();return json({error:'元画像は30MB以下で選んでください。'},413);}
+      return new Response(response.body,{headers:{'Content-Type':mime,'Cache-Control':'no-store',...(Number.isFinite(length)&&length>0?{'Content-Length':String(length)}:{})}});
+    }
+    return json({error:'画像の取り込み先を確認できませんでした。'},422);
+  }catch(e){return json({error:e instanceof Error?e.message:'画像を取り込めませんでした。'},502);}
+}
+
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin&&(!request.headers.get('host')||request.headers.get('origin')!==`${new URL(request.url).protocol}//${request.headers.get('host')}`))return json({error:'アプリの画面から実行してください。'},403);
   if(!libraryConfigured())return json({error:'画像の共有保存先が設定されていません。'},503);
