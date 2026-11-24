@@ -35,6 +35,24 @@ function hostMatches(hostname: string, host: string) {
 }
 
 /**
+ * Google ドライブのファイルID。
+ *
+ * 貼られるリンクには何通りかの形がある。**どの形でも同じファイルIDを取り出す。**
+ * - `/file/d/<ID>/view`（「リンクをコピー」で出る形）
+ * - `/open?id=<ID>`（ドライブのメニューから貼ると、この形になることがある）
+ * - `/uc?id=<ID>` `/thumbnail?id=<ID>`（直リンクの形）
+ *
+ * 2026年11月に、`/open?id=` の形だけサムネイルが出ず、鎖のマークのままだった。
+ * `/file/d/` しか見ていなかったのが原因。
+ */
+function driveFileId(u: URL): string | null {
+  const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
+  if (m) return m[1];
+  const id = u.searchParams.get("id");
+  return id && /^[\w-]{10,}$/.test(id) ? id : null;
+}
+
+/**
  * 表示用URLに変換する。変換できないものは入力をそのまま返す（throwしない）。
  *
  * - Dropbox: dl / raw を消して raw=1 を付ける（rlkey などは残す）
@@ -56,8 +74,8 @@ export function toThumbnailUrl(rawUrl: string): string {
   }
 
   if (hostMatches(u.hostname, "drive.google.com")) {
-    const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
-    if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+    const id = driveFileId(u);
+    if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
   }
 
   return rawUrl;
@@ -97,8 +115,8 @@ export function toDownloadUrl(rawUrl: string): string {
   }
 
   if (hostMatches(u.hostname, "drive.google.com")) {
-    const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
-    if (m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+    const id = driveFileId(u);
+    if (id) return `https://drive.google.com/uc?export=download&id=${id}`;
   }
 
   return rawUrl;

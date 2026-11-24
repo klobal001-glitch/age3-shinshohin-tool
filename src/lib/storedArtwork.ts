@@ -39,7 +39,10 @@ export function archiveArtwork(raw:string,file?:File):Promise<SavedArtwork>{
     try{
       const existing=await savedArtwork(source);if(existing)return existing;
       if(source.startsWith('inside:')&&!file)throw new Error('元ファイルをもう一度選んでください。');
-      const r=file?new Response(file,{headers:{'Content-Type':file.type}}):await fetch(await resolvedArtworkUrl(source),{credentials:'omit',signal:AbortSignal.timeout(60000)});
+      /* 外（Googleドライブなど）からの取り込みは、置き場所が外部サイトからの読み取りを
+         許していないとブラウザに止められる。英語のまま出すと意味が分からないので、
+         何をすればよいかが分かる日本語にして返す。 */
+      const r=file?new Response(file,{headers:{'Content-Type':file.type}}):await fetch(await resolvedArtworkUrl(source),{credentials:'omit',signal:AbortSignal.timeout(60000)}).catch(()=>{throw new Error('この置き場所からは画像を取り込めません。「画像を差し替え」で手元の画像を選ぶと保存できます。');});
       if(!r.ok)throw new Error(r.status===404?'リンク先が見つかりません（404）。':'画像を取得できません。共有設定を確認してください。');
       if(Number(r.headers.get('Content-Length'))>ARTWORK_MAX_SIZE)throw new Error('元画像は30MB以下で選んでください。');
       const mime=(r.headers.get('Content-Type')??'').split(';')[0].toLowerCase();
