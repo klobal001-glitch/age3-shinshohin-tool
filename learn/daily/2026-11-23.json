@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-23",
+  "generatedAt": "2026-11-24T02:07:18.574Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 3,
+    "devices": 2,
+    "events": 7,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 3
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "slow": [],
+  "feedback": []
+}
