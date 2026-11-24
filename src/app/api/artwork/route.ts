@@ -54,7 +54,8 @@ export async function GET(request:Request){
     if(!await registered(source))return json({error:'シートに登録済みの画像リンクを選んでください。'},400);
     let target=new URL(`https://drive.usercontent.google.com/download?export=download&id=${encodeURIComponent(id)}`);
     for(let step=0;step<6;step++){
-      if(target.protocol!=='https:'||target.username||target.password||target.port||!DRIVE_FETCH_HOSTS.test(target.hostname))return json({error:'画像の取り込み先を確認できませんでした。'},400);
+      if(/^accounts\.google\.com$/.test(target.hostname))return json({error:'このファイルは共有が「制限付き」です。共有を「リンクを知っている全員」にしてください。'},422);
+      if(target.protocol!=='https:'||target.username||target.password||target.port||!DRIVE_FETCH_HOSTS.test(target.hostname))return json({error:`画像の取り込み先を確認できませんでした（${target.hostname}）。`},400);
       const response=await fetch(target,{redirect:'manual',signal:AbortSignal.timeout(60000)});
       if([301,302,303,307,308].includes(response.status)){
         await response.body?.cancel();const next=response.headers.get('location');if(!next)break;target=new URL(next,target);continue;
