@@ -131,7 +131,7 @@ export const TASK_GROUPS: TaskGroup[] = [
           },
           {
             id: "poster_asakusa_a1",
-            label: "ポスター A1（浅草）", note: "自動入力欄へ",
+            label: "ポスター A1", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },
@@ -139,7 +139,7 @@ export const TASK_GROUPS: TaskGroup[] = [
           },
           {
             id: "poster_asakusa_b2",
-            label: "浅草ポスター（外B2）",
+            label: "ポスター B2", note: "自動入力欄へ",
             children: [
               { id: "make", label: "制作" },
               { id: "submit", label: "入稿" },

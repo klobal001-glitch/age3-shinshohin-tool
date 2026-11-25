@@ -16,7 +16,11 @@ export const VISUAL_DOWNLOAD_DEFS: { key: string; label: string; size: string }[
   { key: "product_image", label: "商品画像", size: "背景なし画像" },
   { key: "ig_feed", label: "Instagram フィード投稿画像", size: "1,080 × 1,350px" },
   { key: "ig_story", label: "Instagram ストーリーズ投稿画像", size: "1,080 × 1,920px" },
-  { key: "poster_a1_asakusa", label: "ポスター A1（浅草）", size: "594 × 841mm" },
+  /* 名前から「（浅草）」を外した（2026年11月・松尾さんの指示）。浅草だけのものではないため。
+     **key はそのまま。**key を変えると、今まで登録した画像のリンクが全部ひもづかなくなる */
+  { key: "poster_a1_asakusa", label: "ポスター A1", size: "594 × 841mm" },
+  /* B2は日本の印刷で使うJIS B2（515 × 728mm）。ISOのB2（500 × 707mm）ではない */
+  { key: "poster_b2", label: "ポスター B2", size: "515 × 728mm" },
   { key: "signage_v", label: "サイネージ 縦", size: "1,080 × 1,920px" },
   { key: "signage_h", label: "サイネージ 横", size: "1,920 × 1,080px" },
   { key: "uber_image", label: "Uber Eats 商品画像", size: "1,250 × 1,000px" },
