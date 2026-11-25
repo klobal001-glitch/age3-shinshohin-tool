@@ -1,0 +1,161 @@
+{
+  "date": "2026-11-25",
+  "generatedAt": "2026-11-25T23:34:39.945Z",
+  "signal": true,
+  "reasons": [
+    "通信の失敗 42回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）",
+    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（つながらない）",
+    "遅い通信 29回: / age#-shinshohin-tool-theta.vercel.app/api/artwork"
+  ],
+  "totals": {
+    "batches": 47,
+    "devices": 3,
+    "events": 228,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 12
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "資料を見る",
+      "count": 25
+    },
+    {
+      "page": "/",
+      "name": "再試行",
+      "count": 19
+    },
+    {
+      "page": "/",
+      "name": "シーズン商品をえらぶ（#）",
+      "count": 12
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "この商品にはこのビジュアルが無いので、必須の数から外す",
+      "count": 8
+    },
+    {
+      "page": "/",
+      "name": "予定表をつくる",
+      "count": 6
+    },
+    {
+      "page": "/",
+      "name": "別タブで開く",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "当月から#か月",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "翌月から#か月",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "PDFを保存",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "月ごとのカレンダー A#よこ・#枚で年間が見わたせる 写真がまだ無い商品も入れら",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 4
+    },
+    {
+      "page": "/",
+      "name": "#",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "タスク",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラドフェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "#年",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール 月ごとの商品を見る／店頭のA#・販売予定表・リーダー共有",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ホーム",
+      "count": 2
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 42
+    },
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 0,
+      "count": 4
+    },
+    {
+      "page": "/",
+      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/product_info",
+      "status": 409,
+      "count": 1
+    },
+    {
+      "page": "/",
+      "where": "cchndwcqxzztagpmfofq.supabase.co/storage/v#/object/sign/overseas-guides/artwork/files/#b#a#ea#a#c#f#",
+      "status": 0,
+      "count": 1
+    }
+  ],
+  "slow": [
+    {
+      "page": "/",
+      "kind": "通信",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "maxMs": 46368,
+      "count": 29
+    }
+  ],
+  "feedback": []
+}
