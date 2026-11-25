@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto';
+import {createHash,createSign} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {privateLibrary,libraryConfigured} from '../../../lib/overseas/serverLibrary';
 import {ARTWORK_MAX_SIZE,artworkIdPattern,artworkPath,artworkSource,validateArtwork,ArtworkManifest} from '../../../lib/artworkTypes';
@@ -44,6 +44,62 @@ function driveId(u:URL):string|null{
   const m=u.pathname.match(/^\/file\/d\/([^/]+)/);if(m)return m[1];
   const id=u.searchParams.get('id');return id&&/^[\w-]{10,200}$/.test(id)?id:null;
 }
+/* ------------------------------------------------------------------ *
+ * アプリ専用のGoogleアカウント（サービスアカウント）で読む（2026年11月）
+ *
+ * ドライブの共有を「リンクを知っている全員」にしなくても、
+ * **アプリ専用アカウントのメールアドレスにだけ閲覧権限を与えれば**、
+ * アプリが画像を読んで保存できるようにするための道。
+ *
+ * 設定（Vercelの環境変数）。入れていなければ、この道は使わず今までどおり動く。
+ *   GOOGLE_DRIVE_SA_JSON … サービスアカウントの鍵ファイル（JSON）の中身をそのまま
+ *   （分けて入れるときは GOOGLE_DRIVE_SA_EMAIL と GOOGLE_DRIVE_SA_KEY）
+ * ------------------------------------------------------------------ */
+function serviceAccount():{email:string;key:string}|null{
+  const raw=process.env.GOOGLE_DRIVE_SA_JSON?.trim();
+  if(raw){
+    try{
+      const j=JSON.parse(raw) as {client_email?:string;private_key?:string};
+      if(j.client_email&&j.private_key)return {email:j.client_email,key:j.private_key.replace(/\\n/g,'\n')};
+    }catch{/* 形が違えば下の2つを見る */}
+  }
+  const email=process.env.GOOGLE_DRIVE_SA_EMAIL?.trim(),key=process.env.GOOGLE_DRIVE_SA_KEY?.trim();
+  if(email&&key)return {email,key:key.replace(/\\n/g,'\n')};
+  return null;
+}
+const base64url=(v:string|Buffer)=>Buffer.from(v).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+let driveToken:{value:string;expires:number}|undefined;
+/** ドライブを読むための合い言葉を取る。1時間ぶん使い回す */
+async function driveAccessToken(sa:{email:string;key:string}):Promise<string>{
+  if(driveToken&&driveToken.expires>Date.now()+60000)return driveToken.value;
+  const now=Math.floor(Date.now()/1000);
+  const claim={iss:sa.email,scope:'https://www.googleapis.com/auth/drive.readonly',aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+3600};
+  const body=`${base64url(JSON.stringify({alg:'RS256',typ:'JWT'}))}.${base64url(JSON.stringify(claim))}`;
+  const signature=base64url(createSign('RSA-SHA256').update(body).sign(sa.key));
+  const response=await fetch('https://oauth2.googleapis.com/token',{
+    method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:`${body}.${signature}`}),
+    signal:AbortSignal.timeout(20000),
+  });
+  const data=await response.json().catch(()=>null) as {access_token?:string;expires_in?:number}|null;
+  if(!response.ok||!data?.access_token)throw new Error('アプリ用アカウントの設定を確認してください。');
+  driveToken={value:data.access_token,expires:Date.now()+(data.expires_in??3600)*1000};
+  return driveToken.value;
+}
+/** アプリ専用アカウントで1枚読む。権限が無ければ null（そのあと今までの道を試す） */
+async function driveFileAsApp(id:string):Promise<Response|{error:string;status:number}|null>{
+  const sa=serviceAccount();if(!sa)return null;
+  const token=await driveAccessToken(sa);
+  const response=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media&supportsAllDrives=true`,
+    {headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(60000)});
+  if(response.status===401||response.status===403||response.status===404){
+    await response.body?.cancel();
+    return {status:422,error:`このファイルがアプリ用アカウントに共有されていません。ドライブでこのファイル（またはその親フォルダ）を ${sa.email} に「閲覧者」で共有してください。`};
+  }
+  if(!response.ok){await response.body?.cancel();return {status:422,error:'画像を取り込めませんでした。時間を置いて再試行してください。'};}
+  return response;
+}
+
 export async function GET(request:Request){
   if(request.headers.get('x-artwork')!=='1')return json({error:'アプリの画面から実行してください。'},403);
   try{
@@ -52,9 +108,24 @@ export async function GET(request:Request){
     if(!/^(?:www\.)?drive\.google\.com$/.test(u.hostname))return json({error:'Googleドライブのリンクだけ取り込めます。'},400);
     const id=driveId(u);if(!id)return json({error:'Googleドライブの「ファイル」のリンクを登録してください（フォルダのリンクは取り込めません）。'},400);
     if(!await registered(source))return json({error:'シートに登録済みの画像リンクを選んでください。'},400);
+
+    /* まずアプリ専用アカウントで読む（共有が「制限付き」のままでも、
+       そのアカウントに閲覧権限があれば読める）。設定していなければ飛ばす */
+    const asApp=await driveFileAsApp(id);
+    if(asApp instanceof Response){
+      const mime=(asApp.headers.get('content-type')??'').split(';')[0].toLowerCase();
+      if(!/^image\/(png|jpeg|webp)$/.test(mime)){await asApp.body?.cancel();return json({error:'この置き場所のファイルは画像（PNG・JPEG・WebP）ではありません。'},422);}
+      const length=Number(asApp.headers.get('content-length'));
+      if(Number.isFinite(length)&&length>ARTWORK_MAX_SIZE){await asApp.body?.cancel();return json({error:'元画像は30MB以下で選んでください。'},413);}
+      return new Response(asApp.body,{headers:{'Content-Type':mime,'Cache-Control':'no-store',...(Number.isFinite(length)&&length>0?{'Content-Length':String(length)}:{})}});
+    }
+    /* 専用アカウントに権限が無いときは、公開リンクとして読めるか試す。
+       どちらもだめなら、専用アカウント側の案内を返す（そちらが直し方として近いため） */
+    const appError=asApp;
+
     let target=new URL(`https://drive.usercontent.google.com/download?export=download&id=${encodeURIComponent(id)}`);
     for(let step=0;step<6;step++){
-      if(/^accounts\.google\.com$/.test(target.hostname))return json({error:'このファイルは共有が「制限付き」です。共有を「リンクを知っている全員」にしてください。'},422);
+      if(/^accounts\.google\.com$/.test(target.hostname))return json(appError?{error:appError.error}:{error:'このファイルは共有が「制限付き」です。共有を「リンクを知っている全員」にしてください。'},422);
       if(target.protocol!=='https:'||target.username||target.password||target.port||!DRIVE_FETCH_HOSTS.test(target.hostname))return json({error:`画像の取り込み先を確認できませんでした（${target.hostname}）。`},400);
       const response=await fetch(target,{redirect:'manual',signal:AbortSignal.timeout(60000)});
       if([301,302,303,307,308].includes(response.status)){
