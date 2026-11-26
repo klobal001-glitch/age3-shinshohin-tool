@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-26",
+  "generatedAt": "2026-11-26T23:42:18.946Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 5,
+    "devices": 2,
+    "events": 17,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 8
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "このタスクを開く",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "エクラ ドゥ フェ アブラカタブラ #%",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "チラシ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 1
+    }
+  ],
+  "slow": [],
+  "feedback": []
+}

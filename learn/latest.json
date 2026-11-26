@@ -1,17 +1,13 @@
 {
-  "date": "2026-11-25",
-  "generatedAt": "2026-11-25T23:34:39.945Z",
-  "signal": true,
-  "reasons": [
-    "通信の失敗 42回: age#-shinshohin-tool-theta.vercel.app/api/artwork（422）",
-    "通信の失敗 4回: age#-shinshohin-tool-theta.vercel.app/api/artwork（つながらない）",
-    "遅い通信 29回: / age#-shinshohin-tool-theta.vercel.app/api/artwork"
-  ],
+  "date": "2026-11-26",
+  "generatedAt": "2026-11-26T23:42:18.946Z",
+  "signal": false,
+  "reasons": [],
   "howToRead": "signal が false なら、AIはここで終わる（ほかのファイルは読まない）。true のときだけ learn/NIGHTLY.md の手順へ進み、relatedFiles に挙げたファイルだけを読む。",
   "totals": {
-    "batches": 47,
-    "devices": 3,
-    "events": 228,
+    "batches": 5,
+    "devices": 2,
+    "events": 17,
     "droppedBatches": 0
   },
   "feedback": [],
@@ -21,44 +17,14 @@
       "page": "/",
       "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
       "status": 422,
-      "count": 42
-    },
-    {
-      "page": "/",
-      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
-      "status": 0,
-      "count": 4
-    },
-    {
-      "page": "/",
-      "where": "cchndwcqxzztagpmfofq.supabase.co/rest/v#/product_info",
-      "status": 409,
-      "count": 1
-    },
-    {
-      "page": "/",
-      "where": "cchndwcqxzztagpmfofq.supabase.co/storage/v#/object/sign/overseas-guides/artwork/files/#b#a#ea#a#c#f#",
-      "status": 0,
       "count": 1
     }
   ],
-  "topSlow": [
-    {
-      "page": "/",
-      "kind": "通信",
-      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
-      "maxMs": 46368,
-      "count": 29
-    }
-  ],
-  "relatedFiles": [
-    "src/app/page.tsx",
-    "src/components/Header.tsx",
-    "src/components/Sidebar.tsx"
-  ],
+  "topSlow": [],
+  "relatedFiles": [],
   "deletedRawDays": [],
   "quota": {
-    "storageBytes": 431285114,
+    "storageBytes": 431286701,
     "storageLimitBytes": 1073741824,
     "ratio": 0.402,
     "warn": false,
