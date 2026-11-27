@@ -1,0 +1,106 @@
+{
+  "date": "2026-11-27",
+  "generatedAt": "2026-11-27T23:22:12.734Z",
+  "signal": false,
+  "reasons": [],
+  "totals": {
+    "batches": 17,
+    "devices": 4,
+    "events": 54,
+    "droppedBatches": 0
+  },
+  "views": [
+    {
+      "page": "/",
+      "count": 14
+    }
+  ],
+  "clicks": [
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ #%",
+      "count": 14
+    },
+    {
+      "page": "/",
+      "name": "シート",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "閉じる",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ 🧪 前々月#日まで（#月#日(日)） #日遅れ",
+      "count": 3
+    },
+    {
+      "page": "/",
+      "name": "エクラ ドゥ フェ アブラカタブラ #%",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 新 #",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "ホイップ",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "海外FC資料制作",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "# 🖼️ ビジュアル #/#",
+      "count": 2
+    },
+    {
+      "page": "/",
+      "name": "＋ 材料を追加",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "販売スケジュール",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ビジュアル",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ミックスベリーオペラ",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "チョコいちご",
+      "count": 1
+    },
+    {
+      "page": "/",
+      "name": "ホイップ #%",
+      "count": 1
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "page": "/",
+      "where": "age#-shinshohin-tool-theta.vercel.app/api/artwork",
+      "status": 422,
+      "count": 1
+    }
+  ],
+  "slow": [],
+  "feedback": []
+}
